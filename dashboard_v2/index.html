@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agile Delivery Dashboard - V2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="main-header">
+            <div class="header-title">
+                <h1>AGILE DELIVERY DASHBOARD</h1>
+                <span class="subtitle">Software Engineering Metrics</span>
+            </div>
+            
+            <div class="header-details">
+                <div class="detail-badges">
+                    <div class="badge badge-accent">
+                        <span class="badge-icon">⏱️</span>
+                        <div class="badge-content">
+                            <small>AVG LEAD TIME (DAYS)</small>
+                            <strong id="hdr-lead-time">0</strong>
+                            <span id="trend-lead-time" class="trend-text"></span>
+                        </div>
+                    </div>
+                    <div class="badge badge-warning">
+                        <span class="badge-icon">🚧</span>
+                        <div class="badge-content">
+                            <small>CURRENT WIP</small>
+                            <strong id="hdr-wip">0</strong>
+                            <span id="trend-wip" class="trend-text"></span>
+                        </div>
+                    </div>
+                    <div class="badge badge-success">
+                        <span class="badge-icon">🚀</span>
+                        <div class="badge-content">
+                            <small>TOTAL DONE</small>
+                            <strong id="hdr-done">0</strong>
+                            <span id="trend-done" class="trend-text"></span>
+                        </div>
+                    </div>
+                    <div class="badge badge-info">
+                        <span class="badge-icon">🌊</span>
+                        <div class="badge-content">
+                            <small>AVG THROUGHPUT / MO</small>
+                            <strong id="hdr-throughput">0</strong>
+                            <span id="trend-throughput" class="trend-text"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- TABS -->
+        <div class="tabs-container" style="background: var(--bg-surface); padding: 0 24px; border-bottom: 1px solid var(--border); display: flex; gap: 24px;">
+            <button class="tab-btn active" data-target="view-analytics">📈 Analytics View</button>
+            <button class="tab-btn" data-target="view-report">📋 Performance Report</button>
+        </div>
+
+        <main class="content">
+            <!-- GLOBAL FILTERS -->
+            <div class="global-filters" style="background: var(--bg-surface); padding: 12px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 16px; align-items: center;">
+                <strong style="color: var(--text-muted); font-size: 13px; text-transform: uppercase;">Filters:</strong>
+                <select id="global-filter-project" style="padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-family); min-width: 150px;">
+                    <option value="">All Projects</option>
+                </select>
+                <select id="global-filter-assignee" style="padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-family); min-width: 150px;">
+                    <option value="">All Assignees</option>
+                </select>
+                
+                <div style="margin-left: auto; display: flex; gap: 16px; align-items: center;">
+                    <strong style="color: var(--text-muted); font-size: 13px; text-transform: uppercase;">Table Filters:</strong>
+                    <select id="report-filter-lead-time" style="padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-family); min-width: 150px; font-size: 13px;">
+                        <option value="">All Lead Times</option>
+                        <option value="better">Better than Global</option>
+                        <option value="worse">Worse than Global</option>
+                    </select>
+                    <select id="report-filter-throughput" style="padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-family); min-width: 150px; font-size: 13px;">
+                        <option value="">All Throughputs</option>
+                        <option value="better">Better than Global</option>
+                        <option value="worse">Worse than Global</option>
+                    </select>
+                </div>
+
+                <button id="global-filter-clear" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: var(--font-family);">Clear Filters</button>
+            </div>
+
+            <!-- VIEW: ANALYTICS -->
+            <div id="view-analytics" class="tab-content active">
+                <div class="grid-layout">
+                <!-- CFD CHART -->
+                <section class="card cfd-section">
+                    <h2 class="card-header">CUMULATIVE FLOW DIAGRAM (CFD)</h2>
+                    <div class="chart-container">
+                        <canvas id="cfdChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- PRIORITY & STATUS -->
+                <section class="card side-chart">
+                    <h2 class="card-header">ISSUES BY PRIORITY</h2>
+                    <div class="chart-container">
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- LEAD TIME TREND -->
+                <section class="card side-chart">
+                    <h2 class="card-header">LEAD TIME DISTRIBUTION</h2>
+                    <div class="chart-container">
+                        <canvas id="leadTimeChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- ASSIGNEE PRODUCTIVITY -->
+                <section class="card table-card">
+                    <h2 class="card-header">ASSIGNEE PRODUCTIVITY & WIP</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Assignee</th>
+                                    <th>Total Assigned</th>
+                                    <th>Done (Throughput)</th>
+                                    <th>Current WIP</th>
+                                    <th>WIP Limit Risk</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assignee-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- BOTTLENECK TRACKING -->
+                <section class="card table-card">
+                    <h2 class="card-header">BOTTLENECK TRACKING (Oldest In Progress)</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Issue</th>
+                                    <th>Assignee</th>
+                                    <th>Priority</th>
+                                    <th>Days in Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bottleneck-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+            </div>
+            <!-- END view-analytics -->
+
+            <!-- VIEW: REPORT -->
+            <div id="view-report" class="tab-content">
+                <section class="card">
+                    <h2 class="card-header">GLOBAL PERFORMANCE HEATMAP (PROJECT x ASSIGNEE)</h2>
+                    
+                    <div class="report-legend" style="padding: 16px 20px 12px; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                        <div style="margin-bottom: 12px;">
+                            <strong>Legend:</strong> <span style="display:inline-block; width:10px; height:10px; background:rgba(16, 185, 129, 0.4); border-radius:2px; margin: 0 4px;"></span> Better than Global 
+                            <span style="display:inline-block; width:10px; height:10px; background:rgba(239, 68, 68, 0.4); border-radius:2px; margin: 0 4px 0 12px;"></span> Worse than Global
+                            <span style="margin-left: 12px;"><strong>↑ ↓</strong> Trend vs Global Baseline</span>
+                        </div>
+                        <div style="margin-bottom: 16px; font-style: italic; line-height: 1.5; background: rgba(0,0,0,0.02); padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+                            <strong>Avg Lead Time:</strong> Tempo médio (em dias) que as tarefas levam desde a criação até a conclusão (Status 'Done' ou 'Closed').<br>
+                            <strong>Throughput / Mo:</strong> Vazão. Quantidade média de tarefas entregues por mês ativo.
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Project</th>
+                                    <th>Assignee</th>
+                                    <th id="th-lead-time">Avg Lead Time (Days)</th>
+                                    <th>Current WIP</th>
+                                    <th>Total Done</th>
+                                    <th id="th-throughput">Throughput / Mo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

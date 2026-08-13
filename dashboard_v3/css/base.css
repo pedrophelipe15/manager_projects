@@ -1,0 +1,132 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(110,159,255,0.06), transparent 60%),
+    radial-gradient(1000px 500px at 90% 10%, rgba(62,207,154,0.05), transparent 55%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 80px;
+}
+
+.mono { font-family: 'IBM Plex Mono', monospace; }
+.display { font-family: 'Space Grotesk', sans-serif; }
+
+/* ---------- Header ---------- */
+header {
+  padding: 56px 6vw 40px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+
+.eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-dim);
+}
+
+h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 46px);
+  letter-spacing: -0.01em;
+  max-width: 16ch;
+}
+
+header p.sub {
+  margin-top: 14px;
+  color: var(--muted);
+  max-width: 58ch;
+  font-size: 15px;
+}
+
+.header-meta {
+  margin-top: 32px;
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.header-meta div {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+.header-meta span { color: var(--text); }
+
+/* ---------- Layer scaffolding ---------- */
+.layer {
+  padding: 64px 6vw;
+  border-bottom: 1px solid var(--line);
+}
+
+.layer:last-of-type { border-bottom: none; }
+
+.layer-head {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+.layer-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--muted-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.layer-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+}
+
+.layer-desc {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 70ch;
+  margin: 10px 0 36px;
+}
+
+footer {
+  padding: 40px 6vw 20px;
+  color: var(--muted-2);
+  font-size: 12px;
+  max-width: 80ch;
+}
+
+footer b { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

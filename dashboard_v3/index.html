@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Fluxo — Modelo de 3 Camadas</title>
+  
+  <!-- Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Estilos Segregados -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Modelo de medição · dados carregados do Jira (schema padronizado)</div>
+  <h1>Lead time, cycle time e throughput em três camadas</h1>
+  <p class="sub">Métrica por time para diagnóstico operacional, fluxo fim-a-fim para dependências entre times, e portfólio para visão executiva — sem misturar as três em um número só.</p>
+  <div class="header-meta">
+    <div>Fonte <span id="metaSource">dados de exemplo (sintéticos)</span></div>
+    <div>Issues carregadas <span id="metaCount">—</span></div>
+    <div>Cálculo de percentis <span>P50 · P85 · P95</span></div>
+  </div>
+
+  <div class="upload-bar">
+    <label class="file-btn" for="jsonUpload">Carregar JSON do Jira</label>
+    <input type="file" id="jsonUpload" accept="application/json">
+    <button class="btn-ghost" id="useSampleBtn">Usar dados de exemplo</button>
+    <span id="dataStatus" class="ok">Exibindo dados de exemplo — carregue seu export para ver os números reais.</span>
+  </div>
+</header>
+
+<!-- ============ CAMADA 1 — POR TIME ============ -->
+<section class="layer">
+  <div class="layer-head">
+    <span class="layer-num">Camada 01</span>
+    <span class="layer-title display">Por time — diagnóstico operacional</span>
+  </div>
+  <p class="layer-desc">Cycle time em percentis (não médias), throughput no último mês fechado e WIP atual. Cada time compara-se ao seu próprio histórico — não ao time vizinho.</p>
+
+  <div class="field-note">
+    <b>Campos usados desta camada:</b> <span class="mono">fields.status.statusCategory.key</span> (classifica novo / em andamento / concluído — já vem padronizado no seu JSON, ótimo), <span class="mono">fields.created</span>, <span class="mono">fields.project.key/name</span>.
+    <ul>
+      <li><span class="mono">fields.resolutiondate</span><span class="tag-missing">não veio no exemplo</span> — usado para lead time e para datar o throughput por mês. Sem ele, uso <span class="mono">fields.updated</span> como aproximação.</li>
+      <li><span class="mono">changelog.histories</span> (transições de status com timestamp)<span class="tag-missing">não veio no exemplo</span> — necessário para cycle time exato (tempo entre "entrou em andamento" e "concluído"). Sem ele, o cycle time cai para uma aproximação por <span class="mono">created → updated/resolutiondate</span>, que tende a distorcer o número.</li>
+      <li>Limite de WIP por time — não é um dado de issue, é config do board. Ajuste em <span class="mono">TEAM_WIP_LIMITS</span> no script caso queira o indicador de capacidade.</li>
+    </ul>
+  </div>
+
+  <div class="grid-teams" id="teamCardsContainer">
+    <!-- preenchido via JS -->
+  </div>
+</section>
+
+<!-- ============ CAMADA 2 — FIM-A-FIM ============ -->
+<section class="layer">
+  <div class="layer-head">
+    <span class="layer-num">Camada 02</span>
+    <span class="layer-title display">Fluxo fim-a-fim — épicos cross-team</span>
+  </div>
+  <p class="layer-desc">Lead time desde a criação da demanda até a entrega ao cliente, atravessando múltiplos times. O que a liderança e o cliente sentem — e onde normalmente mora o maior gargalo: a espera entre times.</p>
+
+  <div class="field-note" style="border-left-color:var(--coral);">
+    <b>Esta camada não pode ser automatizada com o schema atual.</b> Para montar o relay fim-a-fim automaticamente, preciso de um campo que vincule issues de times diferentes ao mesmo épico/feature:
+    <ul>
+      <li><span class="mono">fields.parent</span> ou <span class="mono">fields.epic</span> (epic link)<span class="tag-missing">não veio no exemplo</span> — agrupa as issues-filhas de um mesmo épico, mesmo estando em projetos/times diferentes.</li>
+      <li>ou <span class="mono">fields.issuelinks</span><span class="tag-missing">não veio no exemplo</span> — se o vínculo entre times for feito via link ("depende de", "bloqueia") em vez de hierarquia de épico.</li>
+    </ul>
+    Até confirmar qual desses (ou outro) seu Jira usa, o diagrama abaixo permanece <b>ilustrativo/editável manualmente</b> — mesma estrutura de antes, para servir de referência visual em reuniões enquanto o cálculo automático não entra.
+  </div>
+
+  <div class="relay-wrap">
+    <div class="relay-kpis">
+      <div class="kpi-big">
+        <span class="metric-label">Lead time fim-a-fim (P50) — exemplo manual</span>
+        <div class="metric-value" style="color:var(--blue);">26<span class="metric-unit">dias</span></div>
+      </div>
+      <div class="kpi-split">
+        <span><span class="legend-dot" style="background:var(--teal);"></span>Trabalho ativo <b>14d (54%)</b></span>
+        <span><span class="legend-dot" style="background:var(--coral);"></span>Espera / handoff <b>12d (46%)</b></span>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 980 150" width="100%" style="overflow:visible;">
+      <defs>
+        <pattern id="wait-pattern" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <rect width="6" height="6" fill="var(--coral-dim)"></rect>
+          <line x1="0" y1="0" x2="0" y2="6" stroke="var(--coral)" stroke-width="1.6"></line>
+        </pattern>
+      </defs>
+      <line x1="20" y1="80" x2="960" y2="80" stroke="var(--line)" stroke-width="1"></line>
+
+      <rect x="20" y="66" width="105" height="28" rx="5" fill="var(--teal)"></rect>
+      <text x="72" y="84" fill="#0E1218" font-size="11" font-weight="600" text-anchor="middle">Atlas · 3d</text>
+      <rect x="125" y="66" width="140" height="28" rx="5" fill="url(#wait-pattern)"></rect>
+      <text x="195" y="112" fill="var(--coral)" font-size="10" text-anchor="middle">espera 4d</text>
+
+      <rect x="265" y="66" width="175" height="28" rx="5" fill="var(--amber)"></rect>
+      <text x="352" y="84" fill="#0E1218" font-size="11" font-weight="600" text-anchor="middle">Vega · 5d</text>
+      <rect x="440" y="66" width="210" height="28" rx="5" fill="url(#wait-pattern)"></rect>
+      <text x="545" y="112" fill="var(--coral)" font-size="10" text-anchor="middle">espera 6d</text>
+
+      <rect x="650" y="66" width="70" height="28" rx="5" fill="var(--teal)"></rect>
+      <text x="685" y="84" fill="#0E1218" font-size="11" font-weight="600" text-anchor="middle">Nimbus · 2d</text>
+      <rect x="720" y="66" width="70" height="28" rx="5" fill="url(#wait-pattern)"></rect>
+      <text x="755" y="112" fill="var(--coral)" font-size="10" text-anchor="middle">espera 2d</text>
+
+      <rect x="790" y="66" width="140" height="28" rx="5" fill="var(--coral)"></rect>
+      <text x="860" y="84" fill="#0E1218" font-size="11" font-weight="600" text-anchor="middle">Orion · 4d</text>
+
+      <circle cx="20" cy="80" r="4" fill="var(--blue)"></circle>
+      <text x="20" y="35" fill="var(--muted)" font-size="10">Demanda criada</text>
+      <circle cx="960" cy="80" r="4" fill="var(--blue)"></circle>
+      <text x="960" y="35" fill="var(--muted)" font-size="10" text-anchor="end">Entregue ao cliente</text>
+    </svg>
+
+    <p class="relay-note">Exemplo ilustrativo — mesma leitura de antes: o maior segmento isolado costuma ser a <b>espera entre times</b>, não o trabalho ativo de nenhum time. Assim que confirmar o campo de vínculo (épico/parent/issuelinks), esse diagrama passa a ser calculado a partir dos seus dados reais.</p>
+  </div>
+</section>
+
+<!-- ============ CAMADA 3 — PORTFÓLIO ============ -->
+<section class="layer">
+  <div class="layer-head">
+    <span class="layer-num">Camada 03</span>
+    <span class="layer-title display">Portfólio — visão executiva</span>
+  </div>
+  <p class="layer-desc">Throughput soma-se entre times; cycle time e lead time não devem ser reduzidos a uma média simples. Aqui: soma, faixa (range) e a comparação time a time.</p>
+
+  <div class="portfolio-grid">
+    <div class="kpi-stack" id="portfolioKpis">
+      <!-- preenchido via JS -->
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Cycle P50</th>
+          <th>Cycle P95</th>
+          <th>Throughput (últ. mês fechado)</th>
+          <th>WIP atual</th>
+          <th>Tendência (mês vs. mês anterior)</th>
+        </tr>
+      </thead>
+      <tbody id="portfolioTableBody">
+        <!-- preenchido via JS -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p><b>Como ler este painel:</b> Camada 1 é para os times agirem sobre o próprio fluxo. Camada 2 é para o PMO destravar dependências entre times (hoje ilustrativa, ver nota acima). Camada 3 é para reportar à liderança sem mascarar variância. Carregue seu export do Jira acima para ver os números reais.</p>
+</footer>
+
+<!-- Scripts Segregados -->
+<script src="js/metrics.js"></script>
+<script src="js/renderers.js"></script>
+<script src="js/sample-data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

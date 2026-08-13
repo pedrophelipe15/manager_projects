@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Tracking & Control Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="main-header">
+            <div class="header-title">
+                <button class="back-btn">&larr;</button>
+                <h1>PROJECT TRACKING & CONTROL DASHBOARD</h1>
+            </div>
+            
+            <div class="header-details">
+                <div class="detail-col">
+                    <p><strong>PROJECT CODE:</strong> <span id="hdr-proj-code">-</span></p>
+                    <p><strong>LOCATION:</strong> <span>GLOBAL</span></p>
+                </div>
+                <div class="detail-col">
+                    <p><strong>REPORT DATE:</strong> <span id="hdr-report-date">-</span></p>
+                    <p><strong>DATA DATE:</strong> <span id="hdr-data-date">-</span></p>
+                </div>
+                <div class="detail-badges">
+                    <div class="badge badge-success">
+                        <span class="badge-icon">🎯</span>
+                        <div class="badge-content">
+                            <small>SCHEDULE PERFORMANCE INDEX (SPI)</small>
+                            <strong id="hdr-spi">0.00</strong>
+                        </div>
+                    </div>
+                    <div class="badge badge-primary">
+                        <span class="badge-icon">$</span>
+                        <div class="badge-content">
+                            <small>COST PERFORMANCE INDEX (CPI)</small>
+                            <strong id="hdr-cpi">0.00</strong>
+                        </div>
+                    </div>
+                    <div class="badge badge-warning">
+                        <span class="badge-icon">📈</span>
+                        <div class="badge-content">
+                            <small>ESTIMATE AT COMPLETION (EAC)</small>
+                            <strong id="hdr-eac">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" data-target="dashboard-view">Control Dashboard</button>
+            <button class="tab-btn" data-target="timeline-view">Project Timeline</button>
+        </div>
+
+        <main class="content">
+            <!-- VIEW: DASHBOARD -->
+            <div id="dashboard-view" class="view-section active">
+                <div class="grid-layout">
+                    <!-- PROJECT SUMMARY -->
+                    <section class="card summary">
+                        <h2 class="card-header">PROJECT SUMMARY</h2>
+                        <div class="summary-list">
+                            <div class="summary-item"><span>📅 BASELINE START DATE</span> <strong id="sum-start">-</strong></div>
+                            <div class="summary-item"><span>🏁 BASELINE FINISH DATE</span> <strong id="sum-finish">-</strong></div>
+                            <div class="summary-item"><span>⏱️ PROJECT DURATION</span> <strong id="sum-duration">-</strong></div>
+                            <div class="summary-item"><span>% OVERALL PROGRESS</span> <strong id="sum-progress" class="text-success">-</strong></div>
+                            <div class="summary-item"><span>📋 TOTAL TICKETS (VOLUME)</span> <strong id="sum-bac">-</strong></div>
+                            <div class="summary-item"><span>📈 TOTAL EXPECTED (EAC)</span> <strong id="sum-eac">-</strong></div>
+                            <div class="summary-item"><span>🚧 BLOCKED/OPEN (VAC)</span> <strong id="sum-vac" class="text-danger">-</strong></div>
+                        </div>
+                    </section>
+
+                    <!-- S-CURVE -->
+                    <section class="card scurve">
+                        <h2 class="card-header">S-CURVE : PROGRESS PERFORMANCE</h2>
+                        <div class="chart-container">
+                            <canvas id="sCurveChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- PLANNED VS EXECUTED QUANTITY -->
+                    <section class="card bar-chart">
+                        <h2 class="card-header">PLANNED VS EXECUTED QUANTITY</h2>
+                        <div class="chart-container">
+                            <canvas id="qtyChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- ISSUES BY STATUS -->
+                    <section class="card bar-chart">
+                        <h2 class="card-header">ISSUES BY STATUS</h2>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- QUANTITY TRACKING -->
+                    <section class="card table-card full-width">
+                        <h2 class="card-header">QUANTITY TRACKING (JIRA ISSUES)</h2>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>PROJECT / ACTIVITY</th>
+                                        <th>TOTAL PLANNED</th>
+                                        <th>EXECUTED (DONE)</th>
+                                        <th>IN PROGRESS</th>
+                                        <th>% COMPLETE</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="qty-tbody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ASSIGNEE TRACKING -->
+                    <section class="card table-card full-width">
+                        <h2 class="card-header">ASSIGNEE TRACKING (PRODUCTIVITY)</h2>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ASSIGNEE</th>
+                                        <th>TOTAL ASSIGNED</th>
+                                        <th>DELIVERED (DONE)</th>
+                                        <th>IN PROGRESS</th>
+                                        <th>% COMPLETE</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="assignee-tbody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- VIEW: TIMELINE -->
+            <div id="timeline-view" class="view-section">
+                <section class="card full-width">
+                    <h2 class="card-header">PROJECT TIMELINE</h2>
+                    <div class="timeline-container">
+                        <div class="filters-bar">
+                            <input type="text" id="filter-activity" placeholder="Filter Activity...">
+                            <input type="text" id="filter-assignee" placeholder="Filter Assignee...">
+                            <select id="filter-status">
+                                <option value="">All Statuses</option>
+                                <option value="Open">Open</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Waiting Approval">Waiting Approval</option>
+                                <option value="Done">Done</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                            <input type="date" id="filter-created" title="Created Date">
+                            <input type="date" id="filter-updated" title="Updated Date">
+                            <button id="clear-filters-btn" class="btn btn-secondary">Clear</button>
+                        </div>
+                        <table class="timeline-table">
+                            <thead>
+                                <tr>
+                                    <th>Activity (Issue)</th>
+                                    <th>Assignee</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timeline-tbody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                        <div class="timeline-visual" id="timeline-visual">
+                            <!-- Gantt visual would go here, simplified to list for now -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

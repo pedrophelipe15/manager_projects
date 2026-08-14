@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Dashboard Gerencial - 5000 Issues</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="dashboard.css?v=2">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="app-header">
+            <h1>Dashboard Gerencial de Fluxo</h1>
+            <div class="global-filters" style="margin-top: 1rem;">
+                <label for="projectFilter" style="color: #cbd5e1; font-weight: 500;">Projeto:</label>
+                <select id="projectFilter" style="padding: 0.5rem; border-radius: 4px; background: rgba(30, 41, 59, 0.8); color: white; border: 1px solid rgba(255, 255, 255, 0.1);">
+                    <option value="">Default (Nada)</option>
+                    <option value="STN">STN - PS - San Antonio</option>
+                    <option value="CBL">CBL - Core Banking</option>
+                    <option value="PAY">PAY - Payments Flow</option>
+                    <option value="MNG">MNG - Management Tools</option>
+                </select>
+            </div>
+            <p class="subtitle" style="margin-top: 0.5rem;">Análise de <span id="total-issues-count">0</span> registros processados</p>
+        </header>
+
+        <!-- KPI Cards -->
+        <section class="kpi-section">
+            <div class="kpi-card glass">
+                <h3>Média de Lead Time</h3>
+                <p id="kpi-lead-time" class="kpi-value">--</p>
+            </div>
+            <div class="kpi-card glass">
+                <h3>Média de Cycle Time</h3>
+                <p id="kpi-cycle-time" class="kpi-value">--</p>
+            </div>
+            <div class="kpi-card glass">
+                <h3>Eficiência do Fluxo (WIP)</h3>
+                <p id="kpi-efficiency" class="kpi-value">--</p>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-container glass">
+                <h3>Distribuição de Lead Time (Dias)</h3>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="leadTimeChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container glass">
+                <h3>Status das Issues</h3>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="data-section glass">
+            <div class="table-header">
+                <h2>Base de Dados Completa (Paginada)</h2>
+                <input type="text" id="searchInput" placeholder="Pesquisar chave (ex: STN-100)..." style="padding: 0.5rem; border-radius: 4px; background: rgba(30, 41, 59, 0.8); color: white; border: 1px solid rgba(255, 255, 255, 0.1);">
+            </div>
+            
+            <!-- Table Filters Panel -->
+            <div class="table-filters toolbar-glass">
+                <div class="toolbar-label">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                    Filtros
+                </div>
+                
+                <div class="custom-multiselect" id="status-multiselect">
+                    <div class="multiselect-header" onclick="toggleDropdown('status-dropdown')">Status: Todos</div>
+                    <div class="multiselect-options" id="status-dropdown">
+                        <!-- Injetado via JS -->
+                    </div>
+                </div>
+                
+                <div class="date-range-group">
+                    <input type="date" id="filterCreatedStart" title="Criado De" class="filter-input compact">
+                    <span class="date-separator">→</span>
+                    <input type="date" id="filterCreatedEnd" title="Criado Até" class="filter-input compact">
+                </div>
+
+                <input type="text" id="filterParentKey" placeholder="Parent Key..." class="filter-input compact" style="width: 130px;">
+                
+                <div class="custom-multiselect" id="assignee-multiselect">
+                    <div class="multiselect-header" onclick="toggleDropdown('assignee-dropdown')">Assignee: Todos</div>
+                    <div class="multiselect-options" id="assignee-dropdown">
+                        <!-- Injetado via JS -->
+                    </div>
+                </div>
+
+                <button class="btn-clear" onclick="clearFilters()" title="Limpar Filtros">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Limpar
+                </button>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Parent</th>
+                            <th>Assignee</th>
+                            <th>Summary</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Due Date</th>
+                            <th>Updated</th>
+                            <th>Resolved</th>
+                            <th>Lead Time</th>
+                            <th>Cycle Time</th>
+                            <th>Timeline</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div class="pagination">
+                <button id="btn-prev" disabled>Anterior</button>
+                <span id="page-info">Página 1 de X</span>
+                <button id="btn-next">Próxima</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal Popup -->
+    <div class="modal-overlay" id="timelineModal" onclick="closeModal(event)">
+        <div class="modal-content glass" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="modalTitle">Timeline do Item <span id="modalKey" style="color: var(--accent);"></span></h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Conteúdo injetado via JS -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .filter-input {
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            background: rgba(15, 23, 42, 0.6);
+            color: #f8fafc;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.85rem;
+        }
+        .filter-input::placeholder {
+            color: #64748b;
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="dashboard.js?v=10"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog Timeline</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 id="issue-title">Carregando Changelog...</h1>
+            <p id="issue-description" class="subtitle">...</p>
+        </header>
+
+        <!-- Container da Tabela de Métricas -->
+        <section id="metrics-container" class="metrics-section" style="display: none;">
+            <h2>Métricas de Tempo</h2>
+            <div class="metrics-table-wrapper">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Fase</th>
+                            <th>Transição</th>
+                            <th>Início</th>
+                            <th>Fim</th>
+                            <th>Duração</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metrics-tbody">
+                        <!-- Intervals will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="metrics-summary">
+                <div class="summary-box">
+                    <span class="summary-label">Total Cycle Time</span>
+                    <span class="summary-value highlight" id="cycle-time-val">--</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-label">Total Lead Time</span>
+                    <span class="summary-value highlight" id="lead-time-val">--</span>
+                </div>
+            </div>
+        </section>
+
+        <main>
+            <div class="timeline" id="timeline-container">
+                <!-- Timeline items will be injected here by app.js -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>

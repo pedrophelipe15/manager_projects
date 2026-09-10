@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Configuracoes - Hierarchy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="hierarchy.css?v=2">
+    <style>
+        .settings-section { margin-bottom: 2rem; }
+        .section-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .section-header h2 { font-size: 1.1rem; font-weight: 600; }
+        .section-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+        .add-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .form-input { background: var(--bg-primary); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.82rem; font-family: inherit; min-width: 120px; }
+        .form-input:focus { outline: none; border-color: var(--accent); }
+        .form-select { background: var(--bg-primary); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.82rem; font-family: inherit; }
+        .form-select option { background: var(--bg-secondary); }
+        .btn-add { background: var(--accent); border: none; color: #fff; padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+        .btn-add:hover { background: #2563eb; }
+        .btn-delete { background: none; border: 1px solid rgba(239,68,68,0.3); color: var(--danger); padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.72rem; cursor: pointer; font-family: inherit; }
+        .btn-delete:hover { background: rgba(239,68,68,0.1); }
+
+        .sync-section { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+        .sync-log { margin-top: 1rem; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--glass-border); border-radius: 8px; max-height: 250px; overflow-y: auto; font-size: 0.75rem; font-family: monospace; line-height: 1.5; display: none; }
+        .sync-log.visible { display: block; }
+        .sync-log .line-ok { color: var(--success); }
+        .sync-log .line-err { color: var(--danger); }
+        .sync-log .line-info { color: var(--text-muted); }
+
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 0.75rem; }
+        .history-table th { text-align: left; padding: 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--glass-border); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .history-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .status-success { color: var(--success); }
+        .status-error { color: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <nav id="hierarchy-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>Configuracoes</h1>
+            <p class="subtitle">Gerencie hierarquias monitoradas, sincronizacao e historico</p>
+        </header>
+
+        <!-- Hierarquias monitoradas -->
+        <section class="settings-section metric-section glass">
+            <div class="section-header">
+                <div>
+                    <h2>Hierarquias Monitoradas</h2>
+                    <p class="section-desc">Epicos e iniciativas cujas arvores sao extraidas e monitoradas.</p>
+                </div>
+            </div>
+            <div class="add-form">
+                <input type="text" id="input-key" class="form-input" placeholder="Key (ex: PSADB-1457)" style="width:150px">
+                <input type="text" id="input-name" class="form-input" placeholder="Nome descritivo" style="flex:1;min-width:200px">
+                <select id="input-type" class="form-select">
+                    <option value="epic">Epic</option>
+                    <option value="initiative">Initiative</option>
+                </select>
+                <button class="btn-add" onclick="addEntry()">Adicionar</button>
+            </div>
+            <table class="metric-table" id="config-table">
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Nome</th>
+                        <th>Tipo</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody id="config-body">
+                    <tr><td colspan="4" class="empty-state">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Projetos excluidos -->
+        <section class="settings-section metric-section glass">
+            <div class="section-header">
+                <div>
+                    <h2>Projetos Excluidos</h2>
+                    <p class="section-desc">Projetos (por prefixo da key, ex: PSDC em PSDC-1404) que NAO sao consolidados nos calculos nem exibidos nos dashboards.</p>
+                </div>
+            </div>
+            <div class="add-form">
+                <input type="text" id="input-excluded-key" class="form-input" placeholder="Project key (ex: PSDC)" style="width:200px" onkeydown="if(event.key==='Enter')addExcluded()">
+                <button class="btn-add" onclick="addExcluded()">Excluir Projeto</button>
+            </div>
+            <table class="metric-table" id="excluded-table">
+                <thead>
+                    <tr>
+                        <th>Project Key</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody id="excluded-body">
+                    <tr><td colspan="2" class="empty-state">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Sincronização -->
+        <section class="settings-section metric-section glass">
+            <div class="section-header">
+                <div>
+                    <h2>Sincronizacao</h2>
+                    <p class="section-desc">Extrai dados do Jira para todas as hierarquias configuradas e recalcula metricas.</p>
+                </div>
+            </div>
+            <div class="sync-section">
+                <button id="btn-sync" class="btn-sync" onclick="triggerSync()">Sincronizar Hierarquia</button>
+                <span id="sync-status-text" class="sync-info"></span>
+            </div>
+            <div id="sync-log" class="sync-log"></div>
+        </section>
+
+        <!-- Histórico -->
+        <section class="settings-section metric-section glass">
+            <div class="section-header">
+                <div>
+                    <h2>Historico de Sincronizacoes</h2>
+                    <p class="section-desc">Ultimas 20 execucoes da pipeline hierarquica.</p>
+                </div>
+            </div>
+            <table class="history-table" id="history-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Duracao</th>
+                        <th>Iniciativas</th>
+                        <th>Epicos</th>
+                        <th>Stories</th>
+                        <th>Subtasks</th>
+                        <th>Changelogs</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body">
+                    <tr><td colspan="8" class="empty-state">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <script src="nav.js?v=2"></script>
+    <script src="settings.js?v=1"></script>
+</body>
+</html>

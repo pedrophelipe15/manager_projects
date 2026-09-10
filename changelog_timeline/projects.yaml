@@ -1,0 +1,94 @@
+projects:
+- key: REYK
+  name: PS - REYKJAVIK
+  exclude_statuses:
+  - Canceled
+  - Reject
+  - Open
+  - To do
+  - Backlog
+  - Refinement
+  pipelines:
+    active:
+      name: Trabalho ativo
+      jql: project = "PS - REYKJAVIK" AND status in ("In Progress", "Blocked", "Test",
+        "Waiting for Delivery")
+    done:
+      name: Done (6 meses)
+      jql: project = "PS - REYKJAVIK" AND status = Done AND resolved >= -26w
+    delta:
+      name: Delta (10 dias)
+      jql: project = "PS - REYKJAVIK" AND updated >= -10d
+- key: STN
+  name: PS - San Antonio
+  exclude_statuses:
+  - Canceled
+  - Reject
+  - Removed
+  - Open
+  - To do
+  - Backlog
+  - Refinement
+  pipelines:
+    active:
+      name: Trabalho ativo
+      jql: project in (13146) AND status in ("In Progress", "Blocked", "Test", "Waiting
+        for Delivery")
+    done:
+      name: Done (6 meses)
+      jql: project in (13146) AND status = Done AND resolved >= -26w
+    delta:
+      name: Delta (10 dias)
+      jql: project in (13146) AND updated >= -10d
+- key: BL
+  name: PS - Belize
+  exclude_statuses:
+  - Canceled
+  - Reject
+  - Open
+  - To do
+  - Backlog
+  - Refinement
+  pipelines:
+    active:
+      name: Trabalho ativo
+      jql: project = "PS - Belize" AND status in ("In Progress", "Blocked", "Test",
+        "Waiting for Delivery")
+    done:
+      name: Done (6 meses)
+      jql: project = "PS - Belize" AND status = Done AND resolved >= -26w
+    delta:
+      name: Delta (10 dias)
+      jql: project = "PS - Belize" AND updated >= -10d
+- key: BKA
+  name: PS - San Ignacio
+  exclude_statuses:
+  - Canceled
+  - Reject
+  - Open
+  - To do
+  - Backlog
+  - Refinement
+  pipelines:
+    active:
+      name: Trabalho ativo
+      jql: project = "PS - San Ignacio" AND status in ("In Progress", "Blocked", "Test",
+        "Waiting for Delivery")
+    done:
+      name: Done (6 meses)
+      jql: project = "PS - San Ignacio" AND status = Done AND resolved >= -26w
+    delta:
+      name: Delta (10 dias)
+      jql: project = "PS - San Ignacio" AND updated >= -10d
+excluded_projects:
+- PSDC
+hierarchy:
+- key: GPPGI-325
+  name: Programa de Modernização
+  type: initiative
+- key: GPPGI-327
+  name: Migração Banco AWS para PagCloud
+  type: initiative
+- key: PSADB-1431
+  name: 2026 KR Classificação de dados
+  type: epic

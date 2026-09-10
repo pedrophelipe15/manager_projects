@@ -1,0 +1,330 @@
+/* =============================================================================
+   Executive Theme — Paleta PagBank (tema claro)
+   Fonte de verdade: changelog_timeline/design-system.md
+   Copia local para manter o MVP apartado. Consuma SEMPRE os tokens semanticos.
+   ============================================================================= */
+
+:root {
+  /* --- Paleta base --- */
+  --bg-page: #FAF9F5;
+  --bg-page-alt: #FFFFFF;
+  --surface: #EDEAE0;
+  --surface-2: #E8E5DA;
+  --border: #DDD8CC;
+  --header-bar: #1C1C1C;
+
+  --ink: #1A1A1A;
+  --ink-invert: #FFFFFF;
+  --muted: #6E6E6E;
+  --muted-2: #8A857A;
+
+  --accent: #F5D029;
+  --accent-strong: #F2C500;
+  --teal: #2E7D8A;
+  --teal-strong: #1F6E7B;
+  --teal-light: #9FD3DD;
+  --danger: #D9534F;
+  --danger-soft: #E05B49;
+
+  /* --- Tokens semanticos --- */
+  --color-bg: var(--bg-page);
+  --color-card: var(--surface);
+  --color-card-border: var(--border);
+  --color-text: var(--ink);
+  --color-text-muted: var(--muted);
+  --color-title-bar: var(--header-bar);
+  --color-highlight: var(--accent);
+  --color-positive: var(--teal);
+  --color-info: var(--teal-light);
+  --color-alert: var(--danger);
+  --series-primary: var(--accent-strong);
+  --series-secondary: var(--teal-light);
+
+  /* --- Tipografia --- */
+  --font-family: "Inter", "Segoe UI", Arial, sans-serif;
+
+  /* --- Elevacao / raio --- */
+  --radius-card: 14px;
+  --radius-pill: 999px;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background: var(--color-bg);
+  padding: 2rem 0.25rem;
+  min-height: 100vh;
+}
+
+/* ---------- Layout base ---------- */
+.slide-wrap {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 0.25rem;
+}
+
+/* ---------- Header ---------- */
+.exec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.title-bar {
+  display: inline-block;
+  background: var(--color-title-bar);
+  color: var(--ink-invert);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+}
+
+.exec-subtitle {
+  margin-top: 0.6rem;
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  max-width: 900px;
+}
+
+.exec-context {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-positive);
+}
+
+.brand {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.brand .brand-mark { color: var(--color-positive); }
+
+/* ---------- KPIs ---------- */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.kpi {
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.1rem;
+}
+
+.kpi .kpi-value {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+}
+.kpi .kpi-value.positive { color: var(--color-positive); }
+.kpi .kpi-value.alert { color: var(--color-alert); }
+
+.kpi .kpi-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.kpi .kpi-pct {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.kpi .kpi-pct.positive { color: var(--color-positive); }
+.kpi .kpi-pct.alert { color: var(--color-alert); }
+.kpi .kpi-sep { color: var(--muted-2); font-weight: 700; }
+
+.kpi .kpi-label {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* KPI hero (amarelo) */
+.kpi.kpi-hero {
+  background: var(--color-highlight);
+  border-color: var(--accent-strong);
+}
+.kpi.kpi-hero .kpi-value,
+.kpi.kpi-hero .kpi-label { color: var(--ink); }
+
+/* Contador Eco (opcional) */
+.eco-counter { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.eco-cell {
+  flex: 1;
+  border-radius: 9px;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid var(--border);
+}
+.eco-cell .eco-n { font-size: 1.2rem; font-weight: 800; }
+.eco-cell .eco-pc { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+.eco-cell.sim { background: rgba(46, 125, 138, 0.12); border-color: var(--teal); }
+.eco-cell.sim .eco-n { color: var(--teal-strong); }
+.eco-cell.nao { background: rgba(217, 83, 79, 0.1); border-color: var(--danger); }
+.eco-cell.nao .eco-n { color: var(--danger); }
+
+/* ---------- Blocos narrativos (opcional) ---------- */
+.narrative {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.narrative .block {
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  padding: 0.9rem 1rem;
+}
+.narrative .block h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-positive);
+}
+.narrative .block.attention h3 { color: var(--color-alert); }
+.narrative .block ul { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; line-height: 1.35; }
+.narrative .block li { margin-bottom: 0.25rem; }
+
+/* ---------- Cronograma ---------- */
+.section-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+.section-card > h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-positive);
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.schedule-table caption {
+  caption-side: top;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+.schedule-table th,
+.schedule-table td {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.85rem;
+}
+.schedule-table thead th {
+  border-top: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+.schedule-table td.period { font-weight: 800; color: var(--ink); white-space: nowrap; }
+.schedule-table td.day-date { color: var(--teal-strong); font-weight: 700; white-space: nowrap; }
+
+.count-pill {
+  display: inline-block;
+  min-width: 28px;
+  text-align: center;
+  border-radius: var(--radius-pill);
+  padding: 0.1rem 0.5rem;
+  font-weight: 800;
+  font-size: 0.78rem;
+  border: 1px solid var(--border);
+  color: var(--ink);
+}
+.count-pill.high { background: rgba(217, 83, 79, 0.18); border-color: var(--danger); color: var(--danger); }
+.count-pill.mid { background: rgba(245, 208, 41, 0.28); border-color: var(--accent-strong); }
+.count-pill.low { background: var(--surface-2); }
+
+.activity-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-page-alt);
+  font-size: 0.72rem;
+  color: var(--ink);
+}
+.tag.eco-sim { background: rgba(46, 125, 138, 0.14); border-color: var(--teal); color: var(--teal-strong); }
+.tag.eco-nao { background: rgba(217, 83, 79, 0.12); border-color: var(--danger); color: var(--danger); }
+
+/* ---------- Footer ---------- */
+.exec-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+.legend { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+.legend .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+.legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.legend .dot.high { background: var(--danger); }
+.legend .dot.mid { background: var(--accent-strong); }
+.legend .dot.low { background: var(--muted-2); }
+
+/* ---------- Estados ---------- */
+.state-msg {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+/* ---------- Modo Slide (print/projecao) ---------- */
+@media print {
+  body { padding: 0; background: #fff; }
+  .slide-wrap { max-width: none; }
+}
+
+/* ---------- Responsivo (modo tela, mobile) ---------- */
+@media (max-width: 768px) {
+  body { padding: 1rem 0.5rem; }
+  .title-bar { font-size: 1.2rem; }
+  .exec-header { flex-direction: column; }
+}

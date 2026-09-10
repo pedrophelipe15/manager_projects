@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Roadmap - Hierarchy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="hierarchy.css?v=3">
+    <style>
+        .page-container { max-width: 100%; padding: 0.75rem 0.5rem; }
+
+        /* Filtros */
+        .filters-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+        .dd-wrapper { position: relative; }
+        .dd-toggle {
+            display: flex; align-items: center; gap: 0.4rem;
+            background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1);
+            color: #f8fafc; padding: 0.4rem 0.7rem; border-radius: 6px;
+            font-size: 0.85rem; font-family: inherit; cursor: pointer; transition: border-color 0.2s;
+        }
+        .dd-toggle:hover { border-color: var(--accent); }
+        .dd-label { color: #94a3b8; }
+        .dd-count { color: var(--accent); font-weight: 600; font-size: 0.8rem; }
+        .dd-arrow { color: #64748b; font-size: 0.7rem; }
+        .dd-menu {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0;
+            background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+            min-width: 220px; max-height: 280px; overflow-y: auto; z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4); padding: 0.4rem 0;
+        }
+        .dd-menu.open { display: block; }
+        .dd-option {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.45rem 0.75rem; font-size: 0.85rem; color: #f8fafc;
+            cursor: pointer; transition: background 0.15s;
+        }
+        .dd-option:hover { background: rgba(255,255,255,0.05); }
+        .dd-option input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+        .btn-clear-filters {
+            background: none; border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8; padding: 0.4rem 0.7rem; border-radius: 6px;
+            font-size: 0.85rem; cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .btn-clear-filters:hover { color: #f8fafc; border-color: var(--accent); }
+
+        /* Section */
+        .roadmap-section { margin-bottom: 2rem; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.6rem; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--glass-border); }
+        .section-badge { font-size: 0.78rem; font-weight: 500; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; }
+
+        /* Roadmap Container */
+        .roadmap-container { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; overflow: hidden; }
+
+        /* Timeline Header */
+        .timeline-header { display: grid; grid-template-columns: var(--info-col-width) 1fr; border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 10; background: rgba(15, 23, 42, 0.95); }
+        .timeline-header-label { padding: 0.6rem 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-right: 1px solid var(--glass-border); }
+        .timeline-months { display: grid; grid-template-columns: repeat(var(--month-count), 1fr); }
+        .timeline-month { padding: 0.6rem 0.3rem; text-align: center; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; border-right: 1px solid rgba(255,255,255,0.03); }
+        .timeline-month.current { color: var(--accent); background: rgba(59,130,246,0.05); }
+
+        /* Initiative Header */
+        .initiative-header { display: grid; grid-template-columns: var(--info-col-width) 1fr; background: rgba(245, 158, 11, 0.06); border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; }
+        .initiative-name { padding: 0.6rem 0.75rem; font-size: 0.9rem; font-weight: 700; color: #f59e0b; }
+
+        /* Epic Header */
+        .epic-header { display: grid; grid-template-columns: var(--info-col-width) 1fr; background: rgba(59, 130, 246, 0.04); border-bottom: 1px solid rgba(255,255,255,0.03); align-items: center; }
+        .epic-name { padding: 0.5rem 0.75rem 0.5rem 1.5rem; font-size: 0.88rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+        .epic-name .epic-key { font-size: 0.78rem; color: var(--text-muted); }
+
+        /* Header stats */
+        .header-stats { padding: 0.5rem 1rem; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); text-align: left; }
+
+        /* Story Row */
+        .story-row { display: grid; grid-template-columns: var(--info-col-width) 1fr; border-bottom: 1px solid rgba(255,255,255,0.02); transition: background 0.15s; }
+        .story-row:hover { background: rgba(255,255,255,0.02); }
+        .story-info { display: grid; grid-template-columns: 80px 110px 1fr auto; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem 0.5rem 2.25rem; border-right: 1px solid var(--glass-border); overflow: hidden; }
+        .story-key { font-size: 0.8rem; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; text-align: left; }
+        .story-key:hover { text-decoration: underline; }
+        .story-assignee { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+        .story-name { font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+        .story-status-badge { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px; white-space: nowrap; text-align: left; }
+        .status-blocked { background: rgba(220, 53, 69, 0.2); color: #f87171; }
+        .status-in-progress { background: rgba(13, 110, 253, 0.2); color: #60a5fa; }
+        .status-done { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .status-default { background: rgba(108, 117, 125, 0.2); color: #94a3b8; }
+
+        /* Timeline bar */
+        .story-timeline { display: grid; grid-template-columns: repeat(var(--month-count), 1fr); align-items: center; padding: 0.3rem 0; }
+        .timeline-cell { padding: 0 0.15rem; height: 28px; display: flex; align-items: center; }
+        .gantt-bar { height: 20px; border-radius: 4px; width: 90%; margin: 0 auto; cursor: pointer; transition: opacity 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); }
+        .gantt-bar:hover { opacity: 0.85; transform: scaleY(1.2); }
+        .gantt-bar.blocked { background: var(--color-blocked, #dc3545); }
+        .gantt-bar.in-progress { background: var(--color-in-progress, #0d6efd); }
+        .gantt-bar.done { background: var(--color-done, #10b981); }
+        .gantt-bar.default { background: var(--color-default, #6c757d); }
+
+        /* Tooltip */
+        .tooltip { position: fixed; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.88rem; line-height: 1.5; z-index: 1000; pointer-events: none; display: none; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .tooltip.visible { display: block; }
+        .tooltip-title { font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem; }
+        .tooltip-row { color: var(--text-muted); }
+        .tooltip-row span { color: var(--text-primary); }
+
+        /* Legend */
+        .legend { display: flex; gap: 1.5rem; margin-top: 0.75rem; padding: 0.6rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); }
+        .legend-inline { display: flex; gap: 1rem; align-items: center; margin-left: auto; }
+        .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text-muted); }
+        .legend-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+        .orphan-separator { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(255,255,255,0.06); }
+
+        :root { --info-col-width: 680px; --color-blocked: #dc3545; --color-in-progress: #0d6efd; --color-done: #10b981; --color-default: #6c757d; }
+        @media (max-width: 768px) { :root { --info-col-width: 300px; } }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <nav id="hierarchy-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>Roadmap</h1>
+            <p class="subtitle">Hierarquia completa: Iniciativa → Epico → Stories | Epicos orfaos</p>
+        </header>
+
+        <div id="roadmap-content">
+            <p class="empty-state">Carregando...</p>
+        </div>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+
+    <script src="nav.js?v=3"></script>
+    <script src="roadmap.js?v=1"></script>
+</body>
+</html>

@@ -17,20 +17,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="dashboard.css?v=2">
+    <link rel="stylesheet" href="dashboard.css?v=9">
 </head>
 <body>
     <div class="dashboard-container">
-        <header class="app-header">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/hierarchy/dashboard-v2.html" class="nav-link">&#x1F4CA; Hierarquia</a>
+            <a href="/dashboard.html" class="nav-link active">Dashboard</a>
+            <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
+            <a href="/wave2.html" class="nav-link">Previsibilidade</a>
+            <a href="/wave3.html" class="nav-link">Pessoas</a>
+            <a href="/wave4.html" class="nav-link">Portfolio</a>
+            <a href="/insights.html" class="nav-link">Insights</a>
+            <a href="/maturidade.html" class="nav-link">&#x1F331; Maturidade</a>
+            <a href="/inconsistencies.html" class="nav-link">Inconsistencias</a>
+            <a href="/settings.html" class="nav-link">Configuracoes</a>
+        </nav>
+
+        <header class="page-header">
             <h1>Dashboard Gerencial de Fluxo</h1>
             <div class="global-filters" style="margin-top: 1rem;">
                 <label for="projectFilter" style="color: #cbd5e1; font-weight: 500;">Projeto:</label>
                 <select id="projectFilter" style="padding: 0.5rem; border-radius: 4px; background: rgba(30, 41, 59, 0.8); color: white; border: 1px solid rgba(255, 255, 255, 0.1);">
-                    <option value="">Default (Nada)</option>
-                    <option value="STN">STN - PS - San Antonio</option>
-                    <option value="CBL">CBL - Core Banking</option>
-                    <option value="PAY">PAY - Payments Flow</option>
-                    <option value="MNG">MNG - Management Tools</option>
+                    <option value="">Selecione um projeto...</option>
                 </select>
             </div>
             <p class="subtitle" style="margin-top: 0.5rem;">Análise de <span id="total-issues-count">0</span> registros processados</p>
@@ -39,32 +49,40 @@
         <!-- KPI Cards -->
         <section class="kpi-section">
             <div class="kpi-card glass">
-                <h3>Média de Lead Time</h3>
-                <p id="kpi-lead-time" class="kpi-value">--</p>
+                <h3>Done esta semana</h3>
+                <p id="kpi-done-week" class="kpi-value">--</p>
+                <details class="kpi-details">
+                    <summary>O que é?</summary>
+                    <div class="kpi-details-content">
+                        <p><strong>O que é:</strong> quantidade de issues concluídas nos últimos 7 dias.</p>
+                        <p><strong>Objetivo:</strong> visão imediata do ritmo de entrega. Comparar com semanas anteriores indica aceleração ou desaceleração.</p>
+                        <p><strong>Cálculo:</strong> issues com resolved_at nos últimos 7 dias no filtro atual.</p>
+                    </div>
+                </details>
             </div>
             <div class="kpi-card glass">
-                <h3>Média de Cycle Time</h3>
-                <p id="kpi-cycle-time" class="kpi-value">--</p>
+                <h3>WIP (em andamento)</h3>
+                <p id="kpi-wip" class="kpi-value">--</p>
+                <details class="kpi-details">
+                    <summary>O que é?</summary>
+                    <div class="kpi-details-content">
+                        <p><strong>O que é:</strong> quantidade de issues atualmente em estados ativos (In Progress, Blocked, Test, Waiting for Delivery).</p>
+                        <p><strong>Objetivo:</strong> controlar a carga de trabalho simultânea. WIP alto gera filas e atrasa tudo.</p>
+                        <p><strong>Cálculo:</strong> contagem de issues no filtro atual com status ativo.</p>
+                    </div>
+                </details>
             </div>
             <div class="kpi-card glass">
-                <h3>Eficiência do Fluxo (WIP)</h3>
-                <p id="kpi-efficiency" class="kpi-value">--</p>
-            </div>
-        </section>
-
-        <!-- Charts Section -->
-        <section class="charts-section">
-            <div class="chart-container glass">
-                <h3>Distribuição de Lead Time (Dias)</h3>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="leadTimeChart"></canvas>
-                </div>
-            </div>
-            <div class="chart-container glass">
-                <h3>Status das Issues</h3>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="statusChart"></canvas>
-                </div>
+                <h3>Paradas >7 dias</h3>
+                <p id="kpi-stale" class="kpi-value">--</p>
+                <details class="kpi-details">
+                    <summary>O que é?</summary>
+                    <div class="kpi-details-content">
+                        <p><strong>O que é:</strong> issues em estado ativo cuja última atualização foi há mais de 7 dias.</p>
+                        <p><strong>Objetivo:</strong> identificar itens que podem estar travados ou esquecidos e precisam de ação imediata.</p>
+                        <p><strong>Cálculo:</strong> issues ativas (In Progress, Blocked, Test, Waiting for Delivery) com updated_at > 7 dias atrás.</p>
+                    </div>
+                </details>
             </div>
         </section>
 
@@ -171,6 +189,8 @@
     </style>
 
     <!-- Scripts -->
-    <script src="dashboard.js?v=10"></script>
+    <script src="dashboard.js?v=22"></script>
+    <script src="nav-alerts.js?v=1"></script>
+    <style>.nav-alert-badge{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:#f59e0b;color:#0f172a;border-radius:10px;font-size:0.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}.nav-alert-badge.critical{background:#ef4444;color:#fff}</style>
 </body>
 </html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Insights - Changelog Timeline</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="insights.css?v=1">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/hierarchy/dashboard-v2.html" class="nav-link">&#x1F4CA; Hierarquia</a>
+            <a href="/dashboard.html" class="nav-link">Dashboard</a>
+            <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
+            <a href="/wave2.html" class="nav-link">Previsibilidade</a>
+            <a href="/wave3.html" class="nav-link">Pessoas</a>
+            <a href="/wave4.html" class="nav-link">Portfolio</a>
+            <a href="/insights.html" class="nav-link active">Insights</a>
+            <a href="/inconsistencies.html" class="nav-link">Inconsistencias</a>
+            <a href="/settings.html" class="nav-link">Configuracoes</a>
+        </nav>
+
+        <header class="page-header">
+            <h1>Insights</h1>
+            <p class="subtitle">Diagnostico automatico do fluxo de trabalho</p>
+        </header>
+
+        <!-- Filtro de Projeto -->
+        <section class="filter-section glass">
+            <label for="projectFilter">Projeto:</label>
+            <select id="projectFilter">
+                <option value="">Selecione um projeto...</option>
+            </select>
+            <span class="severity-badges" id="severityBadges"></span>
+        </section>
+
+        <!-- Resultados -->
+        <div id="results-container">
+            <p class="empty-state">Selecione um projeto para ver os insights.</p>
+        </div>
+    </div>
+
+    <script src="insights-page.js?v=1"></script>
+    <script src="nav-alerts.js?v=1"></script>
+    <style>.nav-alert-badge{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:#f59e0b;color:#0f172a;border-radius:10px;font-size:0.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}.nav-alert-badge.critical{background:#ef4444;color:#fff}</style>
+</body>
+</html>

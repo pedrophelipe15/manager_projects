@@ -1,0 +1,19 @@
+# Segredos — NUNCA commitar
+.env
+exporter_jira/.env
+
+# Bancos SQLite (gerados)
+*.db
+*.db-wal
+*.db-shm
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Dados gerados pela pipeline
+output/
+
+# Ambientes virtuais
+.venv/
+.venv-test/

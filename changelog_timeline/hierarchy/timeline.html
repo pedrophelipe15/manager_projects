@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Timeline - Hierarchy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="hierarchy.css?v=2">
+    <style>
+        .filters-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; }
+        .filter-select { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 0.4rem 0.7rem; border-radius: 8px; font-size: 0.8rem; font-family: inherit; }
+        .filter-select option { background: var(--bg-secondary); }
+        .filter-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .tree { margin: 0; padding: 0; list-style: none; }
+        .tree-item { margin-bottom: 0.25rem; }
+        .tree-node { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; font-size: 0.82rem; }
+        .tree-node:hover { background: rgba(255,255,255,0.04); }
+        .tree-toggle { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.7rem; transition: transform 0.2s; flex-shrink: 0; }
+        .tree-toggle.expanded { transform: rotate(90deg); }
+        .tree-toggle.leaf { visibility: hidden; }
+        .tree-key { font-weight: 600; color: var(--accent); font-size: 0.75rem; min-width: 80px; }
+        .tree-summary { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tree-status { font-size: 0.68rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--text-muted); white-space: nowrap; }
+        .tree-meta { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+        .tree-children { margin-left: 1.5rem; border-left: 1px solid rgba(255,255,255,0.06); padding-left: 0.5rem; display: none; }
+        .tree-children.open { display: block; }
+
+        .level-initiative .tree-node { font-size: 0.9rem; }
+        .level-initiative .tree-key { font-size: 0.82rem; color: var(--warning); }
+        .level-epic .tree-key { color: var(--accent); }
+        .level-story .tree-key { color: var(--text-muted); font-weight: 500; }
+        .level-subtask .tree-key { color: rgba(148,163,184,0.6); font-weight: 400; font-size: 0.7rem; }
+        .level-subtask .tree-node { padding: 0.3rem 0.75rem; font-size: 0.78rem; }
+
+        .expand-all-btn { background: none; border: 1px solid var(--glass-border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-family: inherit; }
+        .expand-all-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+
+        .tree-count { font-size: 0.68rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.1rem 0.4rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <nav id="hierarchy-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>Timeline</h1>
+            <p class="subtitle">Arvore hierarquica visual: Iniciativa → Epico → Story → Sub-task</p>
+        </header>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+            <div>
+                <span class="filter-label">Time: </span>
+                <select id="filter-team" class="filter-select" onchange="applyFilters()">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div>
+                <span class="filter-label">Status: </span>
+                <select id="filter-status" class="filter-select" onchange="applyFilters()">
+                    <option value="">Todos</option>
+                    <option value="Done">Done</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Blocked">Blocked</option>
+                    <option value="Test">Test</option>
+                    <option value="To do">To do</option>
+                    <option value="Open">Open</option>
+                </select>
+            </div>
+            <div>
+                <span class="filter-label">Risco: </span>
+                <select id="filter-risk" class="filter-select" onchange="applyFilters()">
+                    <option value="">Todos</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <button class="expand-all-btn" onclick="expandAll()">Expandir tudo</button>
+            <button class="expand-all-btn" onclick="collapseAll()">Recolher tudo</button>
+        </div>
+
+        <!-- Tree -->
+        <div id="tree-container" class="metric-section glass">
+            <p class="empty-state">Carregando...</p>
+        </div>
+    </div>
+
+    <script src="nav.js?v=2"></script>
+    <script src="timeline.js?v=1"></script>
+</body>
+</html>

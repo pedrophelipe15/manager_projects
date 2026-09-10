@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Epic Health - Hierarchy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+    <link rel="stylesheet" href="hierarchy.css?v=1">
+    <style>
+        .row-done { background: rgba(16, 185, 129, 0.08) !important; }
+        .row-in-progress { background: rgba(59, 130, 246, 0.08) !important; }
+        .row-blocked { background: rgba(245, 158, 11, 0.1) !important; }
+        .row-test { background: rgba(168, 85, 247, 0.08) !important; }
+        .row-waiting { background: rgba(245, 158, 11, 0.08) !important; }
+        .row-canceled { background: rgba(239, 68, 68, 0.1) !important; }
+
+        /* Filtros dropdown com checkbox */
+        .filters-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+        .dd-wrapper { position: relative; }
+        .dd-toggle {
+            display: flex; align-items: center; gap: 0.4rem;
+            background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1);
+            color: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 6px;
+            font-size: 0.8rem; font-family: inherit; cursor: pointer; transition: border-color 0.2s;
+        }
+        .dd-toggle:hover { border-color: var(--accent, #3b82f6); }
+        .dd-label { color: #94a3b8; }
+        .dd-count { color: var(--accent, #3b82f6); font-weight: 600; font-size: 0.75rem; }
+        .dd-arrow { color: #64748b; font-size: 0.65rem; }
+        .dd-menu {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0;
+            background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+            min-width: 180px; max-height: 220px; overflow-y: auto; z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4); padding: 0.4rem 0;
+        }
+        .dd-menu.open { display: block; }
+        .dd-option {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.4rem 0.75rem; font-size: 0.78rem; color: #f8fafc;
+            cursor: pointer; transition: background 0.15s;
+        }
+        .dd-option:hover { background: rgba(255,255,255,0.05); }
+        .dd-option input[type=checkbox] {
+            accent-color: var(--accent, #3b82f6); width: 14px; height: 14px; cursor: pointer;
+        }
+        .btn-clear-filters {
+            background: none; border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8; padding: 0.4rem 0.75rem; border-radius: 6px;
+            font-size: 0.78rem; cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .btn-clear-filters:hover { color: #f8fafc; border-color: var(--accent, #3b82f6); }
+
+        /* Sortable headers */
+        .sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        .sortable:hover { color: #f8fafc; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Navigation -->
+        <nav id="hierarchy-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1 id="page-title">Epic Health</h1>
+            <p class="subtitle" id="page-subtitle">Metricas detalhadas por epico: throughput, forecast Monte Carlo e risco</p>
+        </header>
+
+        <!-- KPIs (visíveis quando épico específico selecionado) -->
+        <div id="kpi-container" class="kpi-grid" style="display:none;"></div>
+
+        <!-- Content -->
+        <div id="content-container" class="metrics-grid">
+            <p class="empty-state">Carregando...</p>
+        </div>
+    </div>
+
+    <script src="nav.js?v=3"></script>
+    <script src="epic-health.js?v=3"></script>
+</body>
+</html>

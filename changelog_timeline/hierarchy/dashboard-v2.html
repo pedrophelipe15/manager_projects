@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Dashboard V2 - Hierarchy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="hierarchy.css?v=2">
+    <style>
+        .section-divider { border: none; border-top: 1px solid var(--glass-border); margin: 2rem 0; }
+        .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .section-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <nav id="hierarchy-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>Dashboard V2</h1>
+            <p class="subtitle">Visao consolidada: iniciativas com seus epicos + epicos orfaos</p>
+        </header>
+
+        <!-- Big Numbers -->
+        <div id="kpi-container" class="kpi-grid"></div>
+
+        <!-- Content -->
+        <div id="content-container" class="metrics-grid">
+            <p class="empty-state">Carregando...</p>
+        </div>
+    </div>
+
+    <script src="nav.js?v=2"></script>
+    <script src="dashboard-v2.js?v=1"></script>
+</body>
+</html>

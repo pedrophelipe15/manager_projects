@@ -1,0 +1,12 @@
+# Web framework e servidor
+fastapi==0.139.2
+uvicorn==0.51.0
+starlette==1.3.1
+pydantic==2.13.4
+
+# Configuracao / ambiente
+PyYAML==6.0.3
+python-dotenv==1.2.2
+
+# Cliente HTTP (exporter Jira)
+requests==2.34.2

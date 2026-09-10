@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Initiative Health - Hierarchy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+    <link rel="stylesheet" href="hierarchy.css?v=1">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Navigation -->
+        <nav id="hierarchy-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1 id="page-title">Initiative Health</h1>
+            <p class="subtitle" id="page-subtitle">Visao corporativa: progresso ponderado, risco e times envolvidos por iniciativa</p>
+        </header>
+
+        <!-- KPIs -->
+        <div id="kpi-container" class="kpi-grid" style="display:none;"></div>
+
+        <!-- Content -->
+        <div id="content-container" class="metrics-grid">
+            <p class="empty-state">Carregando...</p>
+        </div>
+    </div>
+
+    <script src="nav.js?v=3"></script>
+    <script src="initiative-health.js?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Configurações - Changelog Timeline</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="settings.css?v=13">
+</head>
+<body>
+    <div class="settings-container">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/hierarchy/dashboard-v2.html" class="nav-link">&#x1F4CA; Hierarquia</a>
+            <a href="/dashboard.html" class="nav-link">Dashboard</a>
+            <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
+            <a href="/wave2.html" class="nav-link">Previsibilidade</a>
+            <a href="/wave3.html" class="nav-link">Pessoas</a>
+            <a href="/wave4.html" class="nav-link">Portfolio</a>
+            <a href="/insights.html" class="nav-link">Insights</a>
+            <a href="/maturidade.html" class="nav-link">&#x1F331; Maturidade</a>
+            <a href="/inconsistencies.html" class="nav-link">Inconsistencias</a>
+            <a href="/settings.html" class="nav-link active">Configuracoes</a>
+        </nav>
+
+        <header class="page-header">
+            <h1>Configurações</h1>
+            <p class="subtitle">Gerencie as configurações do projeto Changelog Timeline</p>
+        </header>
+
+        <!-- Projects Sync Section -->
+        <section class="settings-section glass">
+            <div class="section-header">
+                <div>
+                    <h2>Atualização de Projetos</h2>
+                    <p class="section-desc">Sincronize os dados do Jira. Cada projeto executa 3 pipelines: trabalho ativo, done (6 meses) e delta (10 dias).</p>
+                </div>
+                <div class="sync-buttons">
+                    <button id="btnSyncAll" class="btn btn-primary">Atualizar Todos</button>
+                    <button id="btnCancelSync" class="btn btn-cancel" onclick="cancelSync()" style="display: none;">Cancelar</button>
+                </div>
+            </div>
+
+            <!-- Projects List -->
+            <div class="projects-list" id="projects-list">
+                <p class="empty-state">Carregando projetos...</p>
+            </div>
+
+            <!-- Sync Progress Log -->
+            <div class="sync-log-container" id="sync-log-container" style="display: none;">
+                <div class="sync-log-header">
+                    <h3>Progresso da Sincronização</h3>
+                    <span class="sync-status-badge" id="sync-status-badge">Em execução</span>
+                </div>
+                <div class="sync-log" id="sync-log"></div>
+            </div>
+        </section>
+
+        <!-- Blacklist Section -->
+        <section class="settings-section glass">
+            <div class="section-header">
+                <div>
+                    <h2>Manutenção do Banco</h2>
+                    <p class="section-desc">Remove issues Done resolvidas há mais de 6 meses. Recomendado executar semanalmente.</p>
+                </div>
+            </div>
+
+            <div class="purge-card" id="purge-card">
+                <div class="purge-info" id="purge-info">
+                    <p class="empty-state">Carregando...</p>
+                </div>
+                <button id="btnPurge" class="btn btn-purge" onclick="executePurge()">Executar Expurgo</button>
+            </div>
+        </section>
+
+        <!-- Blacklist Section -->
+        <section class="settings-section glass">
+            <div class="section-header">
+                <div>
+                    <h2>Blacklist do Changelog</h2>
+                    <p class="section-desc">Autores e campos que serão ignorados na exibição da timeline. Regras ativas são aplicadas automaticamente.</p>
+                </div>
+            </div>
+
+            <!-- Add New Rule -->
+            <div class="add-rule-form">
+                <select id="newRuleType" class="form-select">
+                    <option value="author">Autor</option>
+                    <option value="field">Campo</option>
+                </select>
+                <input type="text" id="newRuleValue" class="form-input" placeholder="Nome do autor ou campo...">
+                <button id="btnAddRule" class="btn btn-primary">Adicionar</button>
+            </div>
+
+            <!-- Rules Tables -->
+            <div class="rules-group">
+                <h3>Autores bloqueados</h3>
+                <table class="rules-table">
+                    <thead>
+                        <tr>
+                            <th>Autor</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="author-rules-body">
+                        <tr><td colspan="3" class="empty-state">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="rules-group">
+                <h3>Campos bloqueados</h3>
+                <table class="rules-table">
+                    <thead>
+                        <tr>
+                            <th>Campo</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="field-rules-body">
+                        <tr><td colspan="3" class="empty-state">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script src="settings.js?v=12"></script>
+    <script src="nav-alerts.js?v=1"></script>
+    <style>.nav-alert-badge{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:#f59e0b;color:#0f172a;border-radius:10px;font-size:0.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}.nav-alert-badge.critical{background:#ef4444;color:#fff}</style>
+</body>
+</html>

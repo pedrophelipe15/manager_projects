@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Changelog Timeline</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,6 +16,20 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Navigation (hidden when in iframe) -->
+        <nav id="main-nav" style="display: flex; gap: 1rem; padding: 0.75rem 1.5rem; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; flex-wrap: wrap;">
+            <a href="/hierarchy/dashboard-v2.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">&#x1F4CA; Hierarquia</a>
+            <a href="/dashboard.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Dashboard</a>
+            <a href="/wave1.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Gargalo e Fluxo</a>
+            <a href="/wave2.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Previsibilidade</a>
+            <a href="/wave3.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Pessoas</a>
+            <a href="/wave4.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Portfolio</a>
+            <a href="/insights.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Insights</a>
+            <a href="/maturidade.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">&#x1F331; Maturidade</a>
+            <a href="/inconsistencies.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Inconsistências</a>
+            <a href="/settings.html" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.8rem; border-radius: 6px;">Configurações</a>
+        </nav>
+
         <header class="app-header">
             <h1 id="issue-title">Carregando Changelog...</h1>
             <p id="issue-description" class="subtitle">...</p>
@@ -57,6 +74,13 @@
     </div>
 
     <!-- Scripts -->
-    <script src="app.js"></script>
+    <script>
+        // Esconde nav quando dentro de iframe
+        if (window.self !== window.top) {
+            const nav = document.getElementById('main-nav');
+            if (nav) nav.style.display = 'none';
+        }
+    </script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>

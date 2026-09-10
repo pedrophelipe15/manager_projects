@@ -639,6 +639,117 @@ def get_projects():
     return enriched
 
 
+# --- Adicionar / remover projeto (escreve no projects.yaml) ---
+
+# Status padrão considerados "trabalho ativo" na pipeline 'active'.
+# Espelha o padrão usado pelos projetos existentes no projects.yaml.
+DEFAULT_ACTIVE_STATUSES = ["In Progress", "Blocked", "Test", "Waiting for Delivery"]
+# Status padrão a excluir na ingestão (issues nesses status são removidas).
+DEFAULT_EXCLUDE_STATUSES = ["Canceled", "Reject", "Open", "To do", "Backlog", "Refinement"]
+
+
+class ProjectCreate(BaseModel):
+    key: str                                   # ex: "BL"
+    name: str                                  # ex: "PS - Belize"
+    jql_project: str                           # cláusula de projeto na JQL, ex: 'project = "PS - Belize"' ou 'project in (13146)'
+    active_statuses: list[str] | None = None   # default: DEFAULT_ACTIVE_STATUSES
+    exclude_statuses: list[str] | None = None  # default: DEFAULT_EXCLUDE_STATUSES
+
+
+def _build_pipelines(jql_project: str, active_statuses: list[str]) -> dict:
+    """Gera as 3 pipelines (active/done/delta) no MESMO padrão dos projetos atuais.
+
+    Só varia a cláusula de projeto e a lista de status ativos; o restante do
+    template (done 26w, delta 10d) é idêntico ao usado pelo processo de coleta.
+    """
+    jql_project = jql_project.strip()
+    status_list = ", ".join(f'"{s}"' for s in active_statuses)
+    return {
+        "active": {
+            "name": "Trabalho ativo",
+            "jql": f'{jql_project} AND status in ({status_list})',
+        },
+        "done": {
+            "name": "Done (6 meses)",
+            "jql": f"{jql_project} AND status = Done AND resolved >= -26w",
+        },
+        "delta": {
+            "name": "Delta (10 dias)",
+            "jql": f"{jql_project} AND updated >= -10d",
+        },
+    }
+
+
+def _save_projects(projects: list[dict]):
+    """Salva a lista de projetos de volta no projects.yaml, preservando o resto."""
+    with open(PROJECTS_YAML, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    data["projects"] = projects
+    with open(PROJECTS_YAML, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+
+@app.post("/api/settings/projects", status_code=201)
+def add_project(entry: ProjectCreate):
+    """Adiciona um novo projeto ao projects.yaml, gerando as 3 pipelines padrão.
+
+    Mantém consistência com o processo de coleta: as JQLs active/done/delta são
+    geradas a partir da cláusula de projeto e da lista de status ativos.
+    """
+    key = entry.key.strip()
+    name = entry.name.strip()
+    jql_project = entry.jql_project.strip()
+
+    if not key:
+        raise HTTPException(status_code=400, detail="key não pode ser vazio")
+    if not name:
+        raise HTTPException(status_code=400, detail="name não pode ser vazio")
+    if not jql_project:
+        raise HTTPException(status_code=400, detail="jql_project não pode ser vazio (ex: 'project = \"PS - Belize\"')")
+
+    # Carrega TODOS os projetos (inclusive desabilitados) para checar duplicata
+    with open(PROJECTS_YAML, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    all_projects = data.get("projects", []) or []
+
+    if any(str(p.get("key", "")).strip().upper() == key.upper() for p in all_projects):
+        raise HTTPException(status_code=409, detail=f"Projeto com key '{key}' já existe")
+
+    active_statuses = entry.active_statuses if entry.active_statuses else DEFAULT_ACTIVE_STATUSES
+    exclude_statuses = entry.exclude_statuses if entry.exclude_statuses is not None else DEFAULT_EXCLUDE_STATUSES
+
+    new_project = {
+        "key": key,
+        "name": name,
+        "exclude_statuses": exclude_statuses,
+        "pipelines": _build_pipelines(jql_project, active_statuses),
+    }
+
+    all_projects.append(new_project)
+    _save_projects(all_projects)
+
+    return new_project
+
+
+@app.delete("/api/settings/projects/{key}")
+def delete_project(key: str):
+    """Remove um projeto do projects.yaml.
+
+    Observação: NÃO remove os dados já ingeridos no banco (issues/métricas).
+    A remoção afeta apenas a configuração de coleta.
+    """
+    with open(PROJECTS_YAML, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    all_projects = data.get("projects", []) or []
+
+    new_projects = [p for p in all_projects if str(p.get("key", "")).strip().upper() != key.strip().upper()]
+    if len(new_projects) == len(all_projects):
+        raise HTTPException(status_code=404, detail=f"Projeto '{key}' não encontrado")
+
+    _save_projects(new_projects)
+    return {"message": f"Projeto '{key}' removido da configuração", "key": key}
+
+
 class SyncRequest(BaseModel):
     project_keys: list[str] | None = None  # None = todos
     mode: str = "delta"  # "delta" ou "full"

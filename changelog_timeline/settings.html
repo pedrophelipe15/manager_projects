@@ -41,8 +41,49 @@
                     <p class="section-desc">Sincronize os dados do Jira. Cada projeto executa 3 pipelines: trabalho ativo, done (6 meses) e delta (10 dias).</p>
                 </div>
                 <div class="sync-buttons">
+                    <button id="btnToggleAddProject" class="btn btn-secondary">+ Adicionar Projeto</button>
                     <button id="btnSyncAll" class="btn btn-primary">Atualizar Todos</button>
                     <button id="btnCancelSync" class="btn btn-cancel" onclick="cancelSync()" style="display: none;">Cancelar</button>
+                </div>
+            </div>
+
+            <!-- Add Project Form (oculto por padrão) -->
+            <div class="add-project-form" id="add-project-form" style="display: none;">
+                <h3>Novo Projeto</h3>
+                <p class="section-desc">As 3 pipelines (ativo, done 6 meses, delta 10 dias) são geradas automaticamente no padrão de coleta atual.</p>
+                <div class="add-project-grid">
+                    <label class="form-field">
+                        <span>Key <em>*</em></span>
+                        <input type="text" id="projKey" class="form-input" placeholder="ex: BL" autocomplete="off">
+                    </label>
+                    <label class="form-field">
+                        <span>Nome <em>*</em></span>
+                        <input type="text" id="projName" class="form-input" placeholder="ex: PS - Belize" autocomplete="off">
+                    </label>
+                    <label class="form-field form-field-wide">
+                        <span>Cláusula de projeto (JQL) <em>*</em></span>
+                        <input type="text" id="projJql" class="form-input" placeholder='ex: project = "PS - Belize"  ou  project in (13146)' autocomplete="off">
+                    </label>
+                    <label class="form-field form-field-wide">
+                        <span>Status ativos (separados por vírgula)</span>
+                        <input type="text" id="projActive" class="form-input" placeholder="In Progress, Blocked, Test, Waiting for Delivery" autocomplete="off">
+                    </label>
+                    <label class="form-field form-field-wide">
+                        <span>Status a excluir na ingestão (separados por vírgula)</span>
+                        <input type="text" id="projExclude" class="form-input" placeholder="Canceled, Reject, Open, To do, Backlog, Refinement" autocomplete="off">
+                    </label>
+                </div>
+
+                <div class="jql-preview" id="jql-preview">
+                    <span class="jql-preview-title">Preview das pipelines geradas:</span>
+                    <div class="pipeline-item"><span class="pipeline-name">Trabalho ativo</span><code class="pipeline-jql" id="preview-active">—</code></div>
+                    <div class="pipeline-item"><span class="pipeline-name">Done (6 meses)</span><code class="pipeline-jql" id="preview-done">—</code></div>
+                    <div class="pipeline-item"><span class="pipeline-name">Delta (10 dias)</span><code class="pipeline-jql" id="preview-delta">—</code></div>
+                </div>
+
+                <div class="add-project-actions">
+                    <button id="btnCancelAddProject" class="btn btn-cancel">Cancelar</button>
+                    <button id="btnSaveProject" class="btn btn-primary">Salvar Projeto</button>
                 </div>
             </div>
 
@@ -132,7 +173,7 @@
         </section>
     </div>
 
-    <script src="settings.js?v=12"></script>
+    <script src="settings.js?v=13"></script>
     <script src="nav-alerts.js?v=1"></script>
     <style>.nav-alert-badge{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:#f59e0b;color:#0f172a;border-radius:10px;font-size:0.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}.nav-alert-badge.critical{background:#ef4444;color:#fff}</style>
 </body>

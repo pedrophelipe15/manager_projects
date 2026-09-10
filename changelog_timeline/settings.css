@@ -430,3 +430,95 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
 @media (max-width: 768px) {
     .settings-container { padding: 1rem; }
 }
+
+/* ==================== Adicionar Projeto ==================== */
+
+.btn-secondary {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(148, 163, 184, 0.1);
+    color: #cbd5e1;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-secondary:hover:not(:disabled) { background: rgba(148, 163, 184, 0.2); color: #f1f5f9; }
+
+.btn-remove-project {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-remove-project:hover:not(:disabled) { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+
+.add-project-form {
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1rem;
+}
+.add-project-form h3 {
+    margin: 0 0 0.3rem;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.add-project-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin: 1rem 0;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.form-field-wide { grid-column: 1 / -1; }
+.form-field > span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+.form-field > span em { color: #f87171; font-style: normal; }
+.form-field .form-input { flex: none; width: 100%; box-sizing: border-box; }
+
+.jql-preview {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.jql-preview-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.add-project-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+    .add-project-grid { grid-template-columns: 1fr; }
+}

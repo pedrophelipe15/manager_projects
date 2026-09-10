@@ -19,7 +19,111 @@ function bindEvents() {
         if (e.key === 'Enter') addRule();
     });
     document.getElementById('btnSyncAll').addEventListener('click', () => startSync(null));
+
+    // Adicionar Projeto
+    document.getElementById('btnToggleAddProject').addEventListener('click', toggleAddProjectForm);
+    document.getElementById('btnCancelAddProject').addEventListener('click', hideAddProjectForm);
+    document.getElementById('btnSaveProject').addEventListener('click', saveProject);
+    ['projJql', 'projActive'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateJqlPreview);
+    });
 }
+
+// ==================== ADD PROJECT ====================
+
+const DEFAULT_ACTIVE = 'In Progress, Blocked, Test, Waiting for Delivery';
+const DEFAULT_EXCLUDE = 'Canceled, Reject, Open, To do, Backlog, Refinement';
+
+function toggleAddProjectForm() {
+    const form = document.getElementById('add-project-form');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        updateJqlPreview();
+        document.getElementById('projKey').focus();
+    } else {
+        hideAddProjectForm();
+    }
+}
+
+function hideAddProjectForm() {
+    const form = document.getElementById('add-project-form');
+    form.style.display = 'none';
+    ['projKey', 'projName', 'projJql', 'projActive', 'projExclude'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+}
+
+function parseCsvStatuses(raw, fallbackCsv) {
+    const source = (raw && raw.trim()) ? raw : fallbackCsv;
+    return source.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function updateJqlPreview() {
+    const jqlProject = document.getElementById('projJql').value.trim();
+    const activeStatuses = parseCsvStatuses(document.getElementById('projActive').value, DEFAULT_ACTIVE);
+    const base = jqlProject || 'project = ...';
+    const statusList = activeStatuses.map(s => `"${s}"`).join(', ');
+
+    document.getElementById('preview-active').textContent = `${base} AND status in (${statusList})`;
+    document.getElementById('preview-done').textContent = `${base} AND status = Done AND resolved >= -26w`;
+    document.getElementById('preview-delta').textContent = `${base} AND updated >= -10d`;
+}
+
+async function saveProject() {
+    const key = document.getElementById('projKey').value.trim();
+    const name = document.getElementById('projName').value.trim();
+    const jqlProject = document.getElementById('projJql').value.trim();
+
+    if (!key) { showToast('Informe a key do projeto', 'error'); document.getElementById('projKey').focus(); return; }
+    if (!name) { showToast('Informe o nome do projeto', 'error'); document.getElementById('projName').focus(); return; }
+    if (!jqlProject) { showToast('Informe a cláusula de projeto (JQL)', 'error'); document.getElementById('projJql').focus(); return; }
+
+    const payload = {
+        key,
+        name,
+        jql_project: jqlProject,
+        active_statuses: parseCsvStatuses(document.getElementById('projActive').value, DEFAULT_ACTIVE),
+        exclude_statuses: parseCsvStatuses(document.getElementById('projExclude').value, DEFAULT_EXCLUDE),
+    };
+
+    const btn = document.getElementById('btnSaveProject');
+    btn.disabled = true;
+    try {
+        const response = await fetch(API_PROJECTS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(data.detail || 'Erro ao adicionar projeto', 'error');
+            return;
+        }
+        showToast(`Projeto ${key} adicionado`, 'success');
+        hideAddProjectForm();
+        await loadProjects();
+    } catch (error) {
+        showToast('Erro de conexão ao adicionar projeto', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+window.deleteProject = async function(key) {
+    if (!confirm(`Remover o projeto "${key}" da configuração?\n\nIsso NÃO apaga os dados já coletados no banco — apenas remove o projeto do projects.yaml.`)) return;
+    try {
+        const response = await fetch(`${API_PROJECTS}/${encodeURIComponent(key)}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(data.detail || 'Erro ao remover projeto', 'error');
+            return;
+        }
+        showToast(`Projeto ${key} removido da configuração`, 'success');
+        await loadProjects();
+    } catch (error) {
+        showToast('Erro de conexão ao remover projeto', 'error');
+    }
+};
 
 // ==================== PROJECTS ====================
 
@@ -83,6 +187,7 @@ function renderProjects() {
                     </div>
                     <div class="project-actions">
                         <button class="btn-sync" onclick="startSync('${p.key}')">Atualizar</button>
+                        <button class="btn-remove-project" onclick="deleteProject('${escapeHTML(p.key)}')" title="Remover da configuração">Remover</button>
                     </div>
                 </div>
                 <details class="pipelines-details">

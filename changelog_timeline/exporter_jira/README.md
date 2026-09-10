@@ -7,7 +7,8 @@ Processo de extração de dados do Jira desacoplado do projeto principal, pronto
 - Conecta na API Jira Cloud (`/rest/api/3`)
 - Executa JQL com paginação por cursor (`nextPageToken`)
 - Mapeia campos Jira para uma estrutura flat estável
-- Opcionalmente extrai comentários por issue
+- Opcionalmente extrai comentários e/ou changelog completo por issue
+- Suporta cache por banco (`--db-cache`) para pular changelog de issues não alteradas
 - Salva saída em arquivos `JSONL` para ingestão em outros sistemas
 
 ## Atualizações já implementadas
@@ -17,16 +18,20 @@ Processo de extração de dados do Jira desacoplado do projeto principal, pronto
 	- Exemplo: `python export_jira.py --jql query_1.txt`
 	- O conteúdo do arquivo é lido e usado como consulta JQL
 	- Se o arquivo estiver vazio, o processo retorna erro informativo
-- Ajuda do CLI atualizada para refletir o novo formato do `--jql`
+- `--with-changelog`: extrai o changelog completo de cada issue (gera `changelogs.jsonl`)
+- `--db-cache <issues.db>`: pula a extração de changelog de issues cujo `updated` não mudou desde a última sync
+- `--skip-test`: pula o `test_connection` (usado quando chamado pela pipeline)
+- Ajuda do CLI atualizada para refletir os formatos de `--jql`
 
 ## Estrutura do pacote
 
-- `export_jira.py`: CLI principal
-- `jira_client.py`: cliente HTTP Jira
-- `jira_mapper.py`: mapeamento de campos
-- `jira_comments.py`: normalização de comentários
+- `export_jira.py`: CLI principal (extração de issues + changelog/comentários → JSONL)
+- `export_hierarchy.py`: extração hierárquica em cascata (Iniciativa → Épico → Story → Sub-task) que persiste direto no `hierarchy.db`
+- `jira_client.py`: cliente HTTP Jira (paginação por cursor, retry com backoff, pausa em 429)
+- `jira_mapper.py`: mapeamento de campos (inclui `extract_text_from_adf`, reutilizado por comentários)
+- `jira_comments.py`: normalização de comentários (delega a extração de texto ADF ao `jira_mapper`)
 - `.env.example`: variáveis de ambiente
-- `requirements.txt`: dependências do projeto
+- `requirements.txt`: dependências do pacote (`requests`, `python-dotenv`)
 
 ## Pré-requisitos
 
@@ -41,7 +46,7 @@ Processo de extração de dados do Jira desacoplado do projeto principal, pronto
 ### 1) Entrar na pasta do projeto
 
 ```powershell
-cd C:\Pedro_Codes\exporter_jira
+cd C:\Pedro_Github\manager_projects\changelog_timeline\exporter_jira
 ```
 
 ### 2) Criar ambiente virtual
@@ -117,11 +122,34 @@ Definir diretório de saída:
 python .\export_jira.py --jql query_1.txt --output-dir output_reyk
 ```
 
+Extrair changelog completo (necessário para as métricas de fluxo):
+
+```powershell
+python .\export_jira.py --jql query_1.txt --with-changelog
+```
+
+Usar cache de changelog por banco (pula issues não alteradas):
+
+```powershell
+python .\export_jira.py --jql query_1.txt --with-changelog --db-cache ..\issues.db
+```
+
 ### 8) Arquivos gerados
 
 - `issues_mapped.jsonl`
+- `changelogs.jsonl` (somente com `--with-changelog`)
 - `issues_raw.jsonl` (somente com `--raw`)
 - `comments.jsonl` (somente com `--with-comments`)
+
+### 9) Extração hierárquica (`export_hierarchy.py`)
+
+Extrai a cascata Iniciativa → Épico → Story → Sub-task e persiste no `hierarchy.db`
+(iniciativas e épicos: só metadados; stories e sub-tasks: metadados + changelog):
+
+```powershell
+python .\export_hierarchy.py --initiative GPPGI-325
+python .\export_hierarchy.py --epics PSADB-1457,PSADB-1500
+```
 
 ## Observações importantes
 

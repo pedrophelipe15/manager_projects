@@ -198,6 +198,10 @@
             <select id="project-select" onchange="loadReport()">
                 <option value="">Selecione um projeto...</option>
             </select>
+            <select id="type-select" onchange="applyFilters()">
+                <option value="">Todos os tipos de problema</option>
+            </select>
+            <button class="btn-config" onclick="clearFilters()">Limpar Filtros</button>
             <button class="btn-action" onclick="copyAllTables()">Copiar Todos</button>
             <button class="btn-config" onclick="openConfigModal()">&#9881; Regras</button>
         </div>
@@ -212,6 +216,41 @@
     <div id="config-modal" class="modal-overlay"></div>
 
     <script>
+        // Estado: acoes carregadas do projeto atual (para filtrar sem recarregar)
+        let allActions = [];
+
+        // Formata 'YYYY-MM-DD' -> 'DD/MM/YYYY'
+        function fmtBR(iso) {
+            if (!iso) return "--";
+            const p = String(iso).split("T")[0].split("-");
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+        }
+
+        // ==================== FILTROS ====================
+        function populateTypeFilter(actions) {
+            const sel = document.getElementById("type-select");
+            const current = sel.value;
+            const types = [...new Set(actions.map(a => a.type))].sort();
+            sel.innerHTML = `<option value="">Todos os tipos de problema</option>` +
+                types.map(t => `<option value="${t}">${t}</option>`).join("");
+            // mantem selecao se ainda existir
+            if (types.includes(current)) sel.value = current;
+        }
+
+        function applyFilters() {
+            const projectKey = document.getElementById("project-select").value;
+            const typeFilter = document.getElementById("type-select").value;
+            let filtered = allActions;
+            if (typeFilter) filtered = filtered.filter(a => a.type === typeFilter);
+            renderSummary(filtered, projectKey);
+            renderReport(filtered, projectKey);
+        }
+
+        function clearFilters() {
+            document.getElementById("type-select").value = "";
+            applyFilters();
+        }
+
         // ==================== INIT ====================
         async function init() {
             const select = document.getElementById("project-select");
@@ -245,20 +284,22 @@
             summaryContainer.innerHTML = "";
 
             try {
-                const [wipRes, inconsRes, agingRes] = await Promise.all([
+                const [wipRes, inconsRes, agingRes, dueChangesRes] = await Promise.all([
                     fetch(`/api/metrics/wave3/wip?project_key=${projectKey}`),
                     fetch(`/api/inconsistencies?project_key=${projectKey}`),
                     fetch(`/api/metrics/wave1/aging-wip?project_key=${projectKey}`),
+                    fetch(`/api/metrics/due-date-changes?project_key=${projectKey}&min_changes=${RULES.due_date_changes_atencao}`),
                 ]);
 
                 const wip = await wipRes.json();
                 const inconsRaw = await inconsRes.json();
                 const incons = inconsRaw.inconsistencies || inconsRaw;
                 const aging = await agingRes.json();
+                const dueChanges = await dueChangesRes.json();
 
-                const actions = buildActions(wip, incons, aging);
-                renderSummary(actions, projectKey);
-                renderReport(actions, projectKey);
+                allActions = buildActions(wip, incons, aging, dueChanges);
+                populateTypeFilter(allActions);
+                applyFilters();
 
             } catch (err) {
                 container.innerHTML = `<p class="empty-state">Erro: ${err.message}</p>`;
@@ -266,8 +307,34 @@
         }
 
         // ==================== BUILD ACTIONS ====================
-        function buildActions(wip, incons, aging) {
+        function buildActions(wip, incons, aging, dueChanges) {
             const actions = [];
+
+            // --- Due date postergado (contador de alteracoes) ---
+            if (dueChanges && dueChanges.issues) {
+                for (const issue of dueChanges.issues) {
+                    const vezes = `<strong style="color:var(--danger)">${issue.changes} vezes</strong>`;
+                    const d = issue.days_postponed;
+                    let problem;
+                    if (d === null || d === undefined) {
+                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, indicando baixa previsibilidade e necessidade de validacao do gestor`;
+                    } else if (d >= 0) {
+                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, empurrando a entrega em <strong style="color:var(--danger)">${d} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validacao do gestor`;
+                    } else {
+                        problem = `O prazo (due date) desta atividade foi alterado ${vezes}, antecipando a entrega em <strong style="color:var(--success)">${Math.abs(d)} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validacao do gestor`;
+                    }
+                    actions.push({
+                        assignee: issue.assignee || "Sem assignee",
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        type: "POSTERGACAO",
+                        problem: problem,
+                        action: "Valide com o gestor o motivo das repactuacoes de prazo. Reavalie escopo/dependencias e defina uma data realista e comprometida.",
+                        severity: issue.changes >= RULES.due_date_changes_critico ? "critico" : "atencao",
+                    });
+                }
+            }
 
             // --- WIP alto ---
             if (wip.people) {
@@ -566,6 +633,8 @@
             blocked_recomendado: 0,
             aging_min_dias: 14,
             aging_critico_dias: 30,
+            due_date_changes_atencao: 2,
+            due_date_changes_critico: 4,
         };
 
         function getRules() {
@@ -630,6 +699,18 @@
                             <button class="btn-save-rule" onclick="saveRuleGroup('aging')">Salvar</button>
                         </div>
                     </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header">
+                            <span class="rule-card-title">Postergacao de Due Date (alteracoes de prazo)</span>
+                            <span class="rule-card-type">POSTERGACAO</span>
+                        </div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-due-atencao" value="${rules.due_date_changes_atencao}"></div>
+                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-due-critico" value="${rules.due_date_changes_critico}"></div>
+                            <button class="btn-save-rule" onclick="saveRuleGroup('due')">Salvar</button>
+                        </div>
+                    </div>
                 </div>
             `;
             document.getElementById("config-modal").classList.add("open");
@@ -653,6 +734,9 @@
             } else if (group === "aging") {
                 saveRule("aging_min_dias", document.getElementById("cfg-aging-min").value);
                 saveRule("aging_critico_dias", document.getElementById("cfg-aging-critico").value);
+            } else if (group === "due") {
+                saveRule("due_date_changes_atencao", document.getElementById("cfg-due-atencao").value);
+                saveRule("due_date_changes_critico", document.getElementById("cfg-due-critico").value);
             }
 
             window.location.reload();

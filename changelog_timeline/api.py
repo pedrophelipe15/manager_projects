@@ -1078,6 +1078,122 @@ def update_validation_rule(rule_id: str, update: ValidationRuleUpdate):
     return dict(row)
 
 
+# --- Due Date: contador de postergações ---
+
+# Deslocamento mínimo (em dias) para uma alteração de due date ser considerada
+# uma postergação relevante. Mudanças de <= este valor (ida/volta, ajuste fino)
+# são ignoradas para não inflar a contagem com ruído (ex: "3 vezes, 0 dias").
+DUE_DATE_SIGNIFICANT_DAYS = 7
+
+
+@app.get("/api/metrics/due-date-changes")
+def api_due_date_changes(project_key: str, min_changes: int = 2):
+    """Conta postergações RELEVANTES de due date por issue ativa.
+
+    Só conta alterações onde havia data anterior (from_value não nulo) E o
+    deslocamento individual (|to - from|) é superior a DUE_DATE_SIGNIFICANT_DAYS
+    dias. Ajustes finos ou ida/volta que somam pouco são ignorados.
+    Retorna apenas issues com contagem de alterações relevantes >= min_changes.
+    """
+    from datetime import date
+
+    def _parse_due(v):
+        """Converte um valor de due date do changelog em date. Aceita ISO ou 'YYYY-MM-DD ...'."""
+        if not v:
+            return None
+        s = str(v).strip()
+        if not s:
+            return None
+        s = s.replace("T", " ").split(" ")[0]  # pega só a parte da data
+        try:
+            y, m, d = s.split("-")
+            return date(int(y), int(m), int(d))
+        except (ValueError, TypeError):
+            return None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Candidatas: issues ativas com pelo menos 1 mudança de duedate com valor anterior
+    cursor.execute("""
+        SELECT DISTINCT pc.issue_key
+        FROM parsed_changelogs pc
+        INNER JOIN issues i ON pc.issue_key = i.key
+        WHERE pc.field = 'duedate'
+          AND pc.from_value IS NOT NULL AND TRIM(pc.from_value) != ''
+          AND i.project_key = ?
+          AND i.status NOT IN ('Done', 'Canceled', 'Reject', 'Removed')
+    """, (project_key,))
+    candidate_keys = [r["issue_key"] for r in cursor.fetchall()]
+
+    result = []
+    for key in candidate_keys:
+        # Todas as mudanças de duedate da issue, em ordem cronológica
+        cursor.execute("""
+            SELECT from_value, to_value, event_date
+            FROM parsed_changelogs
+            WHERE issue_key = ? AND field = 'duedate'
+            ORDER BY event_date ASC
+        """, (key,))
+        due_rows = cursor.fetchall()
+
+        first_due = None
+        last_due = None
+        significant_changes = 0
+        for dr in due_rows:
+            fv = _parse_due(dr["from_value"])
+            tv = _parse_due(dr["to_value"])
+            if first_due is None and fv is not None:
+                first_due = fv
+            if tv is not None:
+                last_due = tv
+            # Conta só deslocamentos relevantes (> limite, em qualquer direção)
+            if fv is not None and tv is not None and abs((tv - fv).days) > DUE_DATE_SIGNIFICANT_DAYS:
+                significant_changes += 1
+
+        if significant_changes < min_changes:
+            continue
+
+        days_postponed = None
+        if first_due is not None and last_due is not None:
+            days_postponed = (last_due - first_due).days
+
+        # Ignora se a postergação líquida acumulada for <= limite (ex: foi e voltou = 0 dias)
+        if days_postponed is None or abs(days_postponed) <= DUE_DATE_SIGNIFICANT_DAYS:
+            continue
+
+        cursor.execute(
+            "SELECT key, summary, status, assignee_name, due_date FROM issues WHERE key = ?",
+            (key,),
+        )
+        info = cursor.fetchone()
+        if not info:
+            continue
+
+        result.append({
+            "key": info["key"],
+            "summary": info["summary"],
+            "status": info["status"],
+            "assignee": info["assignee_name"],
+            "due_date": info["due_date"],
+            "changes": significant_changes,
+            "first_due_date": first_due.isoformat() if first_due else None,
+            "last_due_date": last_due.isoformat() if last_due else None,
+            "days_postponed": days_postponed,
+        })
+
+    # Ordena por dias de postergação desc (mais crítico primeiro)
+    result.sort(key=lambda x: (x["days_postponed"] or 0), reverse=True)
+
+    conn.close()
+    return {
+        "project_key": project_key,
+        "min_changes": min_changes,
+        "significant_threshold_days": DUE_DATE_SIGNIFICANT_DAYS,
+        "issues": result,
+    }
+
+
 # --- Inconsistencies ---
 
 @app.get("/api/inconsistencies")

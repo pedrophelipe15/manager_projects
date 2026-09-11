@@ -104,7 +104,10 @@ function renderConfig(entries) {
             <td><strong>${escapeHTML(e.key)}</strong></td>
             <td>${escapeHTML(e.name)}</td>
             <td>${e.type === "initiative" ? "Iniciativa" : "Epico"}</td>
-            <td><button class="btn-delete" onclick="deleteEntry('${escapeHTML(e.key)}')">Remover</button></td>
+            <td>
+                <button class="btn-purge" onclick="purgeHierarchyData('${escapeHTML(e.key)}')" title="Apagar os dados desta hierarquia no hierarchy.db">Limpar dados</button>
+                <button class="btn-delete" onclick="deleteEntry('${escapeHTML(e.key)}')" title="Remover apenas da configuracao">Remover</button>
+            </td>
         </tr>
     `).join("");
 }
@@ -143,7 +146,7 @@ async function addEntry() {
 }
 
 async function deleteEntry(key) {
-    if (!confirm(`Remover "${key}" da configuracao?`)) return;
+    if (!confirm(`Remover "${key}" da configuracao?\n\nIsso NAO apaga os dados ja coletados no hierarchy.db.`)) return;
 
     try {
         const res = await fetch(`/api/hierarchy/config/${key}`, { method: "DELETE" });
@@ -156,6 +159,39 @@ async function deleteEntry(key) {
     } catch (err) {
         alert("Erro: " + err.message);
     }
+}
+
+async function purgeHierarchyData(key) {
+    // 1. Preview
+    let s;
+    try {
+        const res = await fetch(`/api/hierarchy/config/${encodeURIComponent(key)}/data-stats`);
+        s = await res.json();
+        if (!res.ok) { alert(s.detail || "Erro ao consultar dados."); return; }
+    } catch (err) { alert("Erro: " + err.message); return; }
+
+    if (!s.has_data) { alert(`Nenhum dado no hierarchy.db para "${key}".`); return; }
+
+    // 2. Confirmacao forte com contagens
+    const msg =
+        `APAGAR os dados da hierarquia "${key}" do hierarchy.db?\n\n` +
+        `Serao removidos:\n` +
+        `  - ${s.initiatives} iniciativa(s)\n` +
+        `  - ${s.epics} epico(s)\n` +
+        `  - ${s.stories} story(ies)\n` +
+        `  - ${s.subtasks} sub-task(s)\n` +
+        `  - ${s.changelogs} changelog(s) e ${s.metrics} metrica(s)\n\n` +
+        `Acao IRREVERSIVEL. A configuracao NAO e alterada (voce pode recoletar via sync).\n\nConfirmar?`;
+    if (!confirm(msg)) return;
+
+    // 3. Executa
+    try {
+        const res = await fetch(`/api/hierarchy/config/${encodeURIComponent(key)}/data`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) { alert(data.detail || "Erro ao apagar dados."); return; }
+        alert(`Dados removidos: ${data.epics_removed} epicos, ${data.stories_removed} stories, ${data.subtasks_removed} subtasks.`);
+        await loadConfig();
+    } catch (err) { alert("Erro: " + err.message); }
 }
 
 // ==================== SYNC ====================

@@ -1862,6 +1862,117 @@ def delete_hierarchy_config(key: str):
     return {"message": f"Hierarquia '{key}' removida"}
 
 
+# --- Limpar DADOS de uma hierarquia do hierarchy.db (destrutivo, separado da config) ---
+
+def _collect_hierarchy_keys(cur, key: str) -> dict:
+    """Resolve a subárvore de uma key (initiative ou epic) e retorna as keys por nível.
+
+    initiative -> seus epics -> stories -> subtasks. epic -> stories -> subtasks.
+    """
+    import json as _json
+    initiatives, epics, stories, subtasks = [], [], [], []
+
+    cur.execute("SELECT children_keys FROM h_initiatives WHERE key = ?", (key,))
+    ini = cur.fetchone()
+    if ini is not None:
+        initiatives = [key]
+        epic_keys = _json.loads(ini["children_keys"] or "[]") if ini["children_keys"] else []
+        if not epic_keys:
+            cur.execute("SELECT key FROM h_epics WHERE parent_key = ?", (key,))
+            epic_keys = [r["key"] for r in cur.fetchall()]
+        epics = epic_keys
+    else:
+        cur.execute("SELECT key FROM h_epics WHERE key = ?", (key,))
+        if cur.fetchone() is None:
+            return {}  # key não é initiative nem epic
+        epics = [key]
+
+    # Stories dos epics
+    for ek in epics:
+        cur.execute("SELECT key FROM h_stories WHERE parent_key = ?", (ek,))
+        stories.extend([r["key"] for r in cur.fetchall()])
+    # Subtasks das stories
+    for sk in stories:
+        cur.execute("SELECT key FROM h_subtasks WHERE parent_key = ?", (sk,))
+        subtasks.extend([r["key"] for r in cur.fetchall()])
+
+    return {"initiatives": initiatives, "epics": epics, "stories": stories, "subtasks": subtasks}
+
+
+@app.get("/api/hierarchy/config/{key}/data-stats")
+def get_hierarchy_data_stats(key: str):
+    """Preview: contagem do que seria removido do hierarchy.db para uma key."""
+    conn = get_hierarchy_connection()
+    cur = conn.cursor()
+    scope = _collect_hierarchy_keys(cur, key)
+    if not scope:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Key '{key}' não encontrada no hierarchy.db")
+
+    all_keys = scope["initiatives"] + scope["epics"] + scope["stories"] + scope["subtasks"]
+    changelogs = metrics = 0
+    if all_keys:
+        ph = ",".join(["?"] * len(all_keys))
+        changelogs = cur.execute(f"SELECT COUNT(*) FROM h_changelogs WHERE issue_key IN ({ph})", all_keys).fetchone()[0]
+        metrics = cur.execute(f"SELECT COUNT(*) FROM h_metrics WHERE issue_key IN ({ph})", all_keys).fetchone()[0]
+    conn.close()
+    return {
+        "key": key,
+        "initiatives": len(scope["initiatives"]),
+        "epics": len(scope["epics"]),
+        "stories": len(scope["stories"]),
+        "subtasks": len(scope["subtasks"]),
+        "changelogs": changelogs,
+        "metrics": metrics,
+        "has_data": bool(all_keys),
+    }
+
+
+@app.delete("/api/hierarchy/config/{key}/data")
+def delete_hierarchy_data(key: str):
+    """Remove os DADOS de uma hierarquia (initiative/epic + filhos) do hierarchy.db.
+
+    Ação DESTRUTIVA e irreversível. NÃO altera o projects.yaml (a config permanece).
+    """
+    conn = get_hierarchy_connection()
+    cur = conn.cursor()
+    scope = _collect_hierarchy_keys(cur, key)
+    if not scope:
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Key '{key}' não encontrada no hierarchy.db")
+
+    all_keys = scope["initiatives"] + scope["epics"] + scope["stories"] + scope["subtasks"]
+    if not all_keys:
+        conn.close()
+        return {"message": f"Nenhum dado para '{key}'", "key": key, "removed": 0}
+
+    ph = ",".join(["?"] * len(all_keys))
+    # Changelogs, métricas e links das keys da subárvore
+    cur.execute(f"DELETE FROM h_changelogs WHERE issue_key IN ({ph})", all_keys)
+    cur.execute(f"DELETE FROM h_metrics WHERE issue_key IN ({ph})", all_keys)
+    cur.execute(f"DELETE FROM h_issue_links WHERE issue_key IN ({ph})", all_keys)
+    # Registros de cada nível
+    if scope["subtasks"]:
+        cur.execute(f"DELETE FROM h_subtasks WHERE key IN ({','.join(['?']*len(scope['subtasks']))})", scope["subtasks"])
+    if scope["stories"]:
+        cur.execute(f"DELETE FROM h_stories WHERE key IN ({','.join(['?']*len(scope['stories']))})", scope["stories"])
+    if scope["epics"]:
+        cur.execute(f"DELETE FROM h_epics WHERE key IN ({','.join(['?']*len(scope['epics']))})", scope["epics"])
+    if scope["initiatives"]:
+        cur.execute(f"DELETE FROM h_initiatives WHERE key IN ({','.join(['?']*len(scope['initiatives']))})", scope["initiatives"])
+
+    conn.commit()
+    conn.close()
+    return {
+        "message": f"Dados da hierarquia '{key}' removidos do hierarchy.db",
+        "key": key,
+        "initiatives_removed": len(scope["initiatives"]),
+        "epics_removed": len(scope["epics"]),
+        "stories_removed": len(scope["stories"]),
+        "subtasks_removed": len(scope["subtasks"]),
+    }
+
+
 # =============================================================================
 # Projetos excluídos (não consolidados nem exibidos)
 # =============================================================================

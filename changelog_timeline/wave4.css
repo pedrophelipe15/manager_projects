@@ -87,3 +87,69 @@ body {
 @media (max-width: 768px) {
     .page-container { padding: 1rem; }
 }
+
+/* ==================== Saude das Issues-Pai: filtros / ordenacao / paginacao ==================== */
+
+.epic-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem 1rem;
+    margin: 0.5rem 0 1rem;
+    align-items: flex-end;
+}
+.epic-filter { display: flex; flex-direction: column; gap: 0.3rem; }
+.epic-filter > span {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+}
+.epic-select {
+    background: rgba(15, 23, 42, 0.7);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 0.45rem 0.7rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    min-width: 150px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.epic-select:focus { outline: none; border-color: var(--accent); }
+
+/* Cabeçalhos ordenáveis */
+.metric-table th.epic-sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+.metric-table th.epic-sortable:hover { color: var(--text-primary); }
+.metric-table th.epic-sortable.sorted { color: var(--accent); }
+
+/* Paginação */
+.epic-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 0.9rem;
+}
+.epic-page-info { font-size: 0.78rem; color: var(--text-muted); }
+.epic-page-btn {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: 6px;
+    padding: 0.4rem 0.85rem;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.epic-page-btn:hover:not(:disabled) { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.epic-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.empty-state { text-align: center; color: var(--text-muted); padding: 1rem; font-style: italic; }

@@ -125,6 +125,46 @@ window.deleteProject = async function(key) {
     }
 };
 
+window.purgeProjectData = async function(key) {
+    // 1. Busca o preview do que seria removido
+    let stats;
+    try {
+        const res = await fetch(`${API_PROJECTS}/${encodeURIComponent(key)}/data-stats`);
+        stats = await res.json();
+        if (!res.ok) { showToast(stats.detail || 'Erro ao consultar dados', 'error'); return; }
+    } catch (error) {
+        showToast('Erro de conexão ao consultar dados', 'error');
+        return;
+    }
+
+    if (!stats.has_data) {
+        showToast(`Nenhum dado no banco para "${key}"`, 'success');
+        return;
+    }
+
+    // 2. Confirmação forte com as contagens exatas
+    const msg =
+        `APAGAR os dados do projeto "${key}" do banco?\n\n` +
+        `Serão removidos:\n` +
+        `  • ${stats.issues.toLocaleString('pt-BR')} issues\n` +
+        `  • ${stats.changelogs.toLocaleString('pt-BR')} eventos de changelog\n` +
+        `  • ${stats.metrics.toLocaleString('pt-BR')} registros de métricas\n\n` +
+        `Esta ação é IRREVERSÍVEL. A configuração (projects.yaml) NÃO é alterada — ` +
+        `você poderá recoletar os dados via "Atualizar".\n\nConfirmar?`;
+    if (!confirm(msg)) return;
+
+    // 3. Executa a remoção
+    try {
+        const res = await fetch(`${API_PROJECTS}/${encodeURIComponent(key)}/data`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.detail || 'Erro ao apagar dados', 'error'); return; }
+        showToast(`Dados de ${key} removidos: ${data.issues_removed} issues, ${data.changelogs_removed} changelogs`, 'success');
+        await loadProjects();
+    } catch (error) {
+        showToast('Erro de conexão ao apagar dados', 'error');
+    }
+};
+
 // ==================== PROJECTS ====================
 
 async function loadProjects() {
@@ -187,7 +227,8 @@ function renderProjects() {
                     </div>
                     <div class="project-actions">
                         <button class="btn-sync" onclick="startSync('${p.key}')">Atualizar</button>
-                        <button class="btn-remove-project" onclick="deleteProject('${escapeHTML(p.key)}')" title="Remover da configuração">Remover</button>
+                        <button class="btn-purge-project" onclick="purgeProjectData('${escapeHTML(p.key)}')" title="Apagar os dados coletados deste projeto no banco">Limpar dados</button>
+                        <button class="btn-remove-project" onclick="deleteProject('${escapeHTML(p.key)}')" title="Remover apenas da configuração (projects.yaml)">Remover</button>
                     </div>
                 </div>
                 <details class="pipelines-details">

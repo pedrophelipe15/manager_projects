@@ -522,3 +522,18 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
 @media (max-width: 640px) {
     .add-project-grid { grid-template-columns: 1fr; }
 }
+
+/* Botão "Limpar dados" (ação destrutiva de dados, distinta do "Remover" config) */
+.btn-purge-project {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-purge-project:hover:not(:disabled) { background: rgba(245, 158, 11, 0.25); color: #fcd34d; }

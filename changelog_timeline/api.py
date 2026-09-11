@@ -750,6 +750,90 @@ def delete_project(key: str):
     return {"message": f"Projeto '{key}' removido da configuração", "key": key}
 
 
+# --- Remover DADOS de um projeto do banco (ação destrutiva, separada da config) ---
+
+# Tabelas de dados/métricas que possuem coluna project_key.
+# Ordem importa: filhas antes, issues por último.
+_PROJECT_DATA_TABLES = [
+    "parsed_changelogs",
+    "metrics_per_status",
+    "metrics_flow",
+    "metrics_cfd",
+    "metrics_percentiles",
+    "metrics",
+]
+
+
+@app.get("/api/settings/projects/{key}/data-stats")
+def get_project_data_stats(key: str):
+    """Retorna a contagem de registros no banco para um project_key (preview do que seria removido)."""
+    pk = key.strip().upper()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM issues WHERE UPPER(project_key) = ?", (pk,))
+    issues_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM parsed_changelogs WHERE UPPER(project_key) = ?", (pk,))
+    changelogs_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM metrics WHERE UPPER(project_key) = ?", (pk,))
+    metrics_count = cursor.fetchone()[0]
+
+    conn.close()
+    return {
+        "project_key": pk,
+        "issues": issues_count,
+        "changelogs": changelogs_count,
+        "metrics": metrics_count,
+        "has_data": (issues_count + changelogs_count + metrics_count) > 0,
+    }
+
+
+@app.delete("/api/settings/projects/{key}/data")
+def delete_project_data(key: str):
+    """Remove TODOS os dados de um projeto do banco (issues, changelogs e métricas).
+
+    Ação DESTRUTIVA e irreversível. NÃO altera o projects.yaml (a configuração
+    permanece). Use quando quiser limpar os dados coletados de um projeto.
+    """
+    pk = key.strip().upper()
+    if not pk:
+        raise HTTPException(status_code=400, detail="key não pode ser vazio")
+
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute("PRAGMA journal_mode=WAL")
+    cur = conn.cursor()
+
+    # Contagem antes (para o relatório de retorno)
+    cur.execute("SELECT COUNT(*) FROM issues WHERE UPPER(project_key) = ?", (pk,))
+    issues_before = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM parsed_changelogs WHERE UPPER(project_key) = ?", (pk,))
+    changelogs_before = cur.fetchone()[0]
+
+    if issues_before == 0 and changelogs_before == 0:
+        conn.close()
+        return {
+            "message": f"Nenhum dado encontrado para o projeto '{pk}'",
+            "project_key": pk,
+            "issues_removed": 0,
+            "changelogs_removed": 0,
+        }
+
+    # Remove das tabelas de dados/métricas e por fim das issues
+    for table in _PROJECT_DATA_TABLES:
+        cur.execute(f"DELETE FROM {table} WHERE UPPER(project_key) = ?", (pk,))
+    cur.execute("DELETE FROM issues WHERE UPPER(project_key) = ?", (pk,))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "message": f"Dados do projeto '{pk}' removidos do banco",
+        "project_key": pk,
+        "issues_removed": issues_before,
+        "changelogs_removed": changelogs_before,
+    }
+
+
 class SyncRequest(BaseModel):
     project_keys: list[str] | None = None  # None = todos
     mode: str = "delta"  # "delta" ou "full"

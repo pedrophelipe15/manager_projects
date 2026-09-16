@@ -1,16 +1,27 @@
 # DATASHEET - Changelog Timeline
 
+> **Versao:** v2.0.0 · **Status:** produtivo · **Atualizado:** 2026-09-15
+>
+> A v2.0.0 consolidou uma revisao de UX (4 ondas) que adicionou a tela **Minha Visao**
+> (home), a tela **Compromisso de Prazo** (Wave 5 / due date slippage), um **design
+> system** compartilhado (`tokens.css`, `nav.*`, `ui.*`, `context.js`) e uma navegacao
+> unica agrupada por pergunta. Ver a secao *Revisao de UX (v2.0.0)* ao final e o
+> guia `docs/GUIA-DESIGN-DASHBOARD.md`.
+
 ## Visao Geral
 
 O **Changelog Timeline** e um sistema de gestao de fluxo e metricas que extrai dados do Jira (issues + changelog de transicoes de status), persiste em banco SQLite local e oferece:
 
-- **Dashboard operacional** — KPIs de ritmo (Done semanal, WIP, paradas)
+- **Minha Visao** (home) — visao consolidada dos projetos do gestor; indicadores clicaveis abrem detalhe inline
+- **Compromisso de Prazo (Wave 5)** — commitment score + reprogramacoes de due date (a equipe cumpre prazo ou empurra a data?)
+- **Dashboard operacional** — KPIs de ritmo (Done semanal, Em andamento, Bloqueado, paradas)
 - **Wave 1: Gargalo e Fluxo** — percentis, flow efficiency, CFD, aging WIP, timeline semanal
 - **Wave 2: Previsibilidade** — throughput, Monte Carlo forecast, aging backlog
 - **Wave 3: Pessoas e Qualidade** — WIP por pessoa, distribuicao de carga, handoffs, retrabalho
 - **Wave 4: Portfolio** — epic health, benchmarking cross-project, throughput consolidado
-- **Insights** — 24 regras de diagnostico automatico com alertas proativos e badge na nav
+- **Maturidade** — report de acoes pendentes por responsavel
 - **Inconsistencias** — validacoes de dados (due date, assignee, metricas)
+- **Insights** — 24 regras de diagnostico automatico (arquivado da navegacao; arquivos preservados)
 
 ---
 
@@ -91,11 +102,20 @@ Acesso: `http://localhost:8000`
 
 ## Navegacao
 
-```
-Dashboard | Gargalo e Fluxo | Previsibilidade | Pessoas | Portfolio | Insights [badge] | Inconsistencias | Configuracoes
-```
+A partir da v2.0.0 a nav e **injetada por `nav.js`** (estilo em `nav.css`) num placeholder
+`<nav id="main-nav" class="nav-bar">`, substituindo as barras duplicadas por pagina. E
+**agrupada por pergunta do gestor** (a ordem/abas vivem no array `GROUPS` de `nav.js`):
 
-Todas as paginas compartilham a nav bar com badge dinamico de alertas (via `nav-alerts.js`).
+| Grupo | Abas | Pergunta |
+|-------|------|----------|
+| Minha Visao | Minha Visao | O que preciso fazer hoje? |
+| Prazos | Compromisso, Previsibilidade | Vamos entregar? |
+| Pessoas | Maturidade, Pessoas | Quem precisa de ajuda? |
+| Fluxo | Gargalo e Fluxo, Portfolio, Dashboard | Onde trava? |
+| Hierarquia | Hierarquia | Como esta a iniciativa? |
+| Dados | Inconsistencias, Configuracoes | Da pra confiar no numero? |
+
+Insights foi **removida da nav** (arquivada em 21/08/2026); o arquivo continua acessivel por URL direta.
 
 ---
 
@@ -103,12 +123,15 @@ Todas as paginas compartilham a nav bar com badge dinamico de alertas (via `nav-
 
 | URL | Descricao |
 |-----|-----------|
-| `/dashboard.html` | Dashboard operacional: KPIs (Done semanal, WIP, Paradas >7d) + tabela de issues |
+| `/minha-visao.html` | **Home**: cards por projeto (commitment score + indicadores clicaveis com detalhe inline) |
+| `/compromisso.html` | **Compromisso de Prazo (Wave 5)**: score, por assignee, issues com prazo empurrado |
+| `/dashboard.html` | Dashboard operacional: KPIs (Done semanal, Em andamento, Bloqueado, Paradas >7d) + tabela |
 | `/wave1.html` | Wave 1: Metricas de gargalo e fluxo (percentis, CFD, aging WIP) |
 | `/wave2.html` | Wave 2: Previsibilidade (throughput, Monte Carlo forecast, aging backlog) |
 | `/wave3.html` | Wave 3: Pessoas e Qualidade (WIP, distribuicao, handoff, retrabalho) |
 | `/wave4.html` | Wave 4: Portfolio (epic health, benchmarking, throughput consolidado) |
-| `/insights.html` | Insights: Diagnostico automatico do fluxo de trabalho |
+| `/maturidade.html` | Report de acoes pendentes por responsavel |
+| `/insights.html` | Insights: Diagnostico automatico (fora da nav; acessivel por URL) |
 | `/?issue=KEY` | Timeline completa de uma issue (ex: `/?issue=BKA-6632`) |
 | `/inconsistencies.html` | Validacoes de dados por projeto |
 | `/settings.html` | Configuracoes: projetos, blacklist, expurgo |
@@ -1319,19 +1342,24 @@ Cascata de JQLs:
 
 ## Padronizacao Visual (Regras Obrigatorias)
 
+> **Nota (v2.0.0):** as regras abaixo sao a base historica. A fonte unica de estilo
+> agora e `tokens.css` (cor/tipografia/espacamento/botoes) — ver *Revisao de UX (v2.0.0)*
+> e `docs/GUIA-DESIGN-DASHBOARD.md`. O fundo com radial-gradients e o blur foram
+> removidos em favor de superficie neutra.
+
 ### Layout
 
-- Body: `padding: 2rem 1rem` + background `#0f172a` + radial-gradients
-- Container: `max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem`
-- Header: h1 `font-size: 2rem`, subtitle `font-size: 1rem`
+- Body: `padding: 2rem 0.5rem` + `background-color: var(--surface-0)` (sem gradiente)
+- Container: `max-width: 100%; margin: 0 auto; padding: 1.5rem 0.5rem`
+- Header: h1 `font-size: 2rem` (`--fs-2xl`), subtitle `font-size: 1rem` (`--fs-lg`)
 - Responsivo: `@media (max-width: 768px) { padding: 1rem; }`
 
 ### Navegacao
 
-- Classes CSS obrigatorias (`nav-bar`, `nav-link`, `nav-link active`)
-- NUNCA estilos inline ou onmouseover
-- Ordem fixa: Dashboard → Gargalo e Fluxo → Previsibilidade → Pessoas → Portfolio → Hierarquia → Insights → Inconsistencias → Configuracoes
-- Nova aba: inserir na posicao correta em TODAS as paginas simultaneamente
+- Injetada por `nav.js` (estilo em `nav.css`) num placeholder `<nav id="main-nav" class="nav-bar">`
+- **Agrupada por pergunta** (ver secao *Navegacao* acima); ordem/abas no array `GROUPS` de `nav.js`
+- NUNCA escrever links a mao por pagina, estilos inline ou onmouseover
+- Adicionar/reordenar aba: editar APENAS `nav.js` (reflete em todas as paginas)
 
 ### Graficos
 
@@ -1354,8 +1382,9 @@ Cascata de JQLs:
 
 ### Documentacao
 
-- Steering em `.kiro/steering/layout-rules.md` com regras detalhadas
-- Referencia: `wave1.html`, `inconsistencies.html`, `settings.html`, `hierarchy/dashboard-v2.html`
+- Steering em `.kiro/steering/layout-rules.md` (regras) + `docs/GUIA-DESIGN-DASHBOARD.md` (racional teorico)
+- Design system: `tokens.css`, `nav.*`, `ui.*`, `context.js`
+- Paginas de referencia: `minha-visao.html`, `compromisso.html`, `wave1.html`, `inconsistencies.html`, `hierarchy/dashboard-v2.html`
 
 
 ---
@@ -1422,3 +1451,53 @@ Valores persistidos em localStorage do browser.
 A aba Insights foi removida da navegacao em 21/08/2026. Os endpoints e arquivos permanecem no projeto para possivel reimplementacao futura.
 
 Documentacao completa em: `aba_arquivada_insights.md`
+
+---
+
+## Revisao de UX (v2.0.0)
+
+Consolidacao de uma revisao de UX em 4 ondas. Alem das telas e nav ja citadas acima,
+os pontos estruturais:
+
+### Wave 5 — Compromisso de Prazo (Due Date Slippage)
+
+Responde a pergunta nº1 dos gestores: a equipe cumpre prazo ou empurra a data? Consome
+`parsed_changelogs WHERE field='duedate'` (evento com `from_value`/`to_value`).
+
+- **Pacote:** `metrics/wave5_commitment/` (`due_date_slippage.py`, `commitment_score.py`, `__init__.py`)
+- **Contrato:** `setup_table()` + `calculate_due_date_slippage(conn, only_keys)`; orquestrado por `run_wave5()` na ingestao (etapa `[6/6]`)
+- **Tabela:** `metrics_due_date_slippage` (issue_key, project_key, assignee_name, reschedules, pushes, pulls, total_days_pushed, original_due, current_due, last_changed_at, classification)
+- **Classificacao:** 0=`kept` (mantido) · 1=`replanned` · 2=`attention` · 3+=`pushing` (prazo empurrado)
+- **Commitment Score:** % de issues entregues na 1a data prometida (sem reprogramar). Meta >= 70%.
+
+### Endpoints novos
+
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| GET | `/api/metrics/wave5/slippage?project_key=X` | Commitment score + por assignee + piores issues |
+| GET | `/api/metrics/wave5/commitment-summary` | Score por projeto (todos), para a home |
+| GET | `/api/home/overview?project_keys=A,B` | Agregados por projeto (score, pushing, blocked, no_assignee, in_flight, stale) |
+| GET | `/api/home/detail?project_key=X&metric=Y` | Issues reais de um indicador (metric: pushing/attention/blocked/no_assignee/in_flight/stale) — alimenta o detalhe inline |
+
+### Design System (frontend)
+
+Fonte unica de estilo, substitui 9 blocos `:root` duplicados e 2 familias de variavel:
+
+- **`tokens.css`** — cor (superficies dessaturadas, texto AA, acao, semantico `--ok/--warn/--risk`, serie de grafico `--chart-1..6` de maxima distincao), tipografia (6 degraus, piso 12px), espacamento (grade 4px), sistema de botoes (`.btn` + `--primary/secondary/ghost/danger` × `--sm/md`). Carregar antes de tudo; mantem aliases retrocompativeis.
+- **`nav.css` / `nav.js`** — navegacao compartilhada agrupada por pergunta.
+- **`ui.css` / `ui.js`** — densidade (compacto/confortavel, `data-density` no `<html>`, localStorage `ct.density`), `tabular-nums` global em tabelas, copiar tabela (TSV), helper `CTUI.token()` para cores de grafico via token.
+- **`context.js`** — persiste o projeto selecionado entre paginas (localStorage `ct.selectedProject`), via `CTContext.bindProjectSelect()`.
+
+Regras de uso e racional teorico (Tufte, Few, Munzner, Cleveland & McGill, WCAG):
+`docs/GUIA-DESIGN-DASHBOARD.md`.
+
+### Dashboard — KPIs
+
+O KPI unico de "WIP" foi separado em **Em andamento** (In Progress + Test + Waiting for
+Delivery) e **Bloqueado** (status Blocked, card proprio). "Done esta semana" ganhou
+comparativo (delta) vs os 7 dias anteriores.
+
+### Estados de interface
+
+Telas novas usam estados distintos: loading (skeleton), vazio (com acao) e erro (com
+"Tentar de novo"). Nav e design system tambem aplicados a `index.html` (timeline por issue).

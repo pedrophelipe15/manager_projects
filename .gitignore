@@ -1,6 +1,8 @@
 _bmad/
 _bmad-output/
 .agent/
+.kiro/skills/
+temp/
 __pycache__/
 *.db
 *.json

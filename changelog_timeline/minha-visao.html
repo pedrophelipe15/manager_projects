@@ -4,45 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <title>Pessoas e Qualidade - Changelog Timeline</title>
-    
+    <title>Minha Visao - Changelog Timeline</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <link rel="stylesheet" href="tokens.css?v=2">
     <link rel="stylesheet" href="ui.css?v=2">
     <link rel="stylesheet" href="nav.css?v=1">
-    <link rel="stylesheet" href="wave3.css?v=1">
+    <link rel="stylesheet" href="minha-visao.css?v=3">
 </head>
 <body>
     <div class="page-container">
         <nav id="main-nav" class="nav-bar"></nav>
 
         <header class="page-header">
-            <h1>Pessoas e Qualidade</h1>
-            <p class="subtitle">WIP, distribuicao de carga, handoffs e retrabalho</p>
-            <p class="disclaimer">Estas metricas identificam riscos organizacionais (bus factor, multitasking, gargalos). Nao sao ranking individual de performance.</p>
+            <h1>Minha Visao</h1>
+            <p class="subtitle">Saude dos seus projetos e o que precisa da sua atencao hoje.</p>
         </header>
 
-        <!-- Filtro de Projeto -->
         <section class="filter-section glass">
-            <label for="projectFilter">Projeto:</label>
-            <select id="projectFilter">
-                <option value="">Selecione um projeto...</option>
-            </select>
+            <label>Meus projetos:</label>
+            <div id="projectPicker" class="project-picker"></div>
+            <button class="btn btn--ghost btn--sm" id="btn-all">Todos</button>
         </section>
 
-        <!-- Resultados -->
         <div id="content-container">
-            <p class="empty-state">Selecione um projeto para visualizar as metricas de pessoas.</p>
+            <p class="empty-state">Carregando...</p>
         </div>
     </div>
 
     <script src="context.js?v=1"></script>
     <script src="nav.js?v=1"></script>
     <script src="ui.js?v=2"></script>
-    <script src="wave3.js?v=3"></script>
+    <script src="minha-visao.js?v=5"></script>
 </body>
 </html>

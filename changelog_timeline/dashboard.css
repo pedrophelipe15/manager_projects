@@ -1,15 +1,4 @@
-:root {
-    --bg-color: #0f172a;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --border-color: rgba(255, 255, 255, 0.1);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --success: #10b981;
-    --warning: #f59e0b;
-}
-
+/* Tokens em tokens.css (fonte unica). */
 * {
     margin: 0;
     padding: 0;
@@ -38,25 +27,7 @@ body {
 }
 
 /* Navigation */
-.nav-bar {
-    display: flex;
-    gap: 1rem;
-    padding: 0.75rem 1.5rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-}
-.nav-link {
-    color: var(--text-muted, #94a3b8);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
-.nav-link:hover { color: var(--text-main, #f8fafc); background: rgba(255, 255, 255, 0.05); }
-.nav-link.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+/* Nav: estilo em nav.css compartilhado. */
 
 .glass {
     background: var(--card-bg);
@@ -83,7 +54,7 @@ body {
 /* KPIs */
 .kpi-section {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 1.5rem;
 }
 
@@ -110,6 +81,18 @@ body {
     font-weight: 700;
     color: var(--text-main);
 }
+
+/* Comparativo do KPI (delta vs período anterior / contexto) */
+.kpi-delta {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    min-height: 1rem;
+}
+.kpi-delta.delta-good { color: var(--ok); }
+.kpi-delta.delta-bad { color: var(--risk); }
+.kpi-delta.delta-neutral { color: var(--text-muted); font-weight: 500; }
 
 /* Charts */
 .charts-section {
@@ -215,10 +198,10 @@ body {
     white-space: nowrap;
 }
 
-.status-done { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-.status-progress { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.status-open { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-.status-blocked { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.status-done { background: var(--ok-bg); color: var(--ok); }
+.status-progress { background: var(--action-quiet); color: var(--action); }
+.status-open { background: rgba(148, 163, 184, 0.2); color: var(--text-2); }
+.status-blocked { background: var(--risk-bg); color: var(--risk); }
 
 .btn-drill {
     background: var(--accent);
@@ -277,7 +260,7 @@ body {
     padding: 0.4rem 0.6rem;
     border-radius: 4px;
     background: rgba(15, 23, 42, 0.6);
-    color: #f8fafc;
+    color: var(--text-1);
     border: 1px solid rgba(255,255,255,0.1);
     font-size: 0.85rem;
     cursor: pointer;
@@ -289,7 +272,7 @@ body {
     top: 100%;
     left: 0;
     min-width: 280px;
-    background: #1e293b;
+    background: var(--surface-1);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     margin-top: 4px;
@@ -338,7 +321,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    color: #94a3b8;
+    color: var(--text-2);
     font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -363,7 +346,7 @@ body {
 }
 
 .date-separator {
-    color: #64748b;
+    color: var(--text-3);
     font-size: 0.85rem;
 }
 
@@ -382,7 +365,7 @@ body {
     padding: 0.3rem 0.6rem;
     border-radius: 4px;
     background: rgba(15, 23, 42, 0.6);
-    color: #f8fafc;
+    color: var(--text-1);
     border: 1px solid rgba(255,255,255,0.1);
     font-size: 0.85rem;
     cursor: pointer;
@@ -391,7 +374,7 @@ body {
 }
 
 .placeholder-text {
-    color: #94a3b8;
+    color: var(--text-2);
 }
 
 .multiselect-tag {
@@ -421,7 +404,7 @@ body {
     margin-left: auto;
     background: transparent;
     border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #ef4444;
+    color: var(--risk);
     display: flex;
     align-items: center;
     gap: 0.3rem;
@@ -511,7 +494,7 @@ body {
 .modal-body {
     font-size: 0.9rem;
     line-height: 1.6;
-    color: #cbd5e1;
+    color: var(--text-2);
 }
 
 @media (max-width: 1024px) {

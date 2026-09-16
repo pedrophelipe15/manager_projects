@@ -25,10 +25,7 @@ async function loadProjects() {
             opt.textContent = `${p.key} - ${p.name}`;
             select.appendChild(opt);
         });
-        if (projects.length === 1) {
-            select.value = projects[0].key;
-            onProjectChange();
-        }
+        CTContext.bindProjectSelect(select, onProjectChange);
     } catch (error) {
         console.error('Erro ao carregar projetos:', error);
     }

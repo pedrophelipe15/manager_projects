@@ -1,15 +1,4 @@
-:root {
-    --bg-color: #0f172a;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --border-color: rgba(255, 255, 255, 0.1);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent: #3b82f6;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-}
-
+/* Tokens em tokens.css (fonte unica). */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -42,26 +31,7 @@ body {
 }
 
 /* Navigation */
-.nav-bar {
-    display: flex;
-    gap: 1rem;
-    padding: 0.75rem 1.5rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-}
-
-.nav-link {
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
-.nav-link:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.05); }
-.nav-link.active { color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+/* Nav: estilo em nav.css compartilhado. */
 
 /* Header */
 .page-header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -78,7 +48,7 @@ body {
 .filter-section label {
     font-size: 0.9rem;
     font-weight: 500;
-    color: #cbd5e1;
+    color: var(--text-2);
 }
 
 .filter-section select {
@@ -100,8 +70,8 @@ body {
     font-weight: 600;
     margin-left: auto;
 }
-.total-badge.warn { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
-.total-badge.ok { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.total-badge.warn { background: rgba(251, 191, 36, 0.15); color: var(--warn); }
+.total-badge.ok { background: rgba(16, 185, 129, 0.15); color: var(--ok); }
 
 /* States */
 .empty-state, .loading, .error-state {
@@ -138,8 +108,8 @@ body {
     font-weight: 600;
 }
 
-.section-warn .section-count { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-.section-ok .section-count { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.section-warn .section-count { background: rgba(251, 191, 36, 0.2); color: var(--warn); }
+.section-ok .section-count { background: rgba(16, 185, 129, 0.2); color: var(--ok); }
 .section-ok .section-title { color: var(--text-muted); }
 
 .section-body {
@@ -154,7 +124,7 @@ body {
 
 .section-ok-msg {
     font-size: 0.85rem;
-    color: #34d399;
+    color: var(--ok);
     font-style: italic;
 }
 
@@ -202,10 +172,10 @@ body {
     font-weight: 500;
     white-space: nowrap;
 }
-.status-done { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-.status-progress { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.status-blocked { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.status-open { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+.status-done { background: rgba(16, 185, 129, 0.2); color: var(--ok); }
+.status-progress { background: rgba(59, 130, 246, 0.2); color: var(--action); }
+.status-blocked { background: rgba(239, 68, 68, 0.2); color: var(--risk); }
+.status-open { background: rgba(148, 163, 184, 0.2); color: var(--text-2); }
 
 
 /* Section Filters */
@@ -232,7 +202,7 @@ body {
 }
 
 .section-filters .filter-input::placeholder {
-    color: #64748b;
+    color: var(--text-3);
 }
 
 /* Pagination */
@@ -275,7 +245,7 @@ body {
 
 .page-info-small {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--text-3);
     display: block;
     text-align: right;
 }
@@ -398,7 +368,7 @@ body {
 .rule-field-label {
     font-size: 0.7rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--text-3);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
@@ -469,7 +439,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
 }
-.btn-modal-save:hover:not(:disabled) { background: #2563eb; }
+.btn-modal-save:hover:not(:disabled) { background: var(--action-hover); }
 .btn-modal-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-modal-cancel {
@@ -491,8 +461,8 @@ body {
     font-weight: 500;
     margin-right: auto;
 }
-.save-status.success { color: #34d399; }
-.save-status.error { color: #f87171; }
+.save-status.success { color: var(--ok); }
+.save-status.error { color: var(--risk); }
 
 /* Responsive */
 @media (max-width: 768px) {

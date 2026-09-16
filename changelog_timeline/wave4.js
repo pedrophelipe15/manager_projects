@@ -151,16 +151,20 @@ function renderCrossThroughput(data) {
     `;
 }
 
-// Gera N cores distintas via HSL com matizes igualmente espaçados.
-// Garante que cada projeto tenha uma cor diferente, independente da quantidade.
+// Cores categoricas de projeto. Usa a paleta do design system (--chart-1..6);
+// se houver mais projetos que tokens, completa via HSL espacado (fallback raro).
 function distinctColors(n) {
+    const base = (window.CTUI && CTUI.chartPalette) ? CTUI.chartPalette() : [];
     const colors = [];
     for (let i = 0; i < n; i++) {
-        const hue = Math.round((360 / n) * i);
-        // Alterna leve variação de saturação/luminosidade para vizinhos ficarem mais distinguíveis
-        const sat = 65 + (i % 2) * 10;
-        const light = 55 + (i % 3) * 5;
-        colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
+        if (i < base.length && base[i]) {
+            colors.push(base[i]);
+        } else {
+            const hue = Math.round((360 / n) * i);
+            const sat = 65 + (i % 2) * 10;
+            const light = 55 + (i % 3) * 5;
+            colors.push(`hsl(${hue}, ${sat}%, ${light}%)`);
+        }
     }
     return colors;
 }
@@ -171,11 +175,13 @@ function renderCrossChart(data) {
 
     const palette = distinctColors(data.projects.length);
 
+    const segBorder = CTUI.token('--surface-0');
     const datasets = data.projects.map((project, idx) => ({
         label: project,
         data: data.weekly.map(w => w.by_project[project] || 0),
         backgroundColor: palette[idx],
-        borderWidth: 0,
+        borderColor: segBorder,
+        borderWidth: 1,
         borderRadius: 2,
     }));
 
@@ -188,7 +194,7 @@ function renderCrossChart(data) {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 11 } } },
+                legend: { position: 'bottom', labels: { color: CTUI.token('--text-1'), font: { size: 11 } } },
                 tooltip: {
                     callbacks: {
                         footer: function(items) {
@@ -198,7 +204,7 @@ function renderCrossChart(data) {
                     }
                 },
                 datalabels: {
-                    color: "#f8fafc",
+                    color: CTUI.token('--text-1'),
                     font: { size: 14, weight: "bold" },
                     anchor: "end",
                     align: "end",
@@ -214,8 +220,8 @@ function renderCrossChart(data) {
                 },
             },
             scales: {
-                x: { stacked: true, ticks: { color: '#94a3b8', maxTicksLimit: 13, font: { size: 10 } }, grid: { display: false } },
-                y: { stacked: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+                x: { stacked: true, ticks: { color: CTUI.token('--text-2'), maxTicksLimit: 13, font: { size: 10 } }, grid: { display: false } },
+                y: { stacked: true, ticks: { color: CTUI.token('--text-2') }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
             }
         },
         plugins: [ChartDataLabels],

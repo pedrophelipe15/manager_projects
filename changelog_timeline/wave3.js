@@ -18,10 +18,7 @@ async function loadProjects() {
             opt.textContent = `${p.key} - ${p.name}`;
             select.appendChild(opt);
         });
-        if (projects.length === 1) {
-            select.value = projects[0].key;
-            onProjectChange();
-        }
+        CTContext.bindProjectSelect(select, onProjectChange);
     } catch (e) { console.error(e); }
 }
 
@@ -188,8 +185,8 @@ function renderWorkloadChart(data) {
             datasets: [{
                 label: 'Issues Done',
                 data: values,
-                backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                borderColor: '#3b82f6',
+                backgroundColor: CTUI.token('--chart-1') + '99',
+                borderColor: CTUI.token('--chart-1'),
                 borderWidth: 1,
                 borderRadius: 4,
             }]
@@ -200,8 +197,8 @@ function renderWorkloadChart(data) {
             indexAxis: 'y',
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true },
-                y: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
+                x: { ticks: { color: CTUI.token('--text-2') }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true },
+                y: { ticks: { color: CTUI.token('--text-1'), font: { size: 11 } }, grid: { display: false } }
             }
         }
     });

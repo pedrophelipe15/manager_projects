@@ -34,6 +34,23 @@ def get_db_connection():
     return conn
 
 
+def resolve_key(conn: sqlite3.Connection, key: str) -> str:
+    """Normaliza uma key possivelmente antiga (issue migrada de projeto) para a key atual.
+
+    Issues movidas entre projetos mudam de key (ex.: STN-3065 -> BKA-6703). A
+    tabela key_aliases mapeia keys antigas para a atual. Se a key não for um
+    alias conhecido, é retornada inalterada.
+    """
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT current_key FROM key_aliases WHERE old_key = ?", (key,))
+        row = cursor.fetchone()
+        return row[0] if row else key
+    except sqlite3.OperationalError:
+        # Tabela ainda não criada (banco anterior à migração): usa a key como está.
+        return key
+
+
 def init_settings_tables():
     """Cria tabelas de configuração se não existirem."""
     conn = sqlite3.connect(DB_PATH, timeout=30)
@@ -187,6 +204,9 @@ def get_issues():
 def get_issue_timeline(key: str):
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # Normaliza key antiga (issue migrada de projeto) para a key atual
+    key = resolve_key(conn, key)
 
     # Busca regras de blacklist ativas
     cursor.execute("SELECT type, value FROM blacklist_rules WHERE enabled = 1")
@@ -1649,6 +1669,235 @@ def api_aging_backlog(project_key: str, min_days: int = 30):
     result = get_aging_backlog(conn, project_key, min_days)
     conn.close()
     return result
+
+
+# --- Wave 5: Compromisso de Prazo (Due Date Commitment) ---
+
+from metrics.wave5_commitment import get_slippage_by_project, get_commitment_summary_all
+
+
+@app.get("/api/metrics/wave5/slippage")
+def api_slippage(project_key: str):
+    """Compromisso de prazo do projeto: commitment score, por assignee e piores issues.
+
+    Responde a pergunta nº1 dos gestores: a equipe cumpre prazo ou so empurra?
+    Consome a tabela metrics_due_date_slippage (populada na ingestão / Wave 5).
+    """
+    conn = get_db_connection()
+    result = get_slippage_by_project(conn, project_key)
+    conn.close()
+    return result
+
+
+@app.get("/api/metrics/wave5/commitment-summary")
+def api_commitment_summary():
+    """Resumo de commitment score por projeto (todos), para a home 'Minha Visão'."""
+    conn = get_db_connection()
+    result = get_commitment_summary_all(conn)
+    conn.close()
+    return result
+
+
+@app.get("/api/home/overview")
+def api_home_overview(project_keys: str | None = None):
+    """Visão consolidada da home 'Minha Visão'.
+
+    Para cada projeto (todos, ou apenas os informados em project_keys separados
+    por vírgula), retorna: commitment score, contagem por classificação, WIP,
+    bloqueadas, sem responsável, paradas >14 dias e as issues acionáveis
+    ('precisa de você hoje').
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Escopo de projetos
+    if project_keys:
+        wanted = [k.strip() for k in project_keys.split(",") if k.strip()]
+    else:
+        cursor.execute("SELECT DISTINCT project_key FROM issues WHERE project_key IS NOT NULL")
+        wanted = [r["project_key"] for r in cursor.fetchall()]
+
+    # Commitment por projeto (dict para lookup)
+    commitment = {c["project_key"]: c for c in get_commitment_summary_all(conn).get("projects", [])}
+
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    stale_cutoff = now - timedelta(days=14)
+    active_states = ("In Progress", "Blocked", "Test", "Waiting for Delivery")
+    active_ph = ",".join(["?"] * len(active_states))
+
+    projects = []
+    for pk in sorted(wanted):
+        # Contagens de status ativo
+        cursor.execute(
+            f"SELECT status, assignee_name, key, summary, updated_at FROM issues "
+            f"WHERE project_key = ? AND status IN ({active_ph})",
+            [pk, *active_states],
+        )
+        active_rows = cursor.fetchall()
+
+        in_flight = sum(1 for r in active_rows if r["status"] in ("In Progress", "Test", "Waiting for Delivery"))
+        blocked = sum(1 for r in active_rows if r["status"] == "Blocked")
+        no_assignee = sum(1 for r in active_rows if not (r["assignee_name"] or "").strip())
+
+        stale = 0
+        for r in active_rows:
+            if not r["updated_at"]:
+                continue
+            try:
+                upd = datetime.fromisoformat(str(r["updated_at"]).replace("Z", "+00:00")).replace(tzinfo=None)
+            except (ValueError, TypeError):
+                continue
+            if upd < stale_cutoff:
+                stale += 1
+
+        c = commitment.get(pk, {})
+        counts = c.get("counts", {})
+        projects.append({
+            "project_key": pk,
+            "commitment_score": c.get("commitment_score"),
+            "pushing": counts.get("pushing", 0),
+            "attention": counts.get("attention", 0),
+            "in_flight": in_flight,
+            "blocked": blocked,
+            "no_assignee": no_assignee,
+            "stale": stale,
+        })
+
+    conn.close()
+    # As issues por indicador sao carregadas sob demanda via /api/home/detail
+    # (modal ao clicar no indicador do card). A home so devolve os agregados.
+    return {"projects": projects}
+
+
+@app.get("/api/home/detail")
+def api_home_detail(project_key: str, metric: str):
+    """Lista as issues reais por tras de um indicador da home 'Minha Visão'.
+
+    metric: pushing | attention | blocked | no_assignee | in_flight | stale
+    Alimenta o modal que abre ao clicar num indicador do card de projeto.
+    """
+    from datetime import datetime, timedelta
+
+    valid = {"pushing", "attention", "blocked", "no_assignee", "in_flight", "stale"}
+    if metric not in valid:
+        return {"error": f"metric invalido. Use um de: {sorted(valid)}", "issues": []}
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    JIRA = "https://jiraps.atlassian.net/browse/"
+
+    meta = {
+        "pushing": {
+            "title": "Prazo empurrado (3x+)",
+            "desc": "Issues com due date reprogramado 3 ou mais vezes.",
+        },
+        "attention": {
+            "title": "Prazo em atencao (2x)",
+            "desc": "Issues com due date reprogramado 2 vezes.",
+        },
+        "blocked": {"title": "Bloqueado", "desc": "Issues em status Blocked."},
+        "no_assignee": {"title": "Sem responsavel", "desc": "Issues ativas sem responsavel atribuido."},
+        "in_flight": {"title": "Em andamento", "desc": "Issues em In Progress, Test ou Waiting for Delivery."},
+        "stale": {"title": "Paradas > 14 dias", "desc": "Issues ativas sem atualizacao ha mais de 14 dias."},
+    }
+
+    issues = []
+
+    if metric in ("pushing", "attention"):
+        classification = "pushing" if metric == "pushing" else "attention"
+        cursor.execute(
+            """
+            SELECT s.issue_key, s.assignee_name, s.reschedules, s.total_days_pushed,
+                   s.original_due, s.current_due, i.summary, i.status
+            FROM metrics_due_date_slippage s
+            LEFT JOIN issues i ON i.key = s.issue_key
+            WHERE s.project_key = ? AND s.classification = ?
+            ORDER BY s.reschedules DESC, s.total_days_pushed DESC
+            """,
+            (project_key, classification),
+        )
+        for r in cursor.fetchall():
+            issues.append({
+                "key": r["issue_key"],
+                "url": JIRA + r["issue_key"],
+                "summary": r["summary"] or "",
+                "assignee": r["assignee_name"] or "Sem responsavel",
+                "status": r["status"] or "",
+                "detail": f"{r['reschedules']} reprogramacoes · +{r['total_days_pushed']}d",
+                "original_due": r["original_due"],
+                "current_due": r["current_due"],
+            })
+    else:
+        active_states = ("In Progress", "Blocked", "Test", "Waiting for Delivery")
+        active_ph = ",".join(["?"] * len(active_states))
+        cursor.execute(
+            f"SELECT key, summary, status, assignee_name, updated_at FROM issues "
+            f"WHERE project_key = ? AND status IN ({active_ph})",
+            [project_key, *active_states],
+        )
+        rows = cursor.fetchall()
+        now = datetime.now()
+        stale_cutoff = now - timedelta(days=14)
+
+        def days_since(updated):
+            if not updated:
+                return None
+            try:
+                upd = datetime.fromisoformat(str(updated).replace("Z", "+00:00")).replace(tzinfo=None)
+            except (ValueError, TypeError):
+                return None
+            return (now - upd).days
+
+        for r in rows:
+            status = r["status"]
+            has_assignee = bool((r["assignee_name"] or "").strip())
+            d = days_since(r["updated_at"])
+            keep = False
+            detail = ""
+            if metric == "blocked" and status == "Blocked":
+                keep = True
+                detail = f"parado ha {d}d" if d is not None else "Bloqueado"
+            elif metric == "no_assignee" and not has_assignee:
+                keep = True
+                detail = status
+            elif metric == "in_flight" and status in ("In Progress", "Test", "Waiting for Delivery"):
+                keep = True
+                detail = status
+            elif metric == "stale":
+                upd_dt = None
+                if r["updated_at"]:
+                    try:
+                        upd_dt = datetime.fromisoformat(str(r["updated_at"]).replace("Z", "+00:00")).replace(tzinfo=None)
+                    except (ValueError, TypeError):
+                        upd_dt = None
+                if upd_dt is not None and upd_dt < stale_cutoff:
+                    keep = True
+                    detail = f"sem atualizacao ha {d}d"
+            if keep:
+                issues.append({
+                    "key": r["key"],
+                    "url": JIRA + r["key"],
+                    "summary": r["summary"] or "",
+                    "assignee": r["assignee_name"] or "Sem responsavel",
+                    "status": status,
+                    "detail": detail,
+                })
+
+        # Ordena os "parados" pelos mais antigos primeiro; demais por status.
+        if metric == "stale":
+            issues.sort(key=lambda x: x["detail"], reverse=True)
+
+    conn.close()
+    m = meta[metric]
+    return {
+        "project_key": project_key,
+        "metric": metric,
+        "title": m["title"],
+        "description": m["desc"],
+        "count": len(issues),
+        "issues": issues,
+    }
 
 
 # --- Wave 3: Pessoas e Qualidade ---

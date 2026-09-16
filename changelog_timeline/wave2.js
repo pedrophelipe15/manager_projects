@@ -4,6 +4,16 @@ let throughputChart = null;
 let forecastChart = null;
 let currentProject = null;
 
+// Cores de grafico via tokens (CTUI.token) — sem hex solto, sem cor de alerta em decoracao.
+const CH = {
+    series: () => CTUI.token('--chart-1'),
+    seriesFill: () => CTUI.token('--chart-1') + '99',
+    refLine: () => CTUI.token('--text-2'),   // linha de media = referencia neutra
+    axis: () => CTUI.token('--text-2'),
+    grid: 'rgba(255,255,255,0.05)',
+    legend: () => CTUI.token('--text-1'),
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     loadProjects();
     document.getElementById('projectFilter').addEventListener('change', onProjectChange);
@@ -20,10 +30,7 @@ async function loadProjects() {
             opt.textContent = `${p.key} - ${p.name}`;
             select.appendChild(opt);
         });
-        if (projects.length === 1) {
-            select.value = projects[0].key;
-            onProjectChange();
-        }
+        CTContext.bindProjectSelect(select, onProjectChange);
     } catch (e) { console.error(e); }
 }
 
@@ -125,8 +132,8 @@ function renderThroughputChart(data) {
                 {
                     label: 'Throughput',
                     data: totals,
-                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                    borderColor: '#3b82f6',
+                    backgroundColor: CH.seriesFill(),
+                    borderColor: CH.series(),
                     borderWidth: 1,
                     borderRadius: 4,
                 },
@@ -134,7 +141,7 @@ function renderThroughputChart(data) {
                     label: `Media (${avg})`,
                     data: Array(labels.length).fill(avg),
                     type: 'line',
-                    borderColor: '#f59e0b',
+                    borderColor: CH.refLine(),
                     borderWidth: 2,
                     borderDash: [6, 3],
                     pointRadius: 0,
@@ -147,7 +154,7 @@ function renderThroughputChart(data) {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 11 } } },
+                legend: { position: 'bottom', labels: { color: CH.legend(), font: { size: 11 } } },
                 tooltip: {
                     callbacks: {
                         afterBody: function(items) {
@@ -160,8 +167,8 @@ function renderThroughputChart(data) {
                 }
             },
             scales: {
-                x: { ticks: { color: '#94a3b8', maxTicksLimit: 13, font: { size: 10 } }, grid: { display: false } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+                x: { ticks: { color: CH.axis(), maxTicksLimit: 13, font: { size: 10 } }, grid: { display: false } },
+                y: { ticks: { color: CH.axis() }, grid: { color: CH.grid }, beginAtZero: true }
             }
         }
     });
@@ -262,12 +269,13 @@ function renderForecastChart(data) {
     const counts = hist.map(h => h.count);
     const maxCount = Math.max(...counts);
 
-    // Colorir barras: verde até P50, amarelo até P85, vermelho depois
+    // Colorir barras por risco de prazo (uso semantico legitimo, via tokens):
+    // ate P50 = confortavel (ok), ate P85 = atencao (warn), depois = risco (risk).
     const p = data.percentiles;
     const colors = hist.map(h => {
-        if (h.weeks <= p.p50) return 'rgba(16, 185, 129, 0.7)';
-        if (h.weeks <= p.p85) return 'rgba(245, 158, 11, 0.7)';
-        return 'rgba(239, 68, 68, 0.7)';
+        if (h.weeks <= p.p50) return CTUI.token('--ok') + 'b3';
+        if (h.weeks <= p.p85) return CTUI.token('--warn') + 'b3';
+        return CTUI.token('--risk') + 'b3';
     });
 
     if (forecastChart) forecastChart.destroy();
@@ -295,8 +303,8 @@ function renderForecastChart(data) {
                 }
             },
             scales: {
-                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                x: { ticks: { color: CH.axis(), font: { size: 10 } }, grid: { display: false } },
+                y: { ticks: { color: CH.axis() }, grid: { color: CH.grid } }
             }
         }
     });

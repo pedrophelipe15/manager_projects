@@ -1,0 +1,61 @@
+/**
+ * ui.css — Densidade, header de tabela fixo e botao copiar (Onda 4 UX).
+ * Complementa tokens.css. Carregar depois de tokens.css.
+ */
+
+/* ---- Toggle de densidade no header ---- */
+.page-header { position: relative; }
+.density-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+@media (max-width: 768px) {
+    .density-toggle { position: static; margin-top: 0.5rem; }
+}
+
+/* ---- Densidade COMPACTA: aperta tabelas e KPIs ---- */
+[data-density="compact"] .data-table th,
+[data-density="compact"] .data-table td,
+[data-density="compact"] .metric-table th,
+[data-density="compact"] .metric-table td,
+[data-density="compact"] .report-table th,
+[data-density="compact"] .report-table td {
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+}
+[data-density="compact"] .kpi-card { padding: 0.9rem; }
+[data-density="compact"] .section { padding: 1rem; }
+[data-density="compact"] .project-card { padding: 0.9rem; }
+[data-density="compact"] .action-item { padding: 0.4rem 0.7rem; }
+
+/* ---- Header de tabela fixo no scroll ---- */
+/* Aplica quando a tabela esta dentro de um wrapper rolavel (.table-scroll). */
+.table-scroll { max-height: 65vh; overflow: auto; border-radius: var(--radius-lg); }
+.table-scroll table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface-2);
+}
+
+/* ---- Barra de acao de tabela (titulo + copiar) ---- */
+.table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+.btn-copy-table.copied { color: var(--ok); border-color: var(--ok); }
+
+/* ---- Numeros tabulares (alinhamento vertical de digitos) ----
+   Aplica figuras de largura fixa em todas as tabelas de dados do projeto.
+   Inofensivo em celulas de texto; essencial em colunas numericas. */
+.data-table,
+.metric-table,
+.report-table,
+.action-table {
+    font-variant-numeric: tabular-nums;
+}

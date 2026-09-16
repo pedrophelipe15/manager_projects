@@ -109,8 +109,17 @@ def setup_db(conn: sqlite3.Connection) -> None:
     )
     ''')
 
+    # Mapa de keys antigas -> key atual (issues migradas entre projetos)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS key_aliases (
+        old_key TEXT PRIMARY KEY,
+        current_key TEXT NOT NULL
+    )
+    ''')
+
     # Índices de performance
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_changelogs_issue_field ON parsed_changelogs(issue_key, field)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_key_aliases_current ON key_aliases(current_key)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_changelogs_project ON parsed_changelogs(project_key)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_issues_project ON issues(project_key)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_issues_status ON issues(status)')
@@ -125,8 +134,97 @@ def clear_tables(conn: sqlite3.Connection) -> None:
     cursor.execute("DELETE FROM parsed_changelogs")
     cursor.execute("DELETE FROM metrics")
     cursor.execute("DELETE FROM issues")
+    cursor.execute("DELETE FROM key_aliases")
     conn.commit()
     print("Tabelas limpas para full reload.")
+
+
+def ingest_key_aliases(conn: sqlite3.Connection, changelogs: list[dict[str, Any]]) -> int:
+    """Extrai migrações de projeto do changelog (field="Key") e popula key_aliases.
+
+    Quando uma issue é movida de projeto, o Jira registra um evento com
+    field="Key", from_value="STN-3065", to_value="BKA-6703". A key atual da
+    issue (issue_key) é sempre a mais recente; mapeamos todas as keys antigas
+    encontradas nesses eventos para a key atual.
+    """
+    cursor = conn.cursor()
+    count = 0
+
+    for entry in changelogs:
+        field = (entry.get("field") or "").strip().lower()
+        if field != "key":
+            continue
+
+        current_key = entry.get("issue_key")
+        old_key = (entry.get("from_value") or "").strip()
+
+        if not current_key or not old_key or old_key == current_key:
+            continue
+
+        # Resolve cadeias de migração (A->B->C): se a key atual já é alias de
+        # outra, aponta o alias antigo para a key final.
+        cursor.execute("SELECT current_key FROM key_aliases WHERE old_key = ?", (current_key,))
+        row = cursor.fetchone()
+        resolved_current = row[0] if row else current_key
+
+        cursor.execute(
+            "INSERT OR REPLACE INTO key_aliases (old_key, current_key) VALUES (?, ?)",
+            (old_key, resolved_current),
+        )
+        count += 1
+
+    # Fechamento transitivo: resolve cadeias A->B->C onde os eventos podem ter
+    # chegado fora de ordem. Repete até estabilizar (aponta cada old_key para a
+    # key final, que não é alias de nenhuma outra).
+    for _ in range(10):  # limite de segurança contra ciclos
+        cursor.execute("""
+            UPDATE key_aliases
+            SET current_key = (
+                SELECT a2.current_key FROM key_aliases a2
+                WHERE a2.old_key = key_aliases.current_key
+            )
+            WHERE current_key IN (SELECT old_key FROM key_aliases)
+        """)
+        if cursor.rowcount == 0:
+            break
+
+    conn.commit()
+    return count
+
+
+def resolve_key(conn: sqlite3.Connection, key: str) -> str:
+    """Normaliza uma key (possivelmente antiga) para a key atual da issue."""
+    cursor = conn.cursor()
+    cursor.execute("SELECT current_key FROM key_aliases WHERE old_key = ?", (key,))
+    row = cursor.fetchone()
+    return row[0] if row else key
+
+
+def purge_stale_old_keys(conn: sqlite3.Connection) -> int:
+    """Remove da tabela issues (e dados relacionados) as keys antigas que foram
+    migradas de projeto e já possuem entrada em key_aliases.
+
+    Quando uma issue é movida (ex.: STN-3065 → BKA-6703), o Jira pode retornar
+    ambas as keys na busca. A key antiga fica como registro 'fantasma' no banco.
+    Esta função remove esses registros, mantendo apenas a key atual.
+    """
+    cursor = conn.cursor()
+    cursor.execute("SELECT old_key FROM key_aliases")
+    old_keys = [r[0] for r in cursor.fetchall()]
+    if not old_keys:
+        return 0
+
+    total = 0
+    for i in range(0, len(old_keys), 500):
+        batch = old_keys[i:i+500]
+        ph = ",".join(["?" for _ in batch])
+        cursor.execute(f"DELETE FROM parsed_changelogs WHERE issue_key IN ({ph})", batch)
+        cursor.execute(f"DELETE FROM metrics WHERE issue_key IN ({ph})", batch)
+        cursor.execute(f"DELETE FROM issues WHERE key IN ({ph})", batch)
+        total += cursor.rowcount
+
+    conn.commit()
+    return total
 
 
 def read_jsonl(file_path: Path) -> list[dict[str, Any]]:
@@ -326,25 +424,30 @@ def main() -> None:
         changelogs = read_jsonl(changelogs_file)
         count = ingest_changelogs(conn, changelogs)
         print(f"  {count} eventos de changelog inseridos.")
+        alias_count = ingest_key_aliases(conn, changelogs)
+        print(f"  {alias_count} aliases de key (issues migradas) mapeados.")
+        purged = purge_stale_old_keys(conn)
+        print(f"  {purged} registros de keys antigas (issues migradas) removidos.")
     else:
         print(f"\n[3/4] AVISO: {changelogs_file} não encontrado. Pulando ingestão de changelogs.")
 
     # 4. Calcular métricas (lead time / cycle time)
     from metrics.base import calculate_metrics
     from metrics.wave1_bottleneck import run_wave1
+    from metrics.wave5_commitment import run_wave5
     from metrics.changelog_cache import load_status_changelogs
 
     only_keys = None
     if args.only_keys:
         only_keys = [k.strip() for k in args.only_keys.split(",") if k.strip()]
-        print(f"\n[4/5] Calculando métricas base para {len(only_keys)} issues...")
+        print(f"\n[4/6] Calculando métricas base para {len(only_keys)} issues...")
     else:
         if issues_file.exists():
             issues_data = read_jsonl(issues_file)
             only_keys = [i.get("jira_key") for i in issues_data if i.get("jira_key")]
-            print(f"\n[4/5] Calculando métricas base para {len(only_keys)} issues afetadas...")
+            print(f"\n[4/6] Calculando métricas base para {len(only_keys)} issues afetadas...")
         else:
-            print("\n[4/5] Calculando métricas base (lead time / cycle time)...")
+            print("\n[4/6] Calculando métricas base (lead time / cycle time)...")
 
     # Carrega changelogs de status UMA VEZ para todos os módulos
     status_cache = load_status_changelogs(conn, only_keys)
@@ -353,12 +456,17 @@ def main() -> None:
     print(f"  Métricas base: {count} issues.")
 
     # 5. Wave 1 — Gargalo e Fluxo (reutiliza status_cache carregado acima)
-    print(f"\n[5/5] Calculando Wave 1 (Gargalo e Fluxo)...")
+    print(f"\n[5/6] Calculando Wave 1 (Gargalo e Fluxo)...")
     wave1_results = run_wave1(conn, only_keys)
     print(f"  time_per_status: {wave1_results.get('time_per_status', 0)} intervalos")
     print(f"  percentiles: {wave1_results.get('percentiles', 0)} registros")
     print(f"  flow_efficiency: {wave1_results.get('flow_efficiency', 0)} issues")
     print(f"  cfd: {wave1_results.get('cfd', 0)} snapshots")
+
+    # 6. Wave 5 — Compromisso de Prazo (due date slippage)
+    print(f"\n[6/6] Calculando Wave 5 (Compromisso de Prazo)...")
+    wave5_results = run_wave5(conn, only_keys)
+    print(f"  due_date_slippage: {wave5_results.get('due_date_slippage', 0)} issues")
 
     conn.close()
     print("\nIngestão concluída com sucesso!")

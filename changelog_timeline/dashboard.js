@@ -70,8 +70,11 @@ function populateProjectDropdown() {
         select.appendChild(option);
     });
 
-    // Se só tem um projeto, seleciona automaticamente
-    if (projects.size === 1) {
+    // Restaura o projeto salvo (contexto compartilhado) ou auto-seleciona se houver 1.
+    // Persiste toda troca; o fluxo do DOMContentLoaded lê select.value em seguida.
+    if (window.CTContext) {
+        CTContext.bindProjectSelect(select, null);
+    } else if (projects.size === 1) {
         select.value = projects.keys().next().value;
     }
 }
@@ -254,6 +257,10 @@ window.clearFilters = function() {
 function updateKPIs() {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    // Estados de trabalho ativo em movimento (Blocked tratado à parte).
+    const inFlightStates = new Set(['In Progress', 'Test', 'Waiting for Delivery']);
+    // Estados ativos no geral (para "Paradas >7 dias", que inclui bloqueadas).
     const activeStates = new Set(['In Progress', 'Blocked', 'Test', 'Waiting for Delivery']);
 
     // Done esta semana: issues resolvidas nos últimos 7 dias
@@ -264,12 +271,41 @@ function updateKPIs() {
     });
     document.getElementById('kpi-done-week').innerText = doneThisWeek.length;
 
-    // WIP: issues em estados ativos
-    const wipIssues = state.filteredData.filter(i => activeStates.has(i.status));
+    // Comparativo: Done nos 7 dias anteriores (dia -14 a -7)
+    const donePrevWeek = state.filteredData.filter(i => {
+        if (i.status !== 'Done' || !i.resolved_at) return false;
+        const resolved = new Date(i.resolved_at);
+        return resolved >= fourteenDaysAgo && resolved < sevenDaysAgo;
+    });
+    renderDelta('kpi-done-week-delta', doneThisWeek.length, donePrevWeek.length, 'higher-better');
+
+    // Em andamento: issues em trabalho ativo, EXCLUINDO Blocked
+    const wipIssues = state.filteredData.filter(i => inFlightStates.has(i.status));
     document.getElementById('kpi-wip').innerText = wipIssues.length;
 
-    // Paradas >7 dias: issues ativas com updated_at > 7 dias
-    const staleIssues = wipIssues.filter(i => {
+    // Bloqueado: issues em status Blocked (ponto no tempo)
+    const blockedIssues = state.filteredData.filter(i => i.status === 'Blocked');
+    const blockedEl = document.getElementById('kpi-blocked');
+    blockedEl.innerText = blockedIssues.length;
+    blockedEl.style.color = blockedIssues.length > 0 ? '#f87171' : '';
+    // Contexto honesto (sem snapshot histórico): fatia do ativo que está travada.
+    const totalActive = wipIssues.length + blockedIssues.length;
+    const blockedDeltaEl = document.getElementById('kpi-blocked-delta');
+    if (blockedDeltaEl) {
+        if (totalActive > 0 && blockedIssues.length > 0) {
+            const pct = Math.round((blockedIssues.length / totalActive) * 100);
+            blockedDeltaEl.textContent = `${pct}% do trabalho ativo travado`;
+            blockedDeltaEl.className = 'kpi-delta ' + (pct >= 40 ? 'delta-bad' : 'delta-neutral');
+        } else {
+            blockedDeltaEl.textContent = '';
+        }
+    }
+    // "Em andamento" é ponto no tempo — sem comparativo temporal honesto disponível.
+    const wipDeltaEl = document.getElementById('kpi-wip-delta');
+    if (wipDeltaEl) wipDeltaEl.textContent = '';
+
+    // Paradas >7 dias: issues ativas (inclui Blocked) com updated_at > 7 dias
+    const staleIssues = state.filteredData.filter(i => activeStates.has(i.status)).filter(i => {
         if (!i.updated_at) return false;
         const updated = new Date(i.updated_at);
         return updated < sevenDaysAgo;
@@ -277,6 +313,25 @@ function updateKPIs() {
     const staleEl = document.getElementById('kpi-stale');
     staleEl.innerText = staleIssues.length;
     staleEl.style.color = staleIssues.length > 0 ? '#f87171' : '';
+}
+
+/**
+ * Renderiza o comparativo de um KPI (↑ N / ↓ N / =) vs período anterior.
+ * direction: 'higher-better' pinta subida de verde e queda de vermelho.
+ */
+function renderDelta(elId, current, previous, direction) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const diff = current - previous;
+    if (diff === 0) {
+        el.textContent = '= igual à semana anterior';
+        el.className = 'kpi-delta delta-neutral';
+        return;
+    }
+    const arrow = diff > 0 ? '▲' : '▼';
+    const good = direction === 'higher-better' ? diff > 0 : diff < 0;
+    el.textContent = `${arrow} ${Math.abs(diff)} vs semana anterior`;
+    el.className = 'kpi-delta ' + (good ? 'delta-good' : 'delta-bad');
 }
 
 window.viewTimeline = function(key) {

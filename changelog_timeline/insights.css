@@ -1,18 +1,4 @@
-/* Insights Page Styles */
-:root {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --text-primary: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent: #3b82f6;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --info: #3b82f6;
-    --glass-bg: rgba(30, 41, 59, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.08);
-}
-
+/* Insights Page Styles — tokens em tokens.css (fonte unica) */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -34,27 +20,7 @@ body {
 }
 
 /* Nav */
-.nav-bar {
-    display: flex;
-    gap: 1rem;
-    padding: 0.75rem 1.5rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-}
-
-.nav-link {
-    padding: 0.4rem 0.8rem;
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
-
-.nav-link:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-.nav-link.active { color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+/* Nav: estilo em nav.css compartilhado. */
 
 /* Header */
 .page-header { margin-bottom: 1.5rem; }
@@ -106,10 +72,10 @@ body {
     font-weight: 500;
 }
 
-.badge-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.badge-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.badge-healthy { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.badge-critical { background: rgba(239, 68, 68, 0.2); color: var(--risk); }
+.badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warn); }
+.badge-info { background: rgba(59, 130, 246, 0.2); color: var(--action); }
+.badge-healthy { background: rgba(16, 185, 129, 0.2); color: var(--ok); }
 
 /* Sections */
 .insights-section {
@@ -257,7 +223,7 @@ body {
     margin-left: auto;
     padding: 0.2rem 0.6rem;
     background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
+    color: var(--risk);
     border-radius: 12px;
     font-size: 0.72rem;
     font-weight: 600;
@@ -265,7 +231,7 @@ body {
 
 .alert-banner-warning .alert-banner-count {
     background: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
+    color: var(--warn);
 }
 
 .alert-banner-desc {

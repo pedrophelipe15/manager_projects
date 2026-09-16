@@ -12,23 +12,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     
+    <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="ui.css?v=2">
+    <link rel="stylesheet" href="nav.css?v=1">
     <link rel="stylesheet" href="wave4.css?v=2">
 </head>
 <body>
     <div class="page-container">
-        <!-- Navigation -->
-        <nav class="nav-bar">
-            <a href="/hierarchy/dashboard-v2.html" class="nav-link">&#x1F4CA; Hierarquia</a>
-            <a href="/dashboard.html" class="nav-link">Dashboard</a>
-            <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
-            <a href="/wave2.html" class="nav-link">Previsibilidade</a>
-            <a href="/wave3.html" class="nav-link">Pessoas</a>
-            <a href="/wave4.html" class="nav-link active">Portfolio</a>
-            <a href="/insights.html" class="nav-link">Insights</a>
-            <a href="/maturidade.html" class="nav-link">&#x1F331; Maturidade</a>
-            <a href="/inconsistencies.html" class="nav-link">Inconsistencias</a>
-            <a href="/settings.html" class="nav-link">Configuracoes</a>
-        </nav>
+        <nav id="main-nav" class="nav-bar"></nav>
 
         <header class="page-header">
             <h1>Portfolio</h1>
@@ -41,8 +32,9 @@
         </div>
     </div>
 
-    <script src="wave4.js?v=2"></script>
-    <script src="nav-alerts.js?v=1"></script>
+    <script src="nav.js?v=1"></script>
+    <script src="ui.js?v=2"></script>
+    <script src="wave4.js?v=4"></script>
     <style>.nav-alert-badge{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:#f59e0b;color:#0f172a;border-radius:10px;font-size:0.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}.nav-alert-badge.critical{background:#ef4444;color:#fff}</style>
 </body>
 </html>

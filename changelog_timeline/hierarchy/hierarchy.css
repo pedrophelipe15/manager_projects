@@ -1,17 +1,4 @@
-/* Hierarchy Module — Design System (mesmo tema do projeto principal) */
-:root {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --text-primary: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent: #3b82f6;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --glass-bg: rgba(30, 41, 59, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.08);
-}
-
+/* Hierarchy Module — tokens em /tokens.css (fonte unica) */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -115,11 +102,11 @@ body {
 
 /* Risk badges */
 .risk-badge { padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
-.risk-badge.risk-done { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-.risk-badge.risk-low { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-.risk-badge.risk-medium { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.risk-badge.risk-high { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-.risk-badge.risk-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.risk-badge.risk-done { background: rgba(16, 185, 129, 0.2); color: var(--ok); }
+.risk-badge.risk-low { background: rgba(16, 185, 129, 0.2); color: var(--ok); }
+.risk-badge.risk-medium { background: rgba(59, 130, 246, 0.2); color: var(--action); }
+.risk-badge.risk-high { background: rgba(245, 158, 11, 0.2); color: var(--warn); }
+.risk-badge.risk-critical { background: rgba(239, 68, 68, 0.2); color: var(--risk); }
 
 /* Detail panel */
 .detail-panel {

@@ -3,6 +3,10 @@ let cfdChart = null;
 let pollInterval = null;
 let currentProject = null;
 
+// Cores de grafico via tokens do design system (sem hex solto).
+const T = (n) => (window.CTUI ? CTUI.token(n) : '#888');
+const hexA = (hex, a) => hex + a; // sufixo de alpha em hex de 2 digitos
+
 document.addEventListener('DOMContentLoaded', () => {
     loadProjects();
     document.getElementById('projectFilter').addEventListener('change', onProjectChange);
@@ -20,10 +24,8 @@ async function loadProjects() {
             opt.dataset.lastSync = p.last_sync ? p.last_sync.date : '';
             select.appendChild(opt);
         });
-        if (projects.length === 1) {
-            select.value = projects[0].key;
-            onProjectChange();
-        }
+        // Restaura o projeto salvo (contexto compartilhado) ou auto-seleciona se houver 1.
+        CTContext.bindProjectSelect(select, onProjectChange);
     } catch (e) { console.error(e); }
 }
 
@@ -411,10 +413,11 @@ function renderPercentilesWeeklyChart(data) {
 
     const datasets = [
         {
+            // Lead Time = matizes QUENTES (laranja/amarelo)
             label: 'Lead Time P85',
             data: data.weeks.map(w => msToDay(w.lead_time.p85_ms)),
-            borderColor: '#f97316',
-            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+            borderColor: T('--chart-2'),
+            backgroundColor: hexA(T('--chart-2'), '1a'),
             borderWidth: 2,
             tension: 0.3,
             fill: false,
@@ -422,18 +425,19 @@ function renderPercentilesWeeklyChart(data) {
         {
             label: 'Lead Time P50',
             data: data.weeks.map(w => msToDay(w.lead_time.p50_ms)),
-            borderColor: '#fb923c',
-            backgroundColor: 'rgba(251, 146, 60, 0.1)',
+            borderColor: T('--chart-4'),
+            backgroundColor: hexA(T('--chart-4'), '1a'),
             borderWidth: 1.5,
             borderDash: [5, 3],
             tension: 0.3,
             fill: false,
         },
         {
+            // Cycle Time = azul (P85) / verde (P50) — hues bem distantes do par Lead
             label: 'Cycle Time P85',
             data: data.weeks.map(w => msToDay(w.cycle_time.p85_ms)),
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderColor: T('--chart-1'),
+            backgroundColor: hexA(T('--chart-1'), '1a'),
             borderWidth: 2,
             tension: 0.3,
             fill: false,
@@ -441,8 +445,8 @@ function renderPercentilesWeeklyChart(data) {
         {
             label: 'Cycle Time P50',
             data: data.weeks.map(w => msToDay(w.cycle_time.p50_ms)),
-            borderColor: '#60a5fa',
-            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+            borderColor: T('--chart-3'),
+            backgroundColor: hexA(T('--chart-3'), '1a'),
             borderWidth: 1.5,
             borderDash: [5, 3],
             tension: 0.3,
@@ -459,7 +463,7 @@ function renderPercentilesWeeklyChart(data) {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 11 } } },
+                legend: { position: 'bottom', labels: { color: T('--text-1'), font: { size: 11 } } },
                 tooltip: {
                     callbacks: {
                         afterTitle: function(items) {
@@ -474,12 +478,12 @@ function renderPercentilesWeeklyChart(data) {
             },
             scales: {
                 x: {
-                    ticks: { color: '#94a3b8', maxTicksLimit: 13, font: { size: 10 } },
+                    ticks: { color: T('--text-2'), maxTicksLimit: 13, font: { size: 10 } },
                     grid: { display: false }
                 },
                 y: {
-                    title: { display: true, text: 'Dias', color: '#94a3b8', font: { size: 11 } },
-                    ticks: { color: '#94a3b8' },
+                    title: { display: true, text: 'Dias', color: T('--text-2'), font: { size: 11 } },
+                    ticks: { color: T('--text-2') },
                     grid: { color: 'rgba(255,255,255,0.05)' },
                     beginAtZero: true,
                 }
@@ -520,18 +524,21 @@ function renderCFDSection(data) {
 function renderCFDChart(data) {
     const ctx = document.getElementById('cfdCanvas').getContext('2d');
     const labels = data.data.map(d => d.date);
+    // Done/Blocked usam cor semantica (leitura direta de bom/ruim); os demais
+    // status sao categoricos e usam a paleta de grafico do design system.
     const statusColors = {
-        'Done': '#10b981', 'In Progress': '#3b82f6', 'Blocked': '#ef4444',
-        'Open': '#94a3b8', 'To do': '#fbbf24', 'Backlog': '#6b7280',
-        'Refinement': '#a855f7', 'Review': '#22d3ee', 'Test': '#f97316',
-        'Waiting for Delivery': '#ec4899'
+        'Done': T('--ok'), 'Blocked': T('--risk'),
+        'In Progress': T('--chart-1'), 'Test': T('--chart-3'),
+        'Waiting for Delivery': T('--chart-4'), 'Review': T('--chart-3'),
+        'Refinement': T('--chart-2'), 'To do': T('--warn'),
+        'Open': T('--text-3'), 'Backlog': T('--chart-5')
     };
 
     const datasets = data.statuses.map(status => ({
         label: status,
         data: data.data.map(d => d.counts[status] || 0),
-        backgroundColor: (statusColors[status] || '#cbd5e1') + '80',
-        borderColor: statusColors[status] || '#cbd5e1',
+        backgroundColor: (statusColors[status] || T('--chart-6')) + '80',
+        borderColor: statusColors[status] || T('--chart-6'),
         borderWidth: 1,
         fill: true,
         tension: 0.3,
@@ -546,16 +553,16 @@ function renderCFDChart(data) {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'bottom', labels: { color: '#f8fafc', font: { size: 11 } } },
+                legend: { position: 'bottom', labels: { color: T('--text-1'), font: { size: 11 } } },
             },
             scales: {
                 x: {
-                    ticks: { color: '#94a3b8', maxTicksLimit: 15, font: { size: 10 } },
+                    ticks: { color: T('--text-2'), maxTicksLimit: 15, font: { size: 10 } },
                     grid: { display: false }
                 },
                 y: {
                     stacked: true,
-                    ticks: { color: '#94a3b8' },
+                    ticks: { color: T('--text-2') },
                     grid: { color: 'rgba(255,255,255,0.05)' }
                 }
             }

@@ -1,0 +1,148 @@
+/**
+ * tokens.css — Design System (Onda 3 UX). FONTE UNICA de cor, tipografia,
+ * espacamento e botoes. Carregar ANTES de qualquer CSS de pagina.
+ *
+ * Substitui os 9 blocos :root duplicados e as 2 familias de nomes de variavel.
+ * Mantem ALIASES retrocompativeis (--bg-primary, --bg-color, --text-main, ...)
+ * para que o CSS existente resolva automaticamente no novo tema, sem reescrever
+ * cada arquivo. Contrastes de texto medidos sobre --surface-0 (>= 4.5:1 = AA).
+ */
+:root {
+    /* ---- Superficies (dessaturadas, 4 degraus) ---- */
+    --surface-0: #0f1420;   /* fundo da pagina */
+    --surface-1: #171e2e;   /* card */
+    --surface-2: #1f2839;   /* card elevado / hover */
+    --surface-3: #35415a;   /* borda ativa / divisor forte */
+
+    /* ---- Texto (contraste medido sobre --surface-0) ---- */
+    --text-1: #f1f5f9;      /* principal      ~17:1  AAA */
+    --text-2: #a8b4c6;      /* secundario     ~8.8:1 AAA */
+    --text-3: #7d8ba1;      /* terciario/hint ~5.3:1 AA  */
+
+    /* ---- Bordas ---- */
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-strong: rgba(255, 255, 255, 0.14);
+
+    /* ---- Acao (um azul, tres estados) ---- */
+    --action: #4a8ef0;
+    --action-hover: #6ba3f5;
+    --action-quiet: rgba(74, 142, 240, 0.12);
+
+    /* ---- Semantico (SO para significado, nunca decoracao) ---- */
+    --ok: #34c98a;
+    --warn: #e8a93a;
+    --risk: #ef5f5f;
+    --ok-bg: rgba(52, 201, 138, 0.12);
+    --warn-bg: rgba(232, 169, 58, 0.12);
+    --risk-bg: rgba(239, 95, 95, 0.12);
+
+    /* ---- Serie de grafico (categorica) ----
+       Paleta de MAXIMA DISTINCAO (matiz + luminosidade bem separados),
+       inspirada em Okabe-Ito (segura para daltonismo) e ajustada para fundo
+       escuro. Ordem pensada para que series adjacentes/sobrepostas contrastem.
+       1 azul, 2 laranja, 3 verde, 4 rosa/magenta, 5 amarelo, 6 ciano. */
+    --chart-1: #4a8ef0;  --chart-2: #f0883e;
+    --chart-3: #3fca8e;  --chart-4: #e26aa8;
+    --chart-5: #e6c84a;  --chart-6: #45c2d6;
+
+    /* ---- Tipografia: escala de 6 degraus (piso 12px) ---- */
+    --fs-xs: 0.75rem;    /* 12px — badge, label KPI, header tabela */
+    --fs-sm: 0.8125rem;  /* 13px — celula, texto de filtro */
+    --fs-md: 0.875rem;   /* 14px — corpo, link de nav */
+    --fs-lg: 1rem;       /* 16px — subtitulo */
+    --fs-xl: 1.25rem;    /* 20px — titulo de secao */
+    --fs-2xl: 2rem;      /* 32px — h1, valor de KPI */
+
+    /* ---- Espacamento: grade 4px ---- */
+    --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+
+    --radius: 6px;
+    --radius-lg: 12px;
+
+    /* ================================================================
+       ALIASES retrocompativeis — apontam para os tokens acima.
+       Cobrem as 2 familias que existiam no projeto.
+       ================================================================ */
+    /* Familia B (wave2-4, insights, minha-visao, compromisso, hierarchy) */
+    --bg-primary: var(--surface-0);
+    --bg-secondary: var(--surface-1);
+    --text-primary: var(--text-1);
+    --text-muted: var(--text-2);
+    --accent: var(--action);
+    --success: var(--ok);
+    --warning: var(--warn);
+    --danger: var(--risk);
+    --info: var(--action);
+    --glass-bg: var(--surface-1);
+    --glass-border: var(--border-subtle);
+
+    /* Familia A (dashboard, wave1, inconsistencies, settings, style) */
+    --bg-color: var(--surface-0);
+    --card-bg: var(--surface-1);
+    --border-color: var(--border-subtle);
+    --text-main: var(--text-1);
+    --text-secondary: var(--text-2);
+    --accent-hover: var(--action-hover);
+    --accent-color: var(--action);
+    --accent-glow: var(--action-quiet);
+    --timeline-line-color: var(--border-subtle);
+}
+
+/* ===================================================================
+   Reset de RUIDO DE FUNDO — superficie neutra, sem gradiente nem blur.
+   Aplicado com !important para vencer os body/.glass das paginas antigas
+   sem precisar reescrever cada arquivo.
+   =================================================================== */
+body {
+    background-color: var(--surface-0) !important;
+    background-image: none !important;
+}
+
+.glass {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-subtle) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* ===================================================================
+   SISTEMA DE BOTOES — 4 variantes x 2 tamanhos. Substitui as ~20 classes.
+   Uso: <button class="btn btn--primary btn--md">...</button>
+   =================================================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    font-family: inherit;
+    font-weight: 500;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.btn:focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Tamanhos */
+.btn--sm { font-size: var(--fs-sm); padding: 0.35rem 0.7rem; min-height: 32px; }
+.btn--md { font-size: var(--fs-md); padding: 0.5rem 1rem; min-height: 38px; }
+
+/* Variantes */
+.btn--primary { background: var(--action); color: #fff; }
+.btn--primary:hover:not(:disabled) { background: var(--action-hover); }
+
+.btn--secondary { background: transparent; border-color: var(--border-strong); color: var(--text-1); }
+.btn--secondary:hover:not(:disabled) { border-color: var(--action); background: var(--action-quiet); }
+
+.btn--ghost { background: transparent; color: var(--text-2); }
+.btn--ghost:hover:not(:disabled) { color: var(--text-1); background: rgba(255, 255, 255, 0.05); }
+
+.btn--danger { background: transparent; border-color: rgba(239, 95, 95, 0.4); color: var(--risk); }
+.btn--danger:hover:not(:disabled) { background: var(--risk); color: #fff; border-color: var(--risk); }

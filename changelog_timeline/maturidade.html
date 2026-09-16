@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="ui.css?v=2">
     <style>
         :root {
             --bg-primary: #0f172a;
@@ -39,11 +41,7 @@
         .page-header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
         .subtitle { color: var(--text-muted); font-size: 1rem; margin-top: 0.3rem; }
 
-        /* Nav */
-        .nav-bar { display: flex; gap: 1rem; padding: 0.75rem 1.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; margin-bottom: 1.5rem; }
-        .nav-link { padding: 0.4rem 0.8rem; color: #94a3b8; text-decoration: none; font-size: 0.9rem; font-weight: 500; border-radius: 6px; transition: all 0.2s; }
-        .nav-link:hover { color: #f8fafc; background: rgba(255,255,255,0.05); }
-        .nav-link.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        /* Nav: estilo em nav.css compartilhado. */
 
         /* Filtro */
         .filter-bar { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -172,22 +170,11 @@
         }
         .btn-save-rule:hover { background: #2563eb; }
     </style>
+    <link rel="stylesheet" href="nav.css?v=1">
 </head>
 <body>
     <div class="page-container">
-        <!-- Navigation -->
-        <nav class="nav-bar">
-            <a href="/hierarchy/dashboard-v2.html" class="nav-link">&#x1F4CA; Hierarquia</a>
-            <a href="/dashboard.html" class="nav-link">Dashboard</a>
-            <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
-            <a href="/wave2.html" class="nav-link">Previsibilidade</a>
-            <a href="/wave3.html" class="nav-link">Pessoas</a>
-            <a href="/wave4.html" class="nav-link">Portfolio</a>
-            <a href="/insights.html" class="nav-link">Insights</a>
-            <a href="/maturidade.html" class="nav-link active">&#x1F331; Maturidade</a>
-            <a href="/inconsistencies.html" class="nav-link">Inconsistencias</a>
-            <a href="/settings.html" class="nav-link">Configuracoes</a>
-        </nav>
+        <nav id="main-nav" class="nav-bar"></nav>
 
         <header class="page-header">
             <h1>&#x1F331; Maturidade</h1>
@@ -215,6 +202,9 @@
     <!-- Modal Config -->
     <div id="config-modal" class="modal-overlay"></div>
 
+    <script src="context.js?v=1"></script>
+    <script src="nav.js?v=1"></script>
+    <script src="ui.js?v=2"></script>
     <script>
         // Estado: acoes carregadas do projeto atual (para filtrar sem recarregar)
         let allActions = [];
@@ -262,6 +252,10 @@
                     opt.value = p.key;
                     opt.textContent = `${p.key} - ${p.name}`;
                     select.appendChild(opt);
+                }
+                // Restaura o projeto salvo (contexto compartilhado) e gera o report.
+                if (window.CTContext) {
+                    CTContext.bindProjectSelect(select, loadReport);
                 }
             } catch (err) {
                 console.error("Erro ao carregar projetos:", err);

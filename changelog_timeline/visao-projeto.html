@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Ações do Projeto (MVP) - Changelog Timeline</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="insights.css?v=1">
+
+    <style>
+        .mvp-tag {
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px;
+            background: rgba(245, 158, 11, 0.2); color: #fbbf24;
+            padding: 0.15rem 0.5rem; border-radius: 4px; vertical-align: middle; margin-left: 0.6rem;
+        }
+
+        /* Multi-seleção de projetos (chips) */
+        .project-picker { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .project-chip {
+            padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+            background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); color: var(--text-muted);
+            cursor: pointer; transition: all 0.15s; user-select: none;
+        }
+        .project-chip:hover { color: var(--text-primary); border-color: rgba(59,130,246,0.4); }
+        .project-chip.selected { background: rgba(59,130,246,0.15); border-color: var(--accent); color: var(--accent); }
+        .picker-actions { display: flex; gap: 0.5rem; margin-left: auto; }
+        .btn-mini {
+            background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.3); color: var(--text-muted);
+            padding: 0.35rem 0.8rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer; font-family: inherit;
+        }
+        .btn-mini:hover { color: var(--text-primary); border-color: var(--accent); }
+
+        /* Resumo de saúde do fluxo (topo) */
+        .health-strip {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;
+        }
+        .health-card {
+            padding: 0.8rem 1rem; border-radius: 8px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--text-muted); font-size: 0.82rem;
+        }
+        .health-card.sev-critical { border-left-color: var(--danger); }
+        .health-card.sev-warning { border-left-color: var(--warning); }
+        .health-card.sev-info { border-left-color: var(--info); }
+        .health-card.sev-healthy { border-left-color: var(--success); }
+        .health-card .hc-title { font-weight: 600; margin-bottom: 0.2rem; display: flex; gap: 0.4rem; align-items: center; }
+        .health-card .hc-proj { font-size: 0.68rem; color: var(--text-muted); font-weight: 400; }
+        .health-card .hc-desc { color: var(--text-muted); line-height: 1.45; font-size: 0.76rem; }
+        .section-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 0 0 0.75rem; font-weight: 600; }
+
+        /* Barra de resumo/contadores */
+        .summary-bar {
+            display: flex; gap: 1.5rem; margin-bottom: 1rem; padding: 0.75rem 1rem;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
+            font-size: 0.85rem; flex-wrap: wrap; align-items: center;
+        }
+        .summary-item { display: flex; align-items: center; gap: 0.4rem; }
+        .summary-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* Filtros da lista */
+        .list-filters { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .list-filters select {
+            background: var(--bg-primary); border: 1px solid var(--glass-border);
+            color: var(--text-primary); padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-family: inherit;
+        }
+
+        /* Tabela de ações única */
+        .action-table { width: 100%; border-collapse: collapse; font-size: 0.82rem;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; overflow: hidden; }
+        .action-table th {
+            text-align: left; padding: 0.6rem 0.7rem; background: rgba(15,23,42,0.8);
+            color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--glass-border); cursor: pointer; white-space: nowrap;
+        }
+        .action-table td { padding: 0.55rem 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: top; }
+        .action-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .col-sev { width: 60px; text-align: center; }
+        .col-proj { width: 70px; }
+        .col-key { width: 105px; white-space: nowrap; }
+        .col-status { width: 90px; }
+        .col-type { width: 105px; }
+        .col-assignee { width: 150px; }
+
+        .type-badge { font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 3px;
+            background: rgba(255,255,255,0.06); color: var(--text-muted); white-space: nowrap; }
+        .proj-badge { font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 3px;
+            background: rgba(59,130,246,0.12); color: var(--accent); white-space: nowrap; }
+        .issue-link { color: var(--accent); text-decoration: none; font-weight: 500; }
+        .issue-link:hover { text-decoration: underline; }
+        .sev-icon { font-size: 0.85rem; }
+
+        /* Botão de regras */
+        .btn-config {
+            background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.3); color: var(--text-muted);
+            padding: 0.4rem 0.9rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-family: inherit;
+        }
+        .btn-config:hover { color: var(--text-primary); border-color: var(--accent); }
+
+        /* Modal de regras */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: flex-start; z-index: 1000; padding: 3rem 1rem; overflow-y: auto;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-content {
+            background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            width: 100%; max-width: 760px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .modal-header h2 { font-size: 1.25rem; font-weight: 700; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; }
+        .modal-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+        .modal-project-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; }
+        .modal-project-row select { background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; font-family: inherit; }
+        .modal-scope-hint { font-size: 0.72rem; color: var(--text-muted); }
+        .rule-card { background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
+        .rule-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .rule-card-title { font-size: 0.9rem; font-weight: 600; }
+        .rule-card-type { font-size: 0.7rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.15rem 0.5rem; border-radius: 3px; }
+        .rule-fields { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+        .rule-field { display: flex; flex-direction: column; gap: 0.25rem; }
+        .rule-field label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+        .rule-field input { background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 0.4rem 0.6rem; border-radius: 4px; font-size: 0.85rem; font-family: inherit; width: 90px; }
+        .rule-field input:focus { outline: none; border-color: var(--accent); }
+        .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
+        .btn-save-rule { background: var(--accent); border: none; color: #fff; padding: 0.5rem 1.2rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .btn-save-rule:hover { background: #2563eb; }
+        .btn-reset-rule { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #f87171; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <nav class="nav-bar">
+            <a href="/hierarchy/dashboard-v2.html" class="nav-link">&#x1F4CA; Hierarquia</a>
+            <a href="/dashboard.html" class="nav-link">Dashboard</a>
+            <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
+            <a href="/wave2.html" class="nav-link">Previsibilidade</a>
+            <a href="/wave3.html" class="nav-link">Pessoas</a>
+            <a href="/wave4.html" class="nav-link">Portfolio</a>
+            <a href="/visao-projeto.html" class="nav-link active">&#x2705; Acoes</a>
+            <a href="/insights.html" class="nav-link">Insights</a>
+            <a href="/maturidade.html" class="nav-link">&#x1F331; Maturidade</a>
+            <a href="/inconsistencies.html" class="nav-link">Inconsistencias</a>
+            <a href="/settings.html" class="nav-link">Configuracoes</a>
+        </nav>
+
+        <header class="page-header">
+            <h1>Acoes do Projeto <span class="mvp-tag">MVP</span></h1>
+            <p class="subtitle">Um unico lugar com o que precisa ser feito. Saude do fluxo no topo, lista de acoes priorizada abaixo.</p>
+        </header>
+
+        <!-- Multi-seleção de projetos -->
+        <section class="filter-section glass" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                <label style="font-weight:600;">Projetos:</label>
+                <div class="project-picker" id="projectPicker"></div>
+                <div class="picker-actions">
+                    <button class="btn-mini" onclick="selectAllProjects()">Todos</button>
+                    <button class="btn-mini" onclick="clearProjects()">Limpar</button>
+                    <button class="btn-config" onclick="openConfigModal()">&#9881; Regras</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resumo de saúde do fluxo -->
+        <div id="health-section" style="display:none;">
+            <p class="section-label">Saude do fluxo (diagnostico do projeto)</p>
+            <div class="health-strip" id="health-strip"></div>
+        </div>
+
+        <!-- Lista de ações -->
+        <p class="section-label">O que precisa ser feito</p>
+        <div id="action-summary"></div>
+        <div class="list-filters" id="list-filters" style="display:none;">
+            <select id="filter-type" onchange="renderActions()"><option value="">Todos os tipos</option></select>
+            <select id="filter-sev" onchange="renderActions()">
+                <option value="">Todas as severidades</option>
+                <option value="critico">Critico</option>
+                <option value="atencao">Atencao</option>
+                <option value="informativo">Informativo</option>
+            </select>
+            <select id="filter-assignee" onchange="renderActions()"><option value="">Todos os responsaveis</option></select>
+        </div>
+        <div id="action-results">
+            <p class="empty-state">Selecione um ou mais projetos para ver as acoes.</p>
+        </div>
+    </div>
+
+    <!-- Modal de Regras (por projeto) -->
+    <div id="config-modal" class="modal-overlay"></div>
+
+    <script>
+        // Regras padrão (fallback quando um projeto não tem regras próprias)
+        const DEFAULT_RULES = {
+            wip_recomendado: 3, wip_atencao: 4, wip_critico: 6,
+            blocked_recomendado: 0, blocked_atencao: 1, blocked_critico: 3,
+            aging_min_dias: 14, aging_critico_dias: 30,
+            due_date_changes_atencao: 2, due_date_changes_critico: 4,
+        };
+
+        // Persistência por projeto: localStorage["report_rules::<KEY>"]
+        function rulesStorageKey(projectKey) { return `report_rules::${projectKey}`; }
+
+        function getRulesForProject(projectKey) {
+            const saved = localStorage.getItem(rulesStorageKey(projectKey));
+            if (saved) {
+                try { return { ...DEFAULT_RULES, ...JSON.parse(saved) }; } catch (e) {}
+            }
+            return { ...DEFAULT_RULES };
+        }
+
+        function saveRulesForProject(projectKey, rules) {
+            localStorage.setItem(rulesStorageKey(projectKey), JSON.stringify(rules));
+        }
+
+        function resetRulesForProject(projectKey) {
+            localStorage.removeItem(rulesStorageKey(projectKey));
+        }
+
+        function hasCustomRules(projectKey) {
+            return localStorage.getItem(rulesStorageKey(projectKey)) !== null;
+        }
+        const SEV_ORDER = { critico: 0, atencao: 1, informativo: 2 };
+        const SEV_ICON = { critico: "🔴", atencao: "🟡", informativo: "🔵" };
+        const HEALTH_ICON = { critical: "🔴", warning: "🟡", info: "🔵", healthy: "🟢" };
+
+        let projects = [];
+        let selected = new Set();
+        let allActions = [];
+        let allHealth = [];
+        let sortKey = "sev";
+        let sortDir = 1;
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const res = await fetch("/api/settings/projects");
+                projects = await res.json();
+                renderPicker();
+            } catch (e) { console.error(e); }
+        });
+
+        function renderPicker() {
+            const el = document.getElementById("projectPicker");
+            el.innerHTML = projects.map(p =>
+                `<span class="project-chip ${selected.has(p.key) ? "selected" : ""}" data-key="${p.key}" onclick="toggleProject('${p.key}')">${p.key}</span>`
+            ).join("");
+        }
+        function toggleProject(key) {
+            if (selected.has(key)) selected.delete(key); else selected.add(key);
+            renderPicker(); reload();
+        }
+        function selectAllProjects() { projects.forEach(p => selected.add(p.key)); renderPicker(); reload(); }
+        function clearProjects() { selected.clear(); renderPicker(); reload(); }
+
+        function fmtBR(iso) {
+            if (!iso) return "--";
+            const p = String(iso).split("T")[0].split("-");
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+        }
+        function escapeHTML(str) {
+            if (!str) return "";
+            return String(str).replace(/[&<>'"]/g, t => ({ "&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;" }[t] || t));
+        }
+
+        async function reload() {
+            const results = document.getElementById("action-results");
+            const healthSection = document.getElementById("health-section");
+            const filters = document.getElementById("list-filters");
+            const summary = document.getElementById("action-summary");
+
+            if (selected.size === 0) {
+                results.innerHTML = '<p class="empty-state">Selecione um ou mais projetos para ver as acoes.</p>';
+                healthSection.style.display = "none"; filters.style.display = "none"; summary.innerHTML = "";
+                return;
+            }
+
+            results.innerHTML = '<p class="empty-state">Carregando...</p>';
+            const keys = [...selected];
+
+            // Busca todos os projetos em paralelo
+            const perProject = await Promise.all(keys.map(loadProject));
+
+            allActions = [];
+            allHealth = [];
+            for (const p of perProject) {
+                allActions.push(...p.actions);
+                allHealth.push(...p.health);
+            }
+
+            renderHealth();
+            populateFilters();
+            filters.style.display = "flex";
+            renderActions();
+        }
+
+        async function loadProject(key) {
+            try {
+                const rules = getRulesForProject(key);
+                const [insRes, wipRes, inconsRes, agingRes, dueRes] = await Promise.all([
+                    fetch(`/api/insights?project_key=${key}`),
+                    fetch(`/api/metrics/wave3/wip?project_key=${key}`),
+                    fetch(`/api/inconsistencies?project_key=${key}`),
+                    fetch(`/api/metrics/wave1/aging-wip?project_key=${key}`),
+                    fetch(`/api/metrics/due-date-changes?project_key=${key}&min_changes=${rules.due_date_changes_atencao}`),
+                ]);
+                const insights = await insRes.json();
+                const wip = await wipRes.json();
+                const inconsRaw = await inconsRes.json();
+                const incons = inconsRaw.inconsistencies || inconsRaw;
+                const aging = await agingRes.json();
+                const dueChanges = await dueRes.json();
+
+                return {
+                    actions: buildActions(key, wip, incons, aging, dueChanges, getRulesForProject(key)),
+                    health: buildHealth(key, insights),
+                };
+            } catch (e) {
+                console.error("Erro em", key, e);
+                return { actions: [], health: [] };
+            }
+        }
+
+        // ===== Saúde do fluxo: diagnóstico sem key/dono (category != alert) =====
+        function buildHealth(projectKey, insights) {
+            if (!insights || !insights.insights) return [];
+            // Alertas com key/dono já viram ações; aqui pegamos o diagnóstico de padrão de fluxo.
+            return insights.insights
+                .filter(i => i.category !== "alert")
+                .map(i => ({ projectKey, severity: i.severity, title: i.title, description: i.description }));
+        }
+
+        function renderHealth() {
+            const section = document.getElementById("health-section");
+            const strip = document.getElementById("health-strip");
+            if (!allHealth.length) { section.style.display = "none"; return; }
+            const order = { critical: 0, warning: 1, info: 2, healthy: 3 };
+            const sorted = [...allHealth].sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
+            strip.innerHTML = sorted.map(h => `
+                <div class="health-card sev-${h.severity}">
+                    <div class="hc-title"><span>${HEALTH_ICON[h.severity] || "⚪"}</span> ${escapeHTML(h.title)}
+                        ${selected.size > 1 ? `<span class="hc-proj">· ${h.projectKey}</span>` : ""}</div>
+                    <div class="hc-desc">${escapeHTML(h.description)}</div>
+                </div>`).join("");
+            section.style.display = "block";
+        }
+
+        // ===== Ações concretas (com key/dono) =====
+        function buildActions(projectKey, wip, incons, aging, dueChanges, rules) {
+            const actions = [];
+            const push = (a) => actions.push({ ...a, projectKey });
+
+            if (dueChanges && dueChanges.issues) for (const i of dueChanges.issues) {
+                push({ assignee: i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status,
+                    type: "POSTERGACAO", severity: i.changes >= rules.due_date_changes_critico ? "critico" : "atencao",
+                    action: `Prazo adiado ${i.changes}x — validar com gestor e definir data realista.` });
+            }
+            if (wip.people) for (const person of wip.people) {
+                if (person.wip_count >= rules.wip_atencao) for (const i of person.issues) {
+                    push({ assignee: person.name, key: i.key, summary: i.summary, status: i.status,
+                        type: "WIP", severity: person.wip_count >= rules.wip_critico ? "critico" : "atencao",
+                        action: `${person.wip_count} itens simultaneos — concluir antes de iniciar novos.` });
+                }
+                const blocked = person.blocked_issues || [];
+                if (blocked.length >= rules.blocked_atencao && rules.blocked_atencao > 0) for (const i of blocked) {
+                    push({ assignee: person.name, key: i.key, summary: i.summary, status: i.status,
+                        type: "BLOCKED", severity: blocked.length >= rules.blocked_critico ? "critico" : "atencao",
+                        action: "Bloqueada — registrar impedimento e escalar." });
+                }
+            }
+            if (incons.due_date_empty) for (const i of incons.due_date_empty) push({ assignee: i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status, type: "DUE DATE", severity: "atencao", action: "Sem due date — preencher no Jira." });
+            if (incons.active_without_assignee) for (const i of incons.active_without_assignee) push({ assignee: "SEM ASSIGNEE", key: i.key, summary: i.summary, status: i.status, type: "ASSIGNEE", severity: "critico", action: "Sem responsavel — atribuir imediatamente." });
+            if (incons.due_date_parent_vs_subtask) for (const i of incons.due_date_parent_vs_subtask) push({ assignee: i.child_assignee || "Sem assignee", key: i.child_key, summary: i.child_summary, status: i.child_status, type: "PRAZO", severity: "atencao", action: `Due date posterior a pai ${i.parent_key} — ajustar.` });
+            if (incons.done_without_metrics) for (const i of incons.done_without_metrics) push({ assignee: i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status, type: "METRICAS", severity: "informativo", action: "Done sem lead/cycle — verificar fluxo no board." });
+            if (incons.active_without_cycle) for (const i of incons.active_without_cycle) push({ assignee: i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status, type: "FLUXO", severity: "informativo", action: "Ativa sem cycle time — mover por In Progress." });
+            if (aging.issues) for (const i of aging.issues) {
+                let days = 0;
+                if (i.updated_at) days = Math.round((Date.now() - new Date(i.updated_at)) / 86400000);
+                if (days < rules.aging_min_dias) continue;
+                push({ assignee: i.assignee_name || i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status,
+                    type: "AGING", severity: days > rules.aging_critico_dias ? "critico" : "atencao",
+                    action: `Parada ha ${days} dias — atualizar status ou cancelar.` });
+            }
+            return actions;
+        }
+
+        function populateFilters() {
+            const typeSel = document.getElementById("filter-type");
+            const assSel = document.getElementById("filter-assignee");
+            const types = [...new Set(allActions.map(a => a.type))].sort();
+            const assignees = [...new Set(allActions.map(a => a.assignee))].sort();
+            const keepT = typeSel.value, keepA = assSel.value;
+            typeSel.innerHTML = `<option value="">Todos os tipos</option>` + types.map(t => `<option value="${t}">${t}</option>`).join("");
+            assSel.innerHTML = `<option value="">Todos os responsaveis</option>` + assignees.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join("");
+            if (types.includes(keepT)) typeSel.value = keepT;
+            if (assignees.includes(keepA)) assSel.value = keepA;
+        }
+
+        function getFiltered() {
+            const t = document.getElementById("filter-type").value;
+            const s = document.getElementById("filter-sev").value;
+            const a = document.getElementById("filter-assignee").value;
+            return allActions.filter(x =>
+                (!t || x.type === t) && (!s || x.severity === s) && (!a || x.assignee === a));
+        }
+
+        function sortBy(key) {
+            if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+            renderActions();
+        }
+
+        function renderActions() {
+            const container = document.getElementById("action-results");
+            const summary = document.getElementById("action-summary");
+            let list = getFiltered();
+
+            // Contadores
+            const crit = list.filter(a => a.severity === "critico").length;
+            const warn = list.filter(a => a.severity === "atencao").length;
+            const info = list.filter(a => a.severity === "informativo").length;
+            const people = new Set(list.map(a => a.assignee)).size;
+            summary.innerHTML = `<div class="summary-bar">
+                <span><strong>${selected.size} projeto(s)</strong> — ${list.length} acoes</span>
+                <span class="summary-item"><span class="summary-dot" style="background:var(--danger)"></span> ${crit} criticos</span>
+                <span class="summary-item"><span class="summary-dot" style="background:var(--warning)"></span> ${warn} atencao</span>
+                <span class="summary-item"><span class="summary-dot" style="background:var(--accent)"></span> ${info} info</span>
+                <span style="color:var(--text-muted)">|</span><span>${people} pessoas</span></div>`;
+
+            if (!list.length) { container.innerHTML = `<p class="empty-state">Nenhuma acao pendente. 🎉</p>`; return; }
+
+            // Ordenação
+            list = [...list].sort((a, b) => {
+                let va, vb;
+                if (sortKey === "sev") { va = SEV_ORDER[a.severity]; vb = SEV_ORDER[b.severity]; }
+                else { va = (a[sortKey] || "").toString().toLowerCase(); vb = (b[sortKey] || "").toString().toLowerCase(); }
+                if (va < vb) return -1 * sortDir;
+                if (va > vb) return 1 * sortDir;
+                return 0;
+            });
+
+            const multiProj = selected.size > 1;
+            container.innerHTML = `<table class="action-table"><thead><tr>
+                <th class="col-sev" onclick="sortBy('sev')">Sev</th>
+                ${multiProj ? `<th class="col-proj" onclick="sortBy('projectKey')">Proj</th>` : ""}
+                <th class="col-key" onclick="sortBy('key')">Key</th>
+                <th onclick="sortBy('summary')">Resumo</th>
+                <th class="col-status" onclick="sortBy('status')">Status</th>
+                <th class="col-type" onclick="sortBy('type')">Tipo</th>
+                <th class="col-assignee" onclick="sortBy('assignee')">Responsavel</th>
+                <th>O que fazer</th>
+            </tr></thead><tbody>
+            ${list.map(a => `<tr>
+                <td class="col-sev"><span class="sev-icon" title="${a.severity}">${SEV_ICON[a.severity] || "⚪"}</span></td>
+                ${multiProj ? `<td><span class="proj-badge">${a.projectKey}</span></td>` : ""}
+                <td><a class="issue-link" href="https://jiraps.atlassian.net/browse/${a.key}" target="_blank">${a.key}</a></td>
+                <td>${escapeHTML(a.summary || "")}</td>
+                <td>${escapeHTML(a.status || "")}</td>
+                <td><span class="type-badge">${a.type}</span></td>
+                <td>${escapeHTML(a.assignee || "")}</td>
+                <td>${escapeHTML(a.action || "")}</td>
+            </tr>`).join("")}
+            </tbody></table>`;
+        }
+
+        // ==================== MODAL DE REGRAS (por projeto) ====================
+        let modalProjectKey = null;
+
+        function openConfigModal() {
+            // Projetos disponíveis para editar: os selecionados; se nenhum, todos
+            const editable = selected.size ? [...selected] : projects.map(p => p.key);
+            if (!editable.length) { alert("Nenhum projeto disponivel."); return; }
+            modalProjectKey = editable.includes(modalProjectKey) ? modalProjectKey : editable[0];
+            renderConfigModal(editable);
+            document.getElementById("config-modal").classList.add("open");
+        }
+
+        function renderConfigModal(editable) {
+            const r = getRulesForProject(modalProjectKey);
+            const custom = hasCustomRules(modalProjectKey);
+            const modal = document.getElementById("config-modal");
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Configuracao de Regras</h2>
+                        <button class="modal-close" onclick="closeConfigModal()">&times;</button>
+                    </div>
+
+                    <div class="modal-project-row">
+                        <label style="font-weight:600;">Projeto:</label>
+                        <select id="cfg-project" onchange="onModalProjectChange(this.value)">
+                            ${editable.map(k => `<option value="${k}" ${k === modalProjectKey ? "selected" : ""}>${k}</option>`).join("")}
+                        </select>
+                        <span class="modal-scope-hint">${custom ? "Este projeto usa regras personalizadas." : "Este projeto usa as regras padrao."}</span>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header"><span class="rule-card-title">WIP (Work In Progress)</span><span class="rule-card-type">WIP</span></div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-wip-recomendado" value="${r.wip_recomendado}"></div>
+                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-wip-atencao" value="${r.wip_atencao}"></div>
+                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-wip-critico" value="${r.wip_critico}"></div>
+                        </div>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header"><span class="rule-card-title">Blocked (Atividades Bloqueadas)</span><span class="rule-card-type">BLOCKED</span></div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-blocked-recomendado" value="${r.blocked_recomendado}"></div>
+                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-blocked-atencao" value="${r.blocked_atencao}"></div>
+                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-blocked-critico" value="${r.blocked_critico}"></div>
+                        </div>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header"><span class="rule-card-title">Aging (Atividades Paradas)</span><span class="rule-card-type">AGING</span></div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Min dias sem atualiz.</label><input type="number" id="cfg-aging-min" value="${r.aging_min_dias}"></div>
+                            <div class="rule-field"><label>Critico (> dias)</label><input type="number" id="cfg-aging-critico" value="${r.aging_critico_dias}"></div>
+                        </div>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header"><span class="rule-card-title">Postergacao de Due Date</span><span class="rule-card-type">POSTERGACAO</span></div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-due-atencao" value="${r.due_date_changes_atencao}"></div>
+                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-due-critico" value="${r.due_date_changes_critico}"></div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn-reset-rule" onclick="resetModalRules()">Restaurar padrao</button>
+                        <button class="btn-save-rule" onclick="saveModalRules()">Salvar regras deste projeto</button>
+                    </div>
+                </div>`;
+        }
+
+        function onModalProjectChange(key) {
+            modalProjectKey = key;
+            const editable = selected.size ? [...selected] : projects.map(p => p.key);
+            renderConfigModal(editable);
+        }
+
+        function closeConfigModal() {
+            document.getElementById("config-modal").classList.remove("open");
+        }
+
+        function readInt(id) { return parseInt(document.getElementById(id).value) || 0; }
+
+        function saveModalRules() {
+            const rules = {
+                wip_recomendado: readInt("cfg-wip-recomendado"),
+                wip_atencao: readInt("cfg-wip-atencao"),
+                wip_critico: readInt("cfg-wip-critico"),
+                blocked_recomendado: readInt("cfg-blocked-recomendado"),
+                blocked_atencao: readInt("cfg-blocked-atencao"),
+                blocked_critico: readInt("cfg-blocked-critico"),
+                aging_min_dias: readInt("cfg-aging-min"),
+                aging_critico_dias: readInt("cfg-aging-critico"),
+                due_date_changes_atencao: readInt("cfg-due-atencao"),
+                due_date_changes_critico: readInt("cfg-due-critico"),
+            };
+            saveRulesForProject(modalProjectKey, rules);
+            closeConfigModal();
+            reload(); // recalcula ações com as novas regras
+        }
+
+        function resetModalRules() {
+            if (!confirm(`Restaurar as regras padrao para ${modalProjectKey}?`)) return;
+            resetRulesForProject(modalProjectKey);
+            const editable = selected.size ? [...selected] : projects.map(p => p.key);
+            renderConfigModal(editable);
+            reload();
+        }
+
+        // Fechar modal ao clicar fora
+        document.addEventListener("click", (e) => {
+            const modal = document.getElementById("config-modal");
+            if (e.target === modal) closeConfigModal();
+        });
+    </script>
+</body>
+</html>

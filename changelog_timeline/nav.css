@@ -1,0 +1,62 @@
+/**
+ * nav.css — Estilo da navegacao compartilhada (Onda 2/3 UX).
+ * Nav agrupada por pergunta. Usa os tokens de /tokens.css.
+ */
+.nav-bar {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+}
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.nav-group-label {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    padding-left: 0.4rem;
+}
+
+.nav-group-links {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.nav-link {
+    padding: 0.4rem 0.8rem;
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: var(--fs-md);
+    font-weight: 500;
+    border-radius: var(--radius);
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.nav-link:hover { color: var(--text-1); background: rgba(255, 255, 255, 0.05); }
+.nav-link.active { color: var(--action); background: var(--action-quiet); }
+
+.nav-sep {
+    align-self: stretch;
+    width: 1px;
+    background: var(--border-subtle);
+    margin: 0.2rem 0.15rem;
+}
+
+@media (max-width: 768px) {
+    .nav-bar { gap: 0.5rem; }
+    .nav-sep { display: none; }
+    .nav-group { flex-basis: 100%; flex-direction: row; align-items: center; gap: 0.5rem; }
+    .nav-group-label { padding-left: 0; min-width: 88px; }
+    .nav-group-links { flex-wrap: wrap; }
+}

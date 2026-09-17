@@ -1,12 +1,18 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.0.0 · **Status:** produtivo · **Atualizado:** 2026-09-15
+> **Versao:** v2.1.0 · **Status:** produtivo · **Atualizado:** 2026-09-15
 >
 > A v2.0.0 consolidou uma revisao de UX (4 ondas) que adicionou a tela **Minha Visao**
 > (home), a tela **Compromisso de Prazo** (Wave 5 / due date slippage), um **design
 > system** compartilhado (`tokens.css`, `nav.*`, `ui.*`, `context.js`) e uma navegacao
-> unica agrupada por pergunta. Ver a secao *Revisao de UX (v2.0.0)* ao final e o
-> guia `docs/GUIA-DESIGN-DASHBOARD.md`.
+> unica agrupada por pergunta.
+>
+> A **v2.1.0** aprofundou a home Minha Visao: indicadores clicaveis abrem um **painel
+> de detalhe inline** (ordenacao, filtros dropdown-checkbox cascateantes, paginacao,
+> coluna Due Date), o seletor de projetos ganhou "Selecionar todos" + "Limpar filtro",
+> e o commitment score tem um **tooltip explicativo** que mostra a conta. O tooltip
+> virou componente reutilizavel do design system (`CTUI.infoTooltip` + `.ct-tip`).
+> Ver a secao *Revisao de UX* ao final e o guia `docs/GUIA-DESIGN-DASHBOARD.md`.
 
 ## Visao Geral
 
@@ -123,7 +129,7 @@ Insights foi **removida da nav** (arquivada em 21/08/2026); o arquivo continua a
 
 | URL | Descricao |
 |-----|-----------|
-| `/minha-visao.html` | **Home**: cards por projeto (commitment score + indicadores clicaveis com detalhe inline) |
+| `/minha-visao.html` | **Home**: cards por projeto — commitment score (com tooltip da conta), indicadores clicaveis que abrem painel de detalhe inline (ordenavel, filtravel, paginado) |
 | `/compromisso.html` | **Compromisso de Prazo (Wave 5)**: score, por assignee, issues com prazo empurrado |
 | `/dashboard.html` | Dashboard operacional: KPIs (Done semanal, Em andamento, Bloqueado, Paradas >7d) + tabela |
 | `/wave1.html` | Wave 1: Metricas de gargalo e fluxo (percentis, CFD, aging WIP) |
@@ -1476,8 +1482,8 @@ Responde a pergunta nº1 dos gestores: a equipe cumpre prazo ou empurra a data? 
 |--------|----------|-----------|
 | GET | `/api/metrics/wave5/slippage?project_key=X` | Commitment score + por assignee + piores issues |
 | GET | `/api/metrics/wave5/commitment-summary` | Score por projeto (todos), para a home |
-| GET | `/api/home/overview?project_keys=A,B` | Agregados por projeto (score, pushing, blocked, no_assignee, in_flight, stale) |
-| GET | `/api/home/detail?project_key=X&metric=Y` | Issues reais de um indicador (metric: pushing/attention/blocked/no_assignee/in_flight/stale) — alimenta o detalhe inline |
+| GET | `/api/home/overview?project_keys=A,B` | Agregados por projeto (score, `commitment_counts`/`commitment_total`, pushing, blocked, no_assignee, in_flight, stale) |
+| GET | `/api/home/detail?project_key=X&metric=Y` | Issues reais de um indicador (metric: pushing/attention/blocked/no_assignee/in_flight/stale); cada issue inclui `due_date` — alimenta o painel de detalhe inline |
 
 ### Design System (frontend)
 
@@ -1501,3 +1507,32 @@ comparativo (delta) vs os 7 dias anteriores.
 
 Telas novas usam estados distintos: loading (skeleton), vazio (com acao) e erro (com
 "Tentar de novo"). Nav e design system tambem aplicados a `index.html` (timeline por issue).
+
+### Incremento v2.1.0 — Home Minha Visao + tooltip reutilizavel
+
+**Painel de detalhe inline (Minha Visao).** Clicar num indicador de um card (Prazo
+empurrado, Bloqueado, Sem responsavel, Em andamento, Paradas >14d) abre, abaixo dos
+cards, um painel com as issues reais daquele indicador (via `/api/home/detail`). O
+painel tem:
+- **Ordenacao** em todas as colunas (Issue, Resumo, Responsavel, Status, Due Date, Detalhe).
+- **Filtros** dropdown-checkbox multi-selecao nas colunas categoricas (Responsavel, Status),
+  **cascateantes** (as opcoes de um recalculam conforme o outro) + botao "Limpar filtros".
+- **Paginacao** de 15 itens por pagina, com os controles na mesma linha dos filtros.
+- **Coluna Due Date** (formato DD/MM/YYYY).
+- Toggle (clicar de novo no indicador) fecha o painel; so um painel aberto por vez.
+
+**Seletor de projetos.** Botao "Todos" renomeado para **"Selecionar todos"**; novo botao
+**"Limpar filtro"** (desmarca todos). Selecao persiste em localStorage (`ct.myProjects`).
+
+**Tooltip explicativo do commitment score.** No hover/focus do percentual, um balao mostra
+a conta real (`mantidas ÷ total × 100`) + breakdown por classificacao. Dados via
+`commitment_counts`/`commitment_total` no `/api/home/overview`.
+
+**Componente reutilizavel `CTUI.infoTooltip` + `.ct-tip`** (ui.js / ui.css). Padrao do
+design system para explicar de onde vem qualquer big number/KPI. Uso documentado no
+`docs/GUIA-DESIGN-DASHBOARD.md` (secao 4b).
+
+### Automacao (hook)
+
+`.kiro/hooks/datasheet-before-commit.json` — hook `UserPromptSubmit` (tipo agent) que,
+ao detectar intencao de commit, exige atualizar este DATASHEET antes de commitar.

@@ -182,6 +182,44 @@ caso a caso.
 
 ---
 
+## 4b. Componentes reutilizaveis
+
+### Tooltip explicativo de metrica (`CTUI.infoTooltip`)
+
+Transparencia de calculo gera confianca: todo big number (score, KPI, %) deveria poder
+explicar de onde veio. O componente `.ct-tip` (estilo em `ui.css`) + `CTUI.infoTooltip()`
+(em `ui.js`) padroniza isso — aparece no hover/focus do elemento-alvo.
+
+Uso:
+
+```html
+<span class="ct-tip-wrap" tabindex="0" role="button" aria-label="Como este numero e calculado">
+  <span class="meu-big-number">54.1%</span>
+  <!-- HTML gerado por CTUI.infoTooltip(...) -->
+</span>
+```
+
+```js
+const tip = CTUI.infoTooltip({
+  title: 'Como o score e calculado',
+  formula: 'Score = mantidas &divide; total &times; 100',
+  calc: '387 &divide; 715 &times; 100 = <strong>54.1%</strong>',
+  rows: [
+    { label: 'Mantidas (1a data)', value: 387, tone: 'good' },
+    { label: 'Prazo empurrado (3x+)', value: 53, tone: 'bad' },
+    { label: 'Total com prazo', value: 715, total: true },
+  ],
+  note: 'Explicacao curta do que cada termo significa.',
+  // position: 'left' | 'up'  (opcional; default abre abaixo/direita)
+});
+```
+
+`tone` aceita `good | info | warn | bad` (usa os tokens semanticos). Sublinhe o alvo
+com borda pontilhada (`border-bottom: 1px dotted var(--border-strong)`) para sinalizar
+que e interativo. Acessivel por teclado (focus/focus-within).
+
+---
+
 ## 5. Checklist ao criar uma tela nova
 
 - [ ] Incluir `tokens.css` antes de tudo; usar só `var(--token)`, zero hex solto.
@@ -195,6 +233,7 @@ caso a caso.
 - [ ] Nav via `nav.js`/`nav.css` (não escrever à mão).
 - [ ] Estados distintos: loading (skeleton), vazio (com ação), erro (com retry).
 - [ ] Tabela grande: header sticky + botão copiar (`ui.js`).
+- [ ] Big number/KPI/%: tooltip explicativo do cálculo via `CTUI.infoTooltip` (§4b).
 
 ---
 

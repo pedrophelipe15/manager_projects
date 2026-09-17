@@ -43,6 +43,10 @@ body {
 .pc-score.good { color: var(--success); }
 .pc-score.warn { color: var(--warning); }
 .pc-score.bad { color: var(--danger); }
+
+/* Tooltip do score usa o componente compartilhado .ct-tip* (ui.css).
+   Aqui so o realce local: sublinhado pontilhado indicando interatividade. */
+.pc-score-tip .pc-score { border-bottom: 1px dotted var(--border-strong); }
 .score-bar { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; margin-bottom: 1rem; }
 .score-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
 
@@ -120,10 +124,68 @@ body {
     text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
     position: sticky; top: 0; background: var(--surface-2); z-index: 1;
 }
+#detail-panel .data-table th.sortable { cursor: pointer; user-select: none; }
+#detail-panel .data-table th.sortable:hover { color: var(--text-1); }
+#detail-panel .data-table th .sort-ind { color: var(--text-3); font-size: 0.72rem; margin-left: 0.15rem; }
+
+/* Barra de filtros do painel (dropdown-checkbox, padrao do projeto) */
+#detail-panel .filters-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
+#detail-panel .dd-wrapper { position: relative; }
+#detail-panel .dd-toggle {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle);
+    color: var(--text-1); padding: 0.4rem 0.75rem; border-radius: var(--radius);
+    font-size: 0.8rem; font-family: inherit; cursor: pointer; transition: border-color 0.2s;
+}
+#detail-panel .dd-toggle:hover { border-color: var(--action); }
+#detail-panel .dd-label { color: var(--text-2); }
+#detail-panel .dd-count { color: var(--action); font-weight: 600; font-size: 0.75rem; }
+#detail-panel .dd-arrow { color: var(--text-3); font-size: 0.65rem; }
+#detail-panel .dd-menu {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0;
+    background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 8px;
+    min-width: 200px; max-height: 260px; overflow-y: auto; z-index: 5;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4); padding: 0.4rem 0;
+}
+#detail-panel .dd-menu.open { display: block; }
+#detail-panel .dd-option {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.75rem; font-size: 0.78rem; color: var(--text-1);
+    cursor: pointer; transition: background 0.15s;
+}
+#detail-panel .dd-option:hover { background: rgba(255,255,255,0.05); }
+#detail-panel .dd-option input[type=checkbox] { accent-color: var(--action); width: 14px; height: 14px; cursor: pointer; }
+#detail-panel .btn-clear-filters {
+    background: none; border: 1px solid var(--border-subtle);
+    color: var(--text-2); padding: 0.4rem 0.75rem; border-radius: var(--radius);
+    font-size: 0.78rem; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+#detail-panel .btn-clear-filters:hover:not(:disabled) { color: var(--text-1); border-color: var(--action); }
+#detail-panel .btn-clear-filters:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Paginacao na mesma linha dos filtros (empurrada para a direita) */
+#detail-panel .detail-pager {
+    margin-left: auto; display: flex; align-items: center; gap: 0.4rem;
+    color: var(--text-2); font-size: 0.78rem;
+}
+#detail-panel .detail-pager-info { color: var(--text-3); }
+#detail-panel .detail-pager-page { min-width: 62px; text-align: center; font-variant-numeric: tabular-nums; }
+#detail-panel .detail-pager-btn {
+    background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle);
+    color: var(--text-1); width: 28px; height: 28px; border-radius: var(--radius);
+    cursor: pointer; font-size: 1rem; line-height: 1; font-family: inherit; transition: all 0.2s;
+}
+#detail-panel .detail-pager-btn:hover:not(:disabled) { border-color: var(--action); color: var(--action); }
+#detail-panel .detail-pager-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+    #detail-panel .detail-pager { margin-left: 0; }
+}
 #detail-panel .data-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
 #detail-panel .data-table tr:hover { background: rgba(255,255,255,0.02); }
 #detail-panel .mm-summary { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #detail-panel .mm-detail { color: var(--text-2); white-space: nowrap; }
+#detail-panel .mm-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
 #detail-panel .jira-link { color: var(--action); text-decoration: none; font-weight: 600; }
 #detail-panel .jira-link:hover { text-decoration: underline; }
 

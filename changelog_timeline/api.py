@@ -1756,6 +1756,13 @@ def api_home_overview(project_keys: str | None = None):
         projects.append({
             "project_key": pk,
             "commitment_score": c.get("commitment_score"),
+            "commitment_total": c.get("total_issues", 0),
+            "commitment_counts": {
+                "kept": counts.get("kept", 0),
+                "replanned": counts.get("replanned", 0),
+                "attention": counts.get("attention", 0),
+                "pushing": counts.get("pushing", 0),
+            },
             "pushing": counts.get("pushing", 0),
             "attention": counts.get("attention", 0),
             "in_flight": in_flight,
@@ -1824,6 +1831,7 @@ def api_home_detail(project_key: str, metric: str):
                 "summary": r["summary"] or "",
                 "assignee": r["assignee_name"] or "Sem responsavel",
                 "status": r["status"] or "",
+                "due_date": r["current_due"],
                 "detail": f"{r['reschedules']} reprogramacoes · +{r['total_days_pushed']}d",
                 "original_due": r["original_due"],
                 "current_due": r["current_due"],
@@ -1832,7 +1840,7 @@ def api_home_detail(project_key: str, metric: str):
         active_states = ("In Progress", "Blocked", "Test", "Waiting for Delivery")
         active_ph = ",".join(["?"] * len(active_states))
         cursor.execute(
-            f"SELECT key, summary, status, assignee_name, updated_at FROM issues "
+            f"SELECT key, summary, status, assignee_name, updated_at, due_date FROM issues "
             f"WHERE project_key = ? AND status IN ({active_ph})",
             [project_key, *active_states],
         )
@@ -1881,6 +1889,7 @@ def api_home_detail(project_key: str, metric: str):
                     "summary": r["summary"] or "",
                     "assignee": r["assignee_name"] or "Sem responsavel",
                     "status": status,
+                    "due_date": r["due_date"],
                     "detail": detail,
                 })
 

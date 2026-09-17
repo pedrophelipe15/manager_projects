@@ -137,6 +137,61 @@
         ];
     }
 
+    function escapeHtml(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    /**
+     * Gera o HTML interno de um tooltip explicativo reutilizavel (`.ct-tip`).
+     * Embuta o retorno dentro de:
+     *   <span class="ct-tip-wrap" tabindex="0" role="button" aria-label="...">
+     *     <span>VALOR</span>
+     *     {aqui}
+     *   </span>
+     *
+     * config = {
+     *   title:   string,                  // titulo (uppercase)
+     *   formula: string (HTML permitido), // ex: "mantidas ÷ total × 100"
+     *   calc:    string (HTML permitido), // ex: "387 ÷ 715 × 100 = <strong>54.1%</strong>"
+     *   rows:    [{ label, value, tone }],// tone: good|info|warn|bad|'' ; total: true marca linha de total
+     *   note:    string,                  // rodape explicativo
+     *   empty:   string,                  // se presente e nao ha rows/calc, mostra so isto
+     *   position:'left'|'up'|''           // modificador de posicao
+     * }
+     */
+    function infoTooltip(config) {
+        config = config || {};
+        var cls = "ct-tip";
+        if (config.position === "left") cls += " ct-tip--left";
+        else if (config.position === "up") cls += " ct-tip--up";
+
+        var title = config.title ? '<div class="ct-tip-title">' + escapeHtml(config.title) + "</div>" : "";
+
+        if (config.empty && !(config.rows && config.rows.length) && !config.calc) {
+            return '<div class="' + cls + '">' + title +
+                '<div class="ct-tip-empty">' + escapeHtml(config.empty) + "</div></div>";
+        }
+
+        var formula = config.formula ? '<div class="ct-tip-formula">' + config.formula + "</div>" : "";
+        var calc = config.calc ? '<div class="ct-tip-calc">' + config.calc + "</div>" : "";
+
+        var rows = "";
+        if (config.rows && config.rows.length) {
+            rows = '<div class="ct-tip-rows">' + config.rows.map(function (r) {
+                var rowCls = "ct-tip-row" + (r.total ? " total" : "");
+                var toneCls = "ct-tip-dot" + (r.tone ? " " + r.tone : "");
+                return '<div class="' + rowCls + '"><span class="' + toneCls + '"></span>' +
+                    '<span class="ct-tip-lbl">' + escapeHtml(r.label) + "</span>" +
+                    '<span class="ct-tip-val">' + escapeHtml(r.value) + "</span></div>";
+            }).join("") + "</div>";
+        }
+
+        var note = config.note ? '<div class="ct-tip-note">' + escapeHtml(config.note) + "</div>" : "";
+        return '<div class="' + cls + '">' + title + formula + calc + rows + note + "</div>";
+    }
+
     global.CTUI = {
         getDensity: getDensity,
         setDensity: setDensity,
@@ -145,5 +200,6 @@
         copyText: copyText,
         token: token,
         chartPalette: chartPalette,
+        infoTooltip: infoTooltip,
     };
 })(window);

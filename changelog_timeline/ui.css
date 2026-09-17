@@ -59,3 +59,64 @@
 .action-table {
     font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   Tooltip explicativo reutilizavel (CTUI.infoTooltip)
+   Balao que aparece no hover/focus de um elemento-alvo, para
+   explicar de onde vem um numero (formula + breakdown).
+
+   Uso:
+     <span class="ct-tip-wrap" tabindex="0" role="button" aria-label="...">
+       <span>54.1%</span>
+       <div class="ct-tip">...conteudo (via CTUI.infoTooltip)...</div>
+     </span>
+
+   Posicionamento: por padrao abre abaixo, alinhado a direita do alvo.
+   Modificadores: .ct-tip--left (alinha a esquerda), .ct-tip--up (abre acima).
+   ============================================================ */
+.ct-tip-wrap { position: relative; cursor: help; outline: none; display: inline-block; }
+.ct-tip-wrap:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px; }
+
+.ct-tip {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+    width: 260px; padding: 0.8rem 0.9rem;
+    background: var(--surface-2); border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg); box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+    opacity: 0; visibility: hidden; transform: translateY(-4px);
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    text-align: left; font-weight: 400; white-space: normal;
+}
+.ct-tip-wrap:hover .ct-tip,
+.ct-tip-wrap:focus .ct-tip,
+.ct-tip-wrap:focus-within .ct-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+
+/* Setinha */
+.ct-tip::after {
+    content: ''; position: absolute; bottom: 100%; right: 18px;
+    border: 6px solid transparent; border-bottom-color: var(--surface-2);
+}
+.ct-tip--left { right: auto; left: 0; }
+.ct-tip--left::after { right: auto; left: 18px; }
+.ct-tip--up { top: auto; bottom: calc(100% + 8px); transform: translateY(4px); }
+.ct-tip--up::after { bottom: auto; top: 100%; border-bottom-color: transparent; border-top-color: var(--surface-2); }
+.ct-tip-wrap:hover .ct-tip--up,
+.ct-tip-wrap:focus .ct-tip--up,
+.ct-tip-wrap:focus-within .ct-tip--up { transform: translateY(0); }
+
+.ct-tip-title { font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-2); margin-bottom: 0.5rem; }
+.ct-tip-formula { font-size: 0.78rem; color: var(--text-3); }
+.ct-tip-calc { font-size: 0.85rem; color: var(--text-1); margin: 0.2rem 0 0.7rem; font-variant-numeric: tabular-nums; }
+.ct-tip-calc strong { color: var(--action); }
+.ct-tip-rows { display: flex; flex-direction: column; gap: 0.3rem; border-top: 1px solid var(--border-subtle); padding-top: 0.6rem; }
+.ct-tip-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; }
+.ct-tip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
+.ct-tip-dot.good { background: var(--ok); }
+.ct-tip-dot.info { background: var(--action); }
+.ct-tip-dot.warn { background: var(--warn); }
+.ct-tip-dot.bad { background: var(--risk); }
+.ct-tip-lbl { color: var(--text-2); flex: 1; }
+.ct-tip-val { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.ct-tip-row.total { border-top: 1px solid var(--border-subtle); margin-top: 0.15rem; padding-top: 0.45rem; }
+.ct-tip-row.total .ct-tip-lbl, .ct-tip-row.total .ct-tip-val { color: var(--text-1); }
+.ct-tip-note { font-size: 0.7rem; color: var(--text-3); line-height: 1.4; margin-top: 0.6rem; }
+.ct-tip-empty { font-size: 0.78rem; color: var(--text-3); }

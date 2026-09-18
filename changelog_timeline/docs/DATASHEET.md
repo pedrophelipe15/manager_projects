@@ -1,6 +1,6 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.1.0 · **Status:** produtivo · **Atualizado:** 2026-09-15
+> **Versao:** v2.1.1 · **Status:** produtivo · **Atualizado:** 2026-09-15
 >
 > A v2.0.0 consolidou uma revisao de UX (4 ondas) que adicionou a tela **Minha Visao**
 > (home), a tela **Compromisso de Prazo** (Wave 5 / due date slippage), um **design
@@ -12,6 +12,12 @@
 > coluna Due Date), o seletor de projetos ganhou "Selecionar todos" + "Limpar filtro",
 > e o commitment score tem um **tooltip explicativo** que mostra a conta. O tooltip
 > virou componente reutilizavel do design system (`CTUI.infoTooltip` + `.ct-tip`).
+>
+> A **v2.1.1** aplicou o mesmo padrao a tela **Compromisso de Prazo**: KPIs "Prazo
+> Empurrado (3x+)" e "Em Atencao (2x)" clicaveis abrem um painel de issues (oculto por
+> default, com ordenacao, filtros de Classificacao/Responsavel/Status, coluna Status e
+> paginacao de 15), o card de score ganhou legenda fixa de cores + tooltip do calculo,
+> e cada score da tabela "Por Responsavel" tem tooltip explicativo.
 > Ver a secao *Revisao de UX* ao final e o guia `docs/GUIA-DESIGN-DASHBOARD.md`.
 
 ## Visao Geral
@@ -1480,7 +1486,7 @@ Responde a pergunta nº1 dos gestores: a equipe cumpre prazo ou empurra a data? 
 
 | Metodo | Endpoint | Descricao |
 |--------|----------|-----------|
-| GET | `/api/metrics/wave5/slippage?project_key=X` | Commitment score + por assignee + piores issues |
+| GET | `/api/metrics/wave5/slippage?project_key=X` | Commitment score + por assignee + piores issues (cada issue inclui `status`, via JOIN com issues) |
 | GET | `/api/metrics/wave5/commitment-summary` | Score por projeto (todos), para a home |
 | GET | `/api/home/overview?project_keys=A,B` | Agregados por projeto (score, `commitment_counts`/`commitment_total`, pushing, blocked, no_assignee, in_flight, stale) |
 | GET | `/api/home/detail?project_key=X&metric=Y` | Issues reais de um indicador (metric: pushing/attention/blocked/no_assignee/in_flight/stale); cada issue inclui `due_date` — alimenta o painel de detalhe inline |
@@ -1531,6 +1537,25 @@ a conta real (`mantidas ÷ total × 100`) + breakdown por classificacao. Dados v
 **Componente reutilizavel `CTUI.infoTooltip` + `.ct-tip`** (ui.js / ui.css). Padrao do
 design system para explicar de onde vem qualquer big number/KPI. Uso documentado no
 `docs/GUIA-DESIGN-DASHBOARD.md` (secao 4b).
+
+### Incremento v2.1.1 — Compromisso de Prazo
+
+**KPIs clicaveis + painel de issues.** Os cards "Prazo Empurrado (3x+)" e "Em Atencao
+(2x)" sao clicaveis: filtram a lista de issues por aquela classificacao, destacam o KPI
+e rolam ate a secao. O painel de issues comeca **oculto** e so aparece ao clicar (ou ao
+aplicar um filtro); clicar de novo / trocar de projeto volta ao default oculto.
+
+**Tabela de detalhe.** Ganhou coluna **Status** (ao lado de Responsavel), **filtro de
+Status** (dropdown-checkbox, alem de Classificacao e Responsavel), **paginacao de 15/pag**
+na mesma linha dos filtros, e valores numericos **centralizados** (reprogramacoes, dias
+adiados, prazos, classificacao). Fonte: `worst_issues` agora inclui `status`.
+
+**Card de Commitment Score.** Recebeu **legenda fixa de cores** (≥70% Aceitavel · 50–69%
+Atencao · <50% Critico) e um **tooltip do calculo** (`CTUI.infoTooltip`).
+
+**Tabela "Por Responsavel".** Cada score tem tooltip explicativo (`CTUI.infoTooltip`) com
+a conta daquela pessoa. Confirmado por dados: `attention` (2 reprogramacoes) e `pushing`
+(3+) sao conjuntos disjuntos — nenhuma issue aparece em ambos.
 
 ### Automacao (hook)
 

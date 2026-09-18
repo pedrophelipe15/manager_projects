@@ -50,10 +50,12 @@ def get_slippage_by_project(conn: sqlite3.Connection, project_key: str) -> dict:
     cursor = conn.cursor()
     cursor.execute(
         """
-        SELECT issue_key, project_key, assignee_name, reschedules, pushes, pulls,
-               total_days_pushed, original_due, current_due, last_changed_at, classification
-        FROM metrics_due_date_slippage
-        WHERE project_key = ?
+        SELECT s.issue_key, s.project_key, s.assignee_name, s.reschedules, s.pushes, s.pulls,
+               s.total_days_pushed, s.original_due, s.current_due, s.last_changed_at, s.classification,
+               i.status AS status
+        FROM metrics_due_date_slippage s
+        LEFT JOIN issues i ON i.key = s.issue_key
+        WHERE s.project_key = ?
         """,
         (project_key,),
     )
@@ -90,6 +92,7 @@ def get_slippage_by_project(conn: sqlite3.Connection, project_key: str) -> dict:
         {
             "issue_key": r["issue_key"],
             "assignee": r["assignee_name"] or "Sem responsavel",
+            "status": r["status"] or "",
             "reschedules": r["reschedules"],
             "pushes": r["pushes"],
             "total_days_pushed": r["total_days_pushed"],
@@ -100,7 +103,7 @@ def get_slippage_by_project(conn: sqlite3.Connection, project_key: str) -> dict:
         }
         for r in worst
         if r["reschedules"] > 0
-    ][:100]
+    ][:300]
 
     return {
         "project_key": project_key,

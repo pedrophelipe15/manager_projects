@@ -20,7 +20,7 @@ def get_wip_per_person(conn: sqlite3.Connection, project_key: str) -> dict:
 
     status_placeholders = ",".join(f"'{s}'" for s in ACTIVE_STATES)
     cursor.execute(f'''
-        SELECT assignee_name, key, summary, status, updated_at
+        SELECT assignee_name, key, summary, status, updated_at, due_date
         FROM issues
         WHERE project_key = ? AND status IN ({status_placeholders})
           AND assignee_name IS NOT NULL AND assignee_name != ''
@@ -35,11 +35,12 @@ def get_wip_per_person(conn: sqlite3.Connection, project_key: str) -> dict:
             "summary": row[2],
             "status": row[3],
             "updated_at": row[4],
+            "due_date": row[5],
         })
 
     # Busca issues Blocked por pessoa (informativo, não afeta cálculo de WIP)
     cursor.execute('''
-        SELECT assignee_name, key, summary, status, updated_at
+        SELECT assignee_name, key, summary, status, updated_at, due_date
         FROM issues
         WHERE project_key = ? AND status = 'Blocked'
           AND assignee_name IS NOT NULL AND assignee_name != ''
@@ -54,6 +55,7 @@ def get_wip_per_person(conn: sqlite3.Connection, project_key: str) -> dict:
             "summary": row[2],
             "status": row[3],
             "updated_at": row[4],
+            "due_date": row[5],
         })
 
     people = []

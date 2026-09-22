@@ -1,6 +1,21 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.1.1 · **Status:** produtivo · **Atualizado:** 2026-09-15
+> **Versao:** v2.2.0 · **Status:** produtivo · **Atualizado:** 2026-09-22
+>
+> A **v2.2.0** trouxe melhorias de fluxo e hierarquia:
+> - **Wave 1 / Flow Efficiency semanal**: novo endpoint `/api/metrics/wave1/flow-efficiency-weekly`
+>   e um grafico separado "Evolucao Semanal da Flow Efficiency" (media por semana ISO de resolucao),
+>   com **linha tracejada de referencia** = media geral do projeto (o mesmo numero do card). O wave1
+>   foi reorganizado: "Flow Efficiency" (card) e a evolucao semanal ficam lado a lado (proporcao 1:2);
+>   os percentis de Lead/Cycle Time desceram para junto da "Evolucao Semanal dos Percentis". Foram
+>   adicionadas notas explicativas (por que card e grafico diferem) e um guia de leitura positivo/negativo
+>   (o que faz o valor subir/descer + exemplos).
+> - **Hierarquia / Epic Health**: paridade com Initiative Health — o grafico de throughput agora mostra
+>   as **barras amarelas de pendentes** por due_date (calendario fixo 2026) e a tela ganhou os big numbers
+>   **"Progresso Planejado Proximas 5 Semanas"** e **"Atividades Pendentes"** (padrao aplicado a todo epico).
+> - **Hierarquia / Roadmap**: correcao de timezone — datas date-only (`due_date`) exibiam 1 dia a menos
+>   em UTC-3; passou a usar parsing em fuso local (`parseLocalDate`).
+> - **Maturidade**: nova coluna **Due Date** na tabela (payload de `wave3_people/wip.py` passou a incluir `due_date`).
 >
 > A v2.0.0 consolidou uma revisao de UX (4 ondas) que adicionou a tela **Minha Visao**
 > (home), a tela **Compromisso de Prazo** (Wave 5 / due date slippage), um **design
@@ -142,7 +157,7 @@ Insights foi **removida da nav** (arquivada em 21/08/2026); o arquivo continua a
 | `/wave2.html` | Wave 2: Previsibilidade (throughput, Monte Carlo forecast, aging backlog) |
 | `/wave3.html` | Wave 3: Pessoas e Qualidade (WIP, distribuicao, handoff, retrabalho) |
 | `/wave4.html` | Wave 4: Portfolio (epic health, benchmarking, throughput consolidado) |
-| `/maturidade.html` | Report de acoes pendentes por responsavel |
+| `/maturidade.html` | Report de acoes pendentes por responsavel (com coluna Due Date) |
 | `/insights.html` | Insights: Diagnostico automatico (fora da nav; acessivel por URL) |
 | `/?issue=KEY` | Timeline completa de uma issue (ex: `/?issue=BKA-6632`) |
 | `/inconsistencies.html` | Validacoes de dados por projeto |
@@ -320,9 +335,10 @@ flow_efficiency = tempo_em_In_Progress / lead_time * 100
 
 - **Tabela:** `metrics_flow` (issue_key, project_key, work_time_ms, wait_time_ms, lead_time_ms, flow_efficiency)
 - **Logica:** Conta apenas tempo em "In Progress" (sem Blocked/Test/Waiting) vs lead time total
-- **Endpoint:** `GET /api/metrics/wave1/flow-efficiency?project_key=X`
+- **Endpoint:** `GET /api/metrics/wave1/flow-efficiency?project_key=X` (agregado geral)
+- **Endpoint semanal:** `GET /api/metrics/wave1/flow-efficiency-weekly?project_key=X&weeks=26` — media da `flow_efficiency` por semana ISO de resolucao (`resolved_at`), com `count` de issues. Reaproveita o `flow_efficiency` ja persistido por issue em `metrics_flow`.
 - **Referencia:** <15% baixa | 15-25% tipica | 25-40% boa | >40% excelente
-- **UI:** Integrado na secao de Percentis com semaforo de cores (vermelho/amarelo/ciano/verde)
+- **UI:** card "Flow Efficiency" (com semaforo de cores) lado a lado (1:2) com o grafico "Evolucao Semanal da Flow Efficiency". O grafico tem uma **linha tracejada de referencia** = media geral (mesmo valor do card), notas explicando por que card e grafico divergem (media geral vs. media por semana) e um guia positivo/negativo de leitura.
 
 ### 1.4 Cumulative Flow Diagram (CFD)
 
@@ -345,11 +361,11 @@ Issues ativas com cycle time acima do P85 historico — precisam de atencao.
 ### Frontend Wave 1
 
 - **Pagina:** `/wave1.html`
-- **JS:** `wave1.js` — carrega 5 endpoints em paralelo, renderiza seções
+- **JS:** `wave1.js` — carrega 6 endpoints em paralelo (inclui flow-efficiency-weekly), renderiza seções
 - **CSS:** `wave1.css`
 - **Componentes visuais:**
-  - Percentis + Flow Efficiency unificados (com descricoes inline e semaforo)
-  - Timeline semanal de percentis (grafico de linha P50/P85 Lead e Cycle)
+  - Linha 1 (lado a lado, 1:2): card **Flow Efficiency** (semaforo + nota comparando com o grafico) | **Evolucao Semanal da Flow Efficiency** (linha de media semanal + linha tracejada de referencia + guia positivo/negativo)
+  - **Lead Time e Cycle Time — Percentis**: KPIs P50/P70/P85/P95 (Lead e Cycle) + timeline semanal de percentis (grafico de linha P50/P85)
   - Tabela de gargalo com barras proporcionais (P85 descendente)
   - Grafico CFD (area empilhada 90 dias)
   - Tabela de Aging WIP (issues acima do P85 de Cycle Time)
@@ -692,6 +708,7 @@ JIRA_REQUEST_TIMEOUT_SECONDS=30
 | GET | `/api/metrics/wave1/percentiles?project_key=X` | P50/P70/P85/P95 de lead e cycle |
 | GET | `/api/metrics/wave1/percentiles-weekly?project_key=X` | Evolucao semanal dos percentis (timeline) |
 | GET | `/api/metrics/wave1/flow-efficiency?project_key=X` | Flow efficiency agregado e por issue |
+| GET | `/api/metrics/wave1/flow-efficiency-weekly?project_key=X&weeks=26` | Flow efficiency media por semana ISO de resolucao (+ count) |
 | GET | `/api/metrics/wave1/cfd?project_key=X` | CFD (snapshots diarios por status) |
 | GET | `/api/metrics/wave1/aging-wip?project_key=X` | Issues ativas acima do P85 |
 

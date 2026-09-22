@@ -25,6 +25,13 @@ function formatDate(dateStr) {
     } catch { return "—"; }
 }
 
+// Formata 'YYYY-MM-DD' -> 'DD/MM/YYYY' sem shift de fuso (mesmo padrão do initiative-health)
+function formatDateBR(isoDate) {
+    if (!isoDate) return "—";
+    const [y, m, d] = isoDate.split("-");
+    return `${d}/${m}/${y}`;
+}
+
 function statusRowClass(status) {
     switch (status) {
         case "Done": return "row-done";
@@ -339,11 +346,20 @@ async function loadEpicDetail(key) {
         kpiContainer.innerHTML = `
             <div class="kpi-card">
                 <div class="kpi-value accent">${pr.progress_pct}%</div>
-                <div class="kpi-label">Progresso</div>
+                <div class="kpi-label">Progresso Atual</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value accent">${pr.planned_progress_pct ?? 0}%</div>
+                <div class="kpi-label">Progresso Planejado Proximas 5 Semanas</div>
+                ${pr.planned_range ? `<div class="kpi-sublabel">${formatDateBR(pr.planned_range.start)} a ${formatDateBR(pr.planned_range.end)}</div>` : ""}
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${pr.done}/${pr.total}</div>
                 <div class="kpi-label">Stories Done</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value warning">${pr.pending_count ?? 0}</div>
+                <div class="kpi-label">Atividades Pendentes</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value ${fc.p85 >= 12 ? 'danger' : fc.p85 >= 8 ? 'warning' : ''}">${fc.p85 > 0 ? fc.p85 + "w" : "—"}</div>
@@ -450,8 +466,8 @@ async function loadEpicDetail(key) {
         // Bind filter events
         bindFilterEvents();
 
-        // Render throughput chart (mensal)
-        renderThroughputChart(tp.monthly || tp.weekly);
+        // Render throughput chart (mensal) com pendentes por due_date
+        renderThroughputChart(tp.monthly || tp.weekly, tp.pending_monthly || []);
 
     } catch (err) {
         container.innerHTML = `<p class="empty-state">Erro ao carregar detalhes: ${err.message}</p>`;
@@ -459,14 +475,32 @@ async function loadEpicDetail(key) {
     }
 }
 
-function renderThroughputChart(data) {
+function renderThroughputChart(data, pendingData) {
     const ctx = document.getElementById("throughput-chart");
     if (!ctx) return;
 
-    const labels = data.map(d => d.month || d.week.replace(/^\d{4}-/, ""));
-    const doneValues = data.map(d => d.done !== undefined ? d.done : (d.count || 0));
-    const canceledValues = data.map(d => d.canceled || 0);
+    pendingData = pendingData || [];
+
+    // Calendário fixo 2026 (Jan-Dez) — mesmo padrão do initiative-health
+    const labels = [];
+    for (let m = 1; m <= 12; m++) labels.push(`2026-${String(m).padStart(2, "0")}`);
+
+    const doneValues = labels.map(label => {
+        const match = data.find(d => d.month === label);
+        return match ? (match.done !== undefined ? match.done : (match.count || 0)) : 0;
+    });
+    const canceledValues = labels.map(label => {
+        const match = data.find(d => d.month === label);
+        return match ? (match.canceled || 0) : 0;
+    });
     const hasCanceled = canceledValues.some(v => v > 0);
+
+    // Pending stories por due_date (calendário fixo 2026) — barra amarela, stack separado
+    const pendingValues = labels.map(label => {
+        const match = pendingData.find(p => p.month === label);
+        return match ? match.pending : 0;
+    });
+    const hasPending = pendingValues.some(v => v > 0);
 
     if (throughputChart) throughputChart.destroy();
 
@@ -478,6 +512,7 @@ function renderThroughputChart(data) {
             borderColor: "rgba(16, 185, 129, 1)",
             borderWidth: 1,
             borderRadius: 4,
+            stack: "throughput",
         },
     ];
 
@@ -489,6 +524,19 @@ function renderThroughputChart(data) {
             borderColor: "rgba(239, 68, 68, 1)",
             borderWidth: 1,
             borderRadius: 4,
+            stack: "throughput",
+        });
+    }
+
+    if (hasPending) {
+        datasets.push({
+            label: "Pendentes (due date)",
+            data: pendingValues,
+            backgroundColor: "rgba(234, 179, 8, 0.7)",
+            borderColor: "rgba(234, 179, 8, 1)",
+            borderWidth: 1,
+            borderRadius: 4,
+            stack: "pending",
         });
     }
 
@@ -499,7 +547,7 @@ function renderThroughputChart(data) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: hasCanceled, position: "bottom", labels: { color: "#f8fafc", font: { size: 11 } } },
+                legend: { display: hasCanceled || hasPending, position: "bottom", labels: { color: "#f8fafc", font: { size: 11 } } },
                 datalabels: {
                     color: "#f8fafc",
                     font: { size: 16, weight: "bold" },

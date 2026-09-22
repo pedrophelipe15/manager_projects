@@ -439,6 +439,38 @@ def assess_epic_risk(
     return "low"
 
 
+def get_epic_pending_stories_by_duedate(conn: sqlite3.Connection, epic_key: str) -> list[dict]:
+    """Retorna stories pendentes (não Done/Canceled) de um épico agrupadas por mês
+    usando due_date. Calendário fixo: Jan-Dez 2026.
+
+    Retorna: [{"month": "2026-01", "pending": 0}, ..., {"month": "2026-12", "pending": N}]
+    """
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT due_date FROM h_stories
+        WHERE parent_key = ?
+          AND status NOT IN ('Done', 'Canceled')
+          AND due_date IS NOT NULL AND due_date != ''
+    ''', (epic_key,))
+
+    pending_by_month: dict[str, int] = defaultdict(int)
+    for row in cursor.fetchall():
+        date_str = row["due_date"]
+        try:
+            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            key = f"{dt.year}-{dt.month:02d}"
+            pending_by_month[key] += 1
+        except (ValueError, TypeError):
+            continue
+
+    result = []
+    for month in range(1, 13):
+        key = f"2026-{month:02d}"
+        result.append({"month": key, "pending": pending_by_month.get(key, 0)})
+
+    return result
+
+
 def get_epic_health_data(conn: sqlite3.Connection, epic_key: str) -> dict:
     """Retorna dados completos de saúde de um épico.
     
@@ -455,7 +487,7 @@ def get_epic_health_data(conn: sqlite3.Connection, epic_key: str) -> dict:
     epic = dict(epic_row)
 
     # Stories filhas
-    cursor.execute("SELECT key, status, resolved_at FROM h_stories WHERE parent_key = ?", (epic_key,))
+    cursor.execute("SELECT key, status, resolved_at, due_date FROM h_stories WHERE parent_key = ?", (epic_key,))
     stories = cursor.fetchall()
 
     total = len(stories)
@@ -464,12 +496,35 @@ def get_epic_health_data(conn: sqlite3.Connection, epic_key: str) -> dict:
     remaining = total - done
     progress_pct = round(done / total * 100, 1) if total > 0 else 0
 
+    # Contagens de pendentes (mesma lógica da iniciativa, mas para 1 épico)
+    pending_stories = [s for s in stories if s["status"] not in DONE_STATES]
+    pending_count = len(pending_stories)
+    no_duedate_count = sum(1 for s in pending_stories if not s["due_date"])
+
+    # Progresso planejado próximas 5 semanas: stories pendentes (exceto Open/To do/
+    # Refinamento) com due_date nos próximos 35 dias. Igual à iniciativa.
+    now = datetime.now()
+    five_weeks_later = now + timedelta(weeks=5)
+    now_str = now.strftime("%Y-%m-%d")
+    five_weeks_str = five_weeks_later.strftime("%Y-%m-%d")
+    _not_started = ("open", "to do", "refinamento", "refinement")
+    planned_next_5w = sum(
+        1 for s in pending_stories
+        if s["due_date"] and (s["status"] or "").strip().lower() not in _not_started
+        and now_str <= s["due_date"] <= five_weeks_str
+    )
+    planned_progress_pct = round((done + planned_next_5w) / total * 100, 1) if total > 0 else 0
+    planned_range = {"start": now_str, "end": five_weeks_str}
+
     # Throughput semanal (per-epic)
     weekly_data = get_epic_weekly_throughput(conn, epic_key, weeks=12)
     throughput_values = _get_throughput_values(weekly_data)
 
     # Throughput mensal (per-epic)
     monthly_data = get_epic_monthly_throughput(conn, epic_key, months=12)
+
+    # Pending stories por due_date (calendário fixo 2026) — barras amarelas
+    pending_monthly = get_epic_pending_stories_by_duedate(conn, epic_key)
 
     # Forecast Monte Carlo
     forecast = monte_carlo_forecast(throughput_values, remaining)
@@ -513,10 +568,16 @@ def get_epic_health_data(conn: sqlite3.Connection, epic_key: str) -> dict:
             "in_progress": in_progress,
             "remaining": remaining,
             "progress_pct": progress_pct,
+            "pending_count": pending_count,
+            "no_duedate_count": no_duedate_count,
+            "planned_next_5w": planned_next_5w,
+            "planned_progress_pct": planned_progress_pct,
+            "planned_range": planned_range,
         },
         "throughput": {
             "weekly": weekly_data,
             "monthly": monthly_data,
+            "pending_monthly": pending_monthly,
             "avg_per_week": round(sum(throughput_values) / len(throughput_values), 2) if throughput_values else 0,
             "avg_per_month": round(sum(m["count"] for m in monthly_data) / len(monthly_data), 2) if monthly_data else 0,
         },

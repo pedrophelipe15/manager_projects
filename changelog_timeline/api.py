@@ -1522,6 +1522,59 @@ def api_percentiles_weekly(project_key: str, weeks: int = 26):
     return {"project_key": project_key, "weeks": result}
 
 
+@app.get("/api/metrics/wave1/flow-efficiency-weekly")
+def api_flow_efficiency_weekly(project_key: str, weeks: int = 26):
+    """Retorna evolução semanal da Flow Efficiency (Opção A).
+
+    Agrupa issues Done por semana ISO de resolução e calcula a média de
+    flow_efficiency (%) daquela semana, junto com a contagem de issues.
+    Reaproveita o flow_efficiency já persistido por issue em metrics_flow.
+    """
+    from collections import defaultdict
+    from datetime import datetime as dt
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT i.resolved_at, mf.flow_efficiency
+        FROM issues i
+        INNER JOIN metrics_flow mf ON i.key = mf.issue_key
+        WHERE i.status = 'Done' AND i.resolved_at IS NOT NULL AND i.resolved_at != ''
+          AND i.project_key = ?
+        ORDER BY i.resolved_at
+    ''', (project_key,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return {"project_key": project_key, "weeks": []}
+
+    by_week: dict[str, list[float]] = defaultdict(list)
+    for resolved_at, flow_eff in rows:
+        try:
+            resolved_dt = dt.fromisoformat(resolved_at.replace("Z", "+00:00"))
+            iso = resolved_dt.isocalendar()
+            week_key = f"{iso[0]}-W{iso[1]:02d}"
+            by_week[week_key].append(flow_eff or 0.0)
+        except (ValueError, TypeError):
+            continue
+
+    sorted_weeks = sorted(by_week.keys())[-weeks:]
+
+    result = []
+    for week_key in sorted_weeks:
+        effs = by_week[week_key]
+        avg_eff = round(sum(effs) / len(effs), 1) if effs else 0.0
+        result.append({
+            "week": week_key,
+            "count": len(effs),
+            "avg_efficiency": avg_eff,
+        })
+
+    return {"project_key": project_key, "weeks": result}
+
+
 @app.get("/api/metrics/wave1/flow-efficiency")
 def api_flow_efficiency(project_key: str):
     """Retorna flow efficiency agregado e por issue do projeto."""

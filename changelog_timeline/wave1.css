@@ -66,6 +66,27 @@ body {
     gap: 1.5rem;
 }
 
+/* Duas seções lado a lado (ex.: Percentis | Flow Efficiency semanal) */
+.side-by-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: stretch;
+}
+.side-by-side > .metric-section {
+    min-width: 0; /* evita overflow do canvas dentro do grid */
+}
+/* Variante 1:2 — esquerda com metade da largura da direita
+   (Flow Efficiency menor, Evolução Semanal ocupa o espaço extra) */
+.side-by-side--1-2 {
+    grid-template-columns: 1fr 2fr;
+}
+@media (max-width: 768px) {
+    .side-by-side {
+        grid-template-columns: 1fr;
+    }
+}
+
 .metric-section {
     padding: 1.5rem;
 }
@@ -310,6 +331,60 @@ body {
 .formula-content em {
     color: var(--accent, #3b82f6);
     font-style: normal;
+}
+
+/* Nota explicativa do gráfico semanal de Flow Efficiency */
+.flow-week-note {
+    padding: 0.75rem 1rem;
+    background: rgba(59, 130, 246, 0.08);
+    border-left: 3px solid var(--accent, #3b82f6);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-2, #94a3b8);
+    line-height: 1.5;
+}
+.flow-week-note p { margin: 0.35rem 0; }
+.flow-week-note ul { margin: 0.35rem 0; padding-left: 1.1rem; }
+.flow-week-note li { margin: 0.2rem 0; }
+.flow-week-note strong { color: var(--text-primary, #f8fafc); }
+.flow-week-note em { color: var(--accent, #3b82f6); font-style: normal; }
+
+/* Interpretação do gráfico semanal: o que sobe (positivo) x o que desce (negativo) */
+.flow-interpret {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+.flow-interpret-col {
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-2, #94a3b8);
+}
+.flow-interpret-up {
+    background: rgba(16, 185, 129, 0.08);
+    border-left: 3px solid #10b981;
+}
+.flow-interpret-down {
+    background: rgba(239, 68, 68, 0.08);
+    border-left: 3px solid #ef4444;
+}
+.flow-interpret-col h4 {
+    margin: 0 0 0.4rem 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.flow-interpret-up h4 { color: #34d399; }
+.flow-interpret-down h4 { color: #f87171; }
+.flow-interpret-col p { margin: 0.35rem 0; }
+.flow-interpret-col ul { margin: 0.35rem 0; padding-left: 1.1rem; }
+.flow-interpret-col li { margin: 0.25rem 0; }
+.flow-interpret-col strong { color: var(--text-primary, #f8fafc); }
+@media (max-width: 768px) {
+    .flow-interpret { grid-template-columns: 1fr; }
 }
 
 /* Flow Efficiency row (inside percentiles section) */

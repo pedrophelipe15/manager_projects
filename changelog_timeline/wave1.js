@@ -71,15 +71,16 @@ async function onProjectChange() {
     container.innerHTML = '<p class="empty-state">Carregando...</p>';
 
     try {
-        const [timePerStatus, percentiles, flowEff, cfd, aging, percWeekly] = await Promise.all([
+        const [timePerStatus, percentiles, flowEff, cfd, aging, percWeekly, flowEffWeekly] = await Promise.all([
             fetch(`${API}/time-per-status?project_key=${key}`).then(r => r.json()),
             fetch(`${API}/percentiles?project_key=${key}`).then(r => r.json()),
             fetch(`${API}/flow-efficiency?project_key=${key}`).then(r => r.json()),
             fetch(`${API}/cfd?project_key=${key}`).then(r => r.json()),
             fetch(`${API}/aging-wip?project_key=${key}`).then(r => r.json()),
             fetch(`${API}/percentiles-weekly?project_key=${key}`).then(r => r.json()),
+            fetch(`${API}/flow-efficiency-weekly?project_key=${key}`).then(r => r.json()),
         ]);
-        renderAll(timePerStatus, percentiles, flowEff, cfd, aging, percWeekly);
+        renderAll(timePerStatus, percentiles, flowEff, cfd, aging, percWeekly, flowEffWeekly);
     } catch (e) {
         container.innerHTML = '<p class="empty-state">Erro ao carregar métricas.</p>';
         console.error(e);
@@ -180,15 +181,18 @@ function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag] || tag));
 }
 
-function renderAll(timePerStatus, percentiles, flowEff, cfd, aging, percWeekly) {
+function renderAll(timePerStatus, percentiles, flowEff, cfd, aging, percWeekly, flowEffWeekly) {
     const container = document.getElementById('content-container');
     let html = '<div class="metrics-grid">';
 
-    // 1. Percentis + Flow Efficiency (unificados)
-    html += renderPercentiles(percentiles, flowEff);
+    // 1. Flow Efficiency (esquerda, 1/3) + Flow Efficiency semanal (direita, 2/3)
+    html += '<div class="side-by-side side-by-side--1-2">';
+    html += renderPercentiles(percentiles, flowEff, flowEffWeekly);
+    html += renderFlowEfficiencyWeekly(flowEffWeekly);
+    html += '</div>';
 
-    // 1.5. Timeline semanal de percentis
-    html += renderPercentilesWeekly(percWeekly);
+    // 1.5. Lead/Cycle Time: percentis atuais + evolução semanal (full width, abaixo)
+    html += renderPercentilesWeekly(percWeekly, percentiles);
 
     // 2. Tempo por status (gargalo)
     html += renderTimePerStatus(timePerStatus);
@@ -209,10 +213,13 @@ function renderAll(timePerStatus, percentiles, flowEff, cfd, aging, percWeekly) 
     if (percWeekly.weeks && percWeekly.weeks.length > 0) {
         renderPercentilesWeeklyChart(percWeekly);
     }
+    if (flowEffWeekly && flowEffWeekly.weeks && flowEffWeekly.weeks.length > 0) {
+        renderFlowEfficiencyWeeklyChart(flowEffWeekly, flowEff);
+    }
 }
 
 // --- Percentis ---
-function renderPercentiles(data, flowData) {
+function renderPercentiles(data, flowData, weeklyData) {
     const p = data.percentiles || {};
     const lead = p.lead_time || {};
     const cycle = p.cycle_time || {};
@@ -263,35 +270,61 @@ function renderPercentiles(data, flowData) {
         `;
     }
 
+    // Nota comparando o card (este número) com o gráfico ao lado (semanal)
+    const avgGeral = (flowData && flowData.count > 0) ? flowData.avg_efficiency : null;
+    const weeksCount = (weeklyData && weeklyData.weeks) ? weeklyData.weeks.length : 0;
+    const explicacao = (avgGeral !== null && weeksCount > 0) ? `
+        <div class="flow-week-note">
+            <p><strong>Este número e o gráfico ao lado ("Evolução Semanal") não batem — por quê?</strong></p>
+            <p>Os dois medem a mesma coisa por issue, mas resumem de formas diferentes:</p>
+            <ul>
+                <li><strong>Este card (${avgGeral}%)</strong> = média de <em>todas</em> as issues Done do projeto, de toda a história. É a "eficiência média geral".</li>
+                <li><strong>Gráfico ao lado</strong> = uma média <em>por semana</em>, apenas das últimas ${weeksCount} semanas. Cada ponto é a média daquela semana isolada.</li>
+            </ul>
+            <p>Por isso a linha do gráfico oscila mais que este card: uma semana com poucas issues sobe ou desce fácil. A <strong>linha tracejada</strong> do gráfico marca justamente esta média geral (${avgGeral}%), para comparar cada semana com o histórico — pontos acima dela = semana melhor que a média; abaixo = pior.</p>
+        </div>
+    ` : '';
+
     return `
         <section class="metric-section glass">
-            <h2>Percentis de Lead Time, Cycle Time e Flow Efficiency</h2>
-            <p class="metric-desc">Quanto tempo leva para completar issues e qual a eficiencia do fluxo.</p>
-            ${flowHtml}
-            <div class="charts-row">
-                <div>
-                    <h3 style="font-size:0.9rem; color: var(--text-muted); margin-bottom:0.4rem;">Lead Time (${lead.count || 0} issues Done)</h3>
-                    <p class="inline-formula">Tempo total desde a criacao da issue ate sua resolucao (resolved_at − created_at). Tempo calendario.</p>
-                    <div class="kpis-row">
-                        <div class="kpi-box"><div class="kpi-label">P50</div><div class="kpi-value">${fmtDays(lead.p50_ms)}</div></div>
-                        <div class="kpi-box"><div class="kpi-label">P70</div><div class="kpi-value">${fmtDays(lead.p70_ms)}</div></div>
-                        <div class="kpi-box"><div class="kpi-label">P85</div><div class="kpi-value accent">${fmtDays(lead.p85_ms)}</div></div>
-                        <div class="kpi-box"><div class="kpi-label">P95</div><div class="kpi-value warning">${fmtDays(lead.p95_ms)}</div></div>
-                    </div>
-                </div>
-                <div>
-                    <h3 style="font-size:0.9rem; color: var(--text-muted); margin-bottom:0.4rem;">Cycle Time (${cycle.count || 0} issues)</h3>
-                    <p class="inline-formula">Soma dos intervalos em estados ativos (In Progress, Blocked, Test, Waiting for Delivery). Inclui intervalo aberto para issues ativas.</p>
-                    <div class="kpis-row">
-                        <div class="kpi-box"><div class="kpi-label">P50</div><div class="kpi-value">${fmtDays(cycle.p50_ms)}</div></div>
-                        <div class="kpi-box"><div class="kpi-label">P70</div><div class="kpi-value">${fmtDays(cycle.p70_ms)}</div></div>
-                        <div class="kpi-box"><div class="kpi-label">P85</div><div class="kpi-value accent">${fmtDays(cycle.p85_ms)}</div></div>
-                        <div class="kpi-box"><div class="kpi-label">P95</div><div class="kpi-value warning">${fmtDays(cycle.p95_ms)}</div></div>
-                    </div>
+            <h2>Flow Efficiency</h2>
+            <p class="metric-desc">Qual a eficiencia do fluxo: proporcao do lead time gasta trabalhando vs. em espera.</p>
+            ${flowHtml || '<p class="metric-desc">Sem dados de Flow Efficiency.</p>'}
+            ${explicacao}
+        </section>
+    `;
+}
+
+// Bloco de KPIs de Lead Time e Cycle Time (P50/P70/P85/P95).
+// Renderizado junto da "Evolução Semanal dos Percentis".
+function renderPercentilesKpis(data) {
+    const p = data.percentiles || {};
+    const lead = p.lead_time || {};
+    const cycle = p.cycle_time || {};
+    return `
+        <div class="charts-row">
+            <div>
+                <h3 style="font-size:0.9rem; color: var(--text-muted); margin-bottom:0.4rem;">Lead Time (${lead.count || 0} issues Done)</h3>
+                <p class="inline-formula">Tempo total desde a criacao da issue ate sua resolucao (resolved_at − created_at). Tempo calendario.</p>
+                <div class="kpis-row">
+                    <div class="kpi-box"><div class="kpi-label">P50</div><div class="kpi-value">${fmtDays(lead.p50_ms)}</div></div>
+                    <div class="kpi-box"><div class="kpi-label">P70</div><div class="kpi-value">${fmtDays(lead.p70_ms)}</div></div>
+                    <div class="kpi-box"><div class="kpi-label">P85</div><div class="kpi-value accent">${fmtDays(lead.p85_ms)}</div></div>
+                    <div class="kpi-box"><div class="kpi-label">P95</div><div class="kpi-value warning">${fmtDays(lead.p95_ms)}</div></div>
                 </div>
             </div>
-            <p class="inline-formula" style="margin-top:0.5rem;"><strong>Percentis</strong>: P85 = "85% das issues terminam em ate X dias" (metodo nearest-rank). Usa apenas issues com valor &gt; 0.</p>
-        </section>
+            <div>
+                <h3 style="font-size:0.9rem; color: var(--text-muted); margin-bottom:0.4rem;">Cycle Time (${cycle.count || 0} issues)</h3>
+                <p class="inline-formula">Soma dos intervalos em estados ativos (In Progress, Blocked, Test, Waiting for Delivery). Inclui intervalo aberto para issues ativas.</p>
+                <div class="kpis-row">
+                    <div class="kpi-box"><div class="kpi-label">P50</div><div class="kpi-value">${fmtDays(cycle.p50_ms)}</div></div>
+                    <div class="kpi-box"><div class="kpi-label">P70</div><div class="kpi-value">${fmtDays(cycle.p70_ms)}</div></div>
+                    <div class="kpi-box"><div class="kpi-label">P85</div><div class="kpi-value accent">${fmtDays(cycle.p85_ms)}</div></div>
+                    <div class="kpi-box"><div class="kpi-label">P95</div><div class="kpi-value warning">${fmtDays(cycle.p95_ms)}</div></div>
+                </div>
+            </div>
+        </div>
+        <p class="inline-formula" style="margin-top:0.5rem;"><strong>Percentis</strong>: P85 = "85% das issues terminam em ate X dias" (metodo nearest-rank). Usa apenas issues com valor &gt; 0.</p>
     `;
 }
 
@@ -360,17 +393,26 @@ function renderTimePerStatus(data) {
 // --- Percentiles Weekly Timeline ---
 let percWeeklyChart = null;
 
-function renderPercentilesWeekly(data) {
+function renderPercentilesWeekly(data, percentiles) {
+    // KPIs de Lead/Cycle Time (P50/P70/P85/P95) exibidos junto do gráfico semanal.
+    const kpisHtml = percentiles ? renderPercentilesKpis(percentiles) : '';
+
     if (!data.weeks || data.weeks.length === 0) {
         return `<section class="metric-section glass">
-            <h2>Evolução Semanal dos Percentis</h2>
-            <p class="metric-desc">Sem dados. Execute sincronização com issues Done para popular.</p>
+            <h2>Lead Time e Cycle Time — Percentis</h2>
+            <p class="metric-desc">Quanto tempo leva para completar issues.</p>
+            ${kpisHtml}
+            <h3 style="font-size:1rem;margin-top:1.5rem;">Evolução Semanal</h3>
+            <p class="metric-desc">Sem dados semanais. Execute sincronização com issues Done para popular.</p>
         </section>`;
     }
 
     return `
         <section class="metric-section glass">
-            <h2>Evolução Semanal dos Percentis</h2>
+            <h2>Lead Time e Cycle Time — Percentis</h2>
+            <p class="metric-desc">Quanto tempo leva para completar issues. Percentis atuais acima; evolução semanal abaixo.</p>
+            ${kpisHtml}
+            <h3 style="font-size:1rem;margin-top:1.5rem;margin-bottom:0.3rem;">Evolução Semanal dos Percentis</h3>
             <p class="metric-desc">Tendência do P50 e P85 de Lead Time e Cycle Time por semana de resolução. Permite identificar se o fluxo está melhorando ou piorando ao longo do tempo.</p>
             <details class="formula-details">
                 <summary>Como é calculado?</summary>
@@ -486,6 +528,139 @@ function renderPercentilesWeeklyChart(data) {
                     ticks: { color: T('--text-2') },
                     grid: { color: 'rgba(255,255,255,0.05)' },
                     beginAtZero: true,
+                }
+            }
+        }
+    });
+}
+
+// --- Flow Efficiency Weekly (gráfico separado) ---
+let flowEffWeeklyChart = null;
+
+function renderFlowEfficiencyWeekly(data) {
+    if (!data || !data.weeks || data.weeks.length === 0) {
+        return `<section class="metric-section glass">
+            <h2>Evolução Semanal da Flow Efficiency</h2>
+            <p class="metric-desc">Sem dados. Execute sincronização com issues Done para popular.</p>
+        </section>`;
+    }
+
+    return `
+        <section class="metric-section glass">
+            <h2>Evolução Semanal da Flow Efficiency</h2>
+            <p class="metric-desc">Média da Flow Efficiency (%) das issues resolvidas em cada semana ISO. Tendência ascendente = mais tempo trabalhando vs. esperando em filas. A linha tracejada marca a média geral do projeto (card ao lado).</p>
+            <details class="formula-details">
+                <summary>Como é calculado?</summary>
+                <div class="formula-content">
+                    <p><strong>Flow Efficiency por issue</strong> = tempo em "In Progress" / Lead Time.</p>
+                    <p><strong>Média semanal (linha cheia)</strong>: agrupa as issues Done pela semana ISO de resolução (resolved_at) e tira a média das eficiências daquela semana.</p>
+                    <p><strong>Média geral (linha tracejada)</strong>: média de todas as issues Done do projeto — é o valor exibido no card "Flow Efficiency".</p>
+                    <p><strong>Atenção</strong>: semanas com poucas issues (veja a contagem no tooltip) oscilam bastante — uma issue "presa" derruba a média.</p>
+                </div>
+            </details>
+            <div class="chart-container">
+                <canvas id="flowEffWeeklyCanvas"></canvas>
+            </div>
+            <div class="flow-interpret">
+                <div class="flow-interpret-col flow-interpret-up">
+                    <h4>▲ O que faz o valor SUBIR (positivo)</h4>
+                    <p><strong>Causa:</strong> a issue passa mais tempo sendo efetivamente trabalhada (In Progress) e menos tempo parada em filas ou espera (aguardando aprovação, teste, deploy, dependência ou bloqueio).</p>
+                    <p><strong>Exemplos do que fazer:</strong></p>
+                    <ul>
+                        <li>Limitar o WIP (trabalho em progresso) para o time terminar o que começou antes de puxar novas issues.</li>
+                        <li>Reduzir handoffs e tempo de espera entre etapas (ex.: revisar/testar assim que a issue chega, sem deixar na fila).</li>
+                        <li>Resolver bloqueios rápido — escalar dependências no mesmo dia em vez de deixar a issue "esperando".</li>
+                        <li>Quebrar issues grandes em menores, que fluem sem ficar dias em uma só etapa.</li>
+                    </ul>
+                </div>
+                <div class="flow-interpret-col flow-interpret-down">
+                    <h4>▼ O que faz o valor DESCER (negativo)</h4>
+                    <p><strong>Causa:</strong> a issue fica muito tempo parada em relação ao tempo trabalhado — ou seja, o Lead Time cresce por causa de espera, não de trabalho.</p>
+                    <p><strong>Exemplos do que evitar (não fazer):</strong></p>
+                    <ul>
+                        <li>Não abrir muitas issues em paralelo e deixá-las todas "In Progress" sem concluir (WIP alto).</li>
+                        <li>Não deixar issues paradas aguardando revisão, teste ou aprovação por dias.</li>
+                        <li>Não ignorar bloqueios — uma issue bloqueada e esquecida derruba a eficiência da semana.</li>
+                        <li>Não reabrir/empurrar issues repetidamente sem trabalhá-las, inflando o tempo de espera.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderFlowEfficiencyWeeklyChart(data, flowData) {
+    const ctx = document.getElementById('flowEffWeeklyCanvas').getContext('2d');
+
+    function weekToDateRange(weekStr) {
+        const [yearStr, wStr] = weekStr.split('-W');
+        const year = parseInt(yearStr);
+        const week = parseInt(wStr);
+        const jan4 = new Date(year, 0, 4);
+        const dayOfWeek = jan4.getDay() || 7;
+        const monday = new Date(jan4);
+        monday.setDate(jan4.getDate() - dayOfWeek + 1 + (week - 1) * 7);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        const fmt = (d) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+        return `${fmt(monday)} - ${fmt(sunday)}`;
+    }
+
+    const labels = data.weeks.map(w => weekToDateRange(w.week));
+
+    const datasets = [{
+        label: 'Flow Efficiency semanal (%)',
+        data: data.weeks.map(w => w.avg_efficiency),
+        borderColor: T('--chart-5'),
+        backgroundColor: hexA(T('--chart-5'), '1a'),
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+    }];
+
+    // Linha de referência: média histórica geral (mesmo valor do card à esquerda)
+    const avgGeral = (flowData && flowData.count > 0) ? flowData.avg_efficiency : null;
+    if (avgGeral !== null) {
+        datasets.push({
+            label: `Média geral (${avgGeral}%)`,
+            data: labels.map(() => avgGeral),
+            borderColor: T('--text-2'),
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            tension: 0,
+            fill: false,
+        });
+    }
+
+    if (flowEffWeeklyChart) flowEffWeeklyChart.destroy();
+    flowEffWeeklyChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'bottom', labels: { color: T('--text-1'), font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        afterTitle: (items) => `${data.weeks[items[0].dataIndex].count} issues resolvidas`,
+                        label: (c) => `${c.dataset.label}: ${c.raw}%`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: T('--text-2'), maxTicksLimit: 13, font: { size: 10 } },
+                    grid: { display: false }
+                },
+                y: {
+                    title: { display: true, text: 'Flow Efficiency (%)', color: T('--text-2'), font: { size: 11 } },
+                    ticks: { color: T('--text-2'), callback: (v) => v + '%' },
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    beginAtZero: true,
+                    max: 100,
                 }
             }
         }

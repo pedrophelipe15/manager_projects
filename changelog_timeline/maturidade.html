@@ -99,12 +99,14 @@
 
         /* Larguras fixas das colunas */
         .report-table th:nth-child(1), .report-table td:nth-child(1) { width: 105px; white-space: nowrap; }
-        .report-table th:nth-child(2), .report-table td:nth-child(2) { width: 22%; }
+        .report-table th:nth-child(2), .report-table td:nth-child(2) { width: 20%; }
         .report-table th:nth-child(3), .report-table td:nth-child(3) { width: 90px; }
         .report-table th:nth-child(4), .report-table td:nth-child(4) { width: 110px; }
-        .report-table th:nth-child(5), .report-table td:nth-child(5) { width: 28%; }
-        .report-table th:nth-child(6), .report-table td:nth-child(6) { width: 28%; }
-        .report-table th:nth-child(7), .report-table td:nth-child(7) { width: 110px; }
+        .report-table th:nth-child(5), .report-table td:nth-child(5) { width: 96px; white-space: nowrap; }
+        .report-table th:nth-child(6), .report-table td:nth-child(6) { width: 27%; }
+        .report-table th:nth-child(7), .report-table td:nth-child(7) { width: 27%; }
+        .report-table th:nth-child(8), .report-table td:nth-child(8) { width: 100px; }
+        .report-table td.due-cell { font-variant-numeric: tabular-nums; }
 
         .severity-critico { color: var(--danger); font-weight: 600; }
         .severity-atencao { color: var(--warning); font-weight: 600; }
@@ -322,6 +324,7 @@
                         key: issue.key,
                         summary: issue.summary,
                         status: issue.status,
+                        due_date: issue.last_due_date || issue.due_date || null,
                         type: "POSTERGACAO",
                         problem: problem,
                         action: "Valide com o gestor o motivo das repactuacoes de prazo. Reavalie escopo/dependencias e defina uma data realista e comprometida.",
@@ -340,6 +343,7 @@
                                 key: issue.key,
                                 summary: issue.summary,
                                 status: issue.status,
+                                due_date: issue.due_date || null,
                                 type: "WIP",
                                 problem: `Voce esta com <strong style="color:var(--danger)">${person.wip_count} atividades</strong> simultaneas em andamento (recomendado: maximo <strong style="color:var(--warning)">${RULES.wip_recomendado}</strong>), o que indica <strong style="color:var(--accent)">multitasking</strong> excessivo e pode estar gerando atrasos`,
                                 action: "Foque em concluir as atividades ja iniciadas antes de pegar novas. Converse com seu lider se precisar repriorizar.",
@@ -356,6 +360,7 @@
                                 key: issue.key,
                                 summary: issue.summary,
                                 status: issue.status,
+                                due_date: issue.due_date || null,
                                 type: "BLOCKED",
                                 problem: `Voce esta com <strong style="color:var(--danger)">${blockedCount} atividade(s) bloqueada(s)</strong> (recomendado: maximo <strong style="color:var(--warning)">${RULES.blocked_recomendado}</strong>), o que impacta o fluxo e gera <strong style="color:var(--accent)">gargalo</strong> no time`,
                                 action: "Identifique o impedimento, registre no Jira e escale para quem pode resolver. Nao deixe parada sem visibilidade.",
@@ -374,6 +379,7 @@
                         key: issue.key,
                         summary: issue.summary,
                         status: issue.status,
+                        due_date: issue.due_date || null,
                         type: "DUE DATE",
                         problem: "Esta atividade esta ativa mas nao possui data de entrega (due date) definida, impossibilitando o acompanhamento de prazos",
                         action: "Acesse o Jira e preencha o campo Due Date com a data prevista de conclusao.",
@@ -390,6 +396,7 @@
                         key: issue.key,
                         summary: issue.summary,
                         status: issue.status,
+                        due_date: issue.due_date || null,
                         type: "ASSIGNEE",
                         problem: "Esta atividade esta em andamento mas nao tem nenhum responsavel atribuido — ninguem esta cuidando dela",
                         action: "Atribua um responsavel imediatamente no Jira. Atividades sem dono tendem a ficar paradas.",
@@ -418,6 +425,7 @@
                         key: issue.key,
                         summary: issue.summary,
                         status: issue.status,
+                        due_date: issue.due_date || null,
                         type: "AGING",
                         problem: `Esta atividade esta sem atualizacao ha <strong style="color:var(--danger)">${days} dias</strong>, o que compromete o <strong style="color:var(--accent)">cycle time</strong> do time que atualmente esta em <strong style="color:var(--warning)">${p85Days} dias</strong> (P85). Enquanto permanecer parada, essa metrica continuara sendo impactada negativamente.`,
                         action: days > RULES.aging_critico_dias
@@ -436,6 +444,7 @@
                         key: issue.child_key,
                         summary: issue.child_summary,
                         status: issue.child_status,
+                        due_date: issue.child_due_date || null,
                         type: "PRAZO",
                         problem: `A data de entrega desta atividade e posterior a data da story pai (${issue.parent_key}: ${issue.parent_due_date}), o que gera inconsistencia no planejamento`,
                         action: "Ajuste a due date para ser igual ou anterior a data da story pai, ou renegocie o prazo da story.",
@@ -452,6 +461,7 @@
                         key: issue.key,
                         summary: issue.summary,
                         status: issue.status,
+                        due_date: issue.due_date || null,
                         type: "METRICAS",
                         problem: "Esta atividade foi concluida (Done) mas nao possui Lead Time nem Cycle Time calculados — provavelmente foi movida direto para Done sem passar pelo fluxo",
                         action: "Verifique se o fluxo no Jira foi seguido corretamente. Para proximas atividades, mova pelo board normalmente (Open → In Progress → Done).",
@@ -468,6 +478,7 @@
                         key: issue.key,
                         summary: issue.summary,
                         status: issue.status,
+                        due_date: issue.due_date || null,
                         type: "FLUXO",
                         problem: "Esta atividade esta em andamento mas nao tem Cycle Time computado — provavelmente foi movida para o status atual sem passar por In Progress",
                         action: "Mova a atividade para In Progress primeiro e depois para o status desejado, para que o tempo seja contabilizado corretamente.",
@@ -549,6 +560,7 @@
                                     <th>Atividade</th>
                                     <th>Status</th>
                                     <th>Tipo</th>
+                                    <th>Due Date</th>
                                     <th>Problema</th>
                                     <th>Acao Necessaria</th>
                                     <th>Severidade</th>
@@ -561,6 +573,7 @@
                                         <td>${i.summary}</td>
                                         <td>${i.status}</td>
                                         <td><span class="type-badge">${i.type}</span></td>
+                                        <td class="due-cell">${fmtBR(i.due_date)}</td>
                                         <td>${i.problem}</td>
                                         <td>${i.action}</td>
                                         <td class="severity-${i.severity}">${i.severity.toUpperCase()}</td>
@@ -580,7 +593,7 @@
             const table = document.querySelector(`.report-table[data-assignee="${assignee}"]`);
             if (!table) return;
 
-            let text = "Key\tAtividade\tStatus\tTipo\tProblema\tAcao Necessaria\tSeveridade\n";
+            let text = "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAcao Necessaria\tSeveridade\n";
             const rows = table.querySelectorAll("tbody tr");
             for (const row of rows) {
                 const cells = [...row.querySelectorAll("td")].map(c => c.textContent.trim());
@@ -601,7 +614,7 @@
             for (const group of groups) {
                 const assignee = group.querySelector(".assignee-header span:first-child").textContent.trim();
                 text += `=== ${assignee} ===\n`;
-                text += "Key\tAtividade\tStatus\tTipo\tProblema\tAcao Necessaria\tSeveridade\n";
+                text += "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAcao Necessaria\tSeveridade\n";
                 const rows = group.querySelectorAll("tbody tr");
                 for (const row of rows) {
                     const cells = [...row.querySelectorAll("td")].map(c => c.textContent.trim());

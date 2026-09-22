@@ -44,15 +44,26 @@ function getTimelineDate(story) {
     return story.due_date;
 }
 
-function getMonthKey(dateStr) {
+// Converte 'YYYY-MM-DD' (ou ISO com hora) em Date no fuso LOCAL, sem o
+// deslocamento de UTC que o motor aplica em datas "date-only" (que causava
+// as datas aparecerem 1 dia a menos em fusos negativos como o Brasil).
+function parseLocalDate(dateStr) {
     if (!dateStr) return null;
-    const d = new Date(dateStr);
+    const datePart = String(dateStr).split("T")[0];
+    const p = datePart.split("-");
+    if (p.length !== 3) { const d = new Date(dateStr); return isNaN(d) ? null : d; }
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+}
+
+function getMonthKey(dateStr) {
+    const d = parseLocalDate(dateStr);
+    if (!d) return null;
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function formatShortDate(dateStr) {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
+    const d = parseLocalDate(dateStr);
+    if (!d) return "";
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -349,7 +360,7 @@ function renderStoryRow(story, months) {
     const barClass = getBarClass(story.status);
     const badgeClass = getStatusBadgeClass(story.status);
     const shortDate = formatShortDate(timelineDate);
-    const fullDate = timelineDate ? new Date(timelineDate).toLocaleDateString("pt-BR") : "—";
+    const fullDate = timelineDate ? (parseLocalDate(timelineDate)?.toLocaleDateString("pt-BR") ?? "—") : "—";
 
     let html = `<div class="story-row"><div class="story-info">`;
     html += jiraLink(story.key);

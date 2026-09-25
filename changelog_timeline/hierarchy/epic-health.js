@@ -64,40 +64,50 @@ function progressBar(pct, width = 80) {
 
 // ==================== FILTROS MULTI-SELECT (Dropdown com Checkboxes) ====================
 
-function buildFilterOptions(stories) {
-    const projects = [...new Set(stories.map(s => s.project_key).filter(Boolean))].sort();
-    const statuses = [...new Set(stories.map(s => s.status).filter(Boolean))].sort();
-    const assignees = [...new Set(stories.map(s => s.assignee_name).filter(Boolean))].sort();
-    return { projects, statuses, assignees };
+// Filtros dinâmicos e cascateantes (hierarquia: Projeto → Status → Assignee).
+// Cada nível recalcula as opções dos níveis inferiores com base no que já foi
+// selecionado acima, preservando as seleções válidas. Padrão: hierarchy/roadmap.js.
+
+function buildDropdown(id, label, options, selected) {
+    const cbs = options.map(o => {
+        const checked = selected.includes(o) ? " checked" : "";
+        return `<label class="dd-option"><input type="checkbox" value="${o}"${checked} onchange="onFilterChange()"><span>${o}</span></label>`;
+    }).join("");
+    const count = selected.length;
+    const countHtml = count > 0 ? `(${count})` : "";
+    return `<div class="dd-wrapper" id="${id}"><button class="dd-toggle" onclick="toggleDropdown('${id}')"><span class="dd-label">${label}</span><span class="dd-count" id="${id}-count">${countHtml}</span><span class="dd-arrow">&#9662;</span></button><div class="dd-menu">${cbs}</div></div>`;
 }
 
-function renderFilters(options) {
+// Aplica todos os filtros EXCETO o informado em `except`.
+// Assim cada dropdown mostra apenas opções coerentes com as seleções dos demais
+// (cascata bidirecional: selecionar Status limita os Projetos, e vice-versa).
+function storiesFilteredExcept(except) {
+    return allStories.filter(s => {
+        if (except !== "project" && filters.project.length > 0 && !filters.project.includes(s.project_key)) return false;
+        if (except !== "status" && filters.status.length > 0 && !filters.status.includes(s.status)) return false;
+        if (except !== "assignee" && filters.assignee.length > 0 && !filters.assignee.includes(s.assignee_name)) return false;
+        return true;
+    });
+}
+
+function renderFilters() {
+    // Cada campo considera os filtros dos OUTROS campos (não o próprio),
+    // permitindo múltipla seleção dentro de um mesmo campo sem se autoexcluir.
+    const projectOptions = [...new Set(storiesFilteredExcept("project").map(s => s.project_key).filter(Boolean))].sort();
+    const statusOptions = [...new Set(storiesFilteredExcept("status").map(s => s.status).filter(Boolean))].sort();
+    const assigneeOptions = [...new Set(storiesFilteredExcept("assignee").map(s => s.assignee_name).filter(Boolean))].sort();
+
+    // Remove seleções que deixaram de existir no contexto atual.
+    filters.project = filters.project.filter(p => projectOptions.includes(p));
+    filters.status = filters.status.filter(s => statusOptions.includes(s));
+    filters.assignee = filters.assignee.filter(a => assigneeOptions.includes(a));
+
     return `
         <div class="filters-row">
-            ${renderDropdown("filter-project", "Projeto", options.projects)}
-            ${renderDropdown("filter-status", "Status", options.statuses)}
-            ${renderDropdown("filter-assignee", "Assignee", options.assignees)}
+            ${buildDropdown("filter-project", "Projeto", projectOptions, filters.project)}
+            ${buildDropdown("filter-status", "Status", statusOptions, filters.status)}
+            ${buildDropdown("filter-assignee", "Assignee", assigneeOptions, filters.assignee)}
             <button class="btn-clear-filters" onclick="clearFilters()">Limpar</button>
-        </div>
-    `;
-}
-
-function renderDropdown(id, label, options) {
-    const checkboxes = options.map(o => `
-        <label class="dd-option">
-            <input type="checkbox" value="${o}" onchange="onFilterChange()">
-            <span>${o}</span>
-        </label>
-    `).join("");
-
-    return `
-        <div class="dd-wrapper" id="${id}">
-            <button class="dd-toggle" onclick="toggleDropdown('${id}')">
-                <span class="dd-label">${label}</span>
-                <span class="dd-count" id="${id}-count"></span>
-                <span class="dd-arrow">&#9662;</span>
-            </button>
-            <div class="dd-menu">${checkboxes}</div>
         </div>
     `;
 }
@@ -118,7 +128,10 @@ function onFilterChange() {
     filters.status = getCheckedValues("filter-status");
     filters.assignee = getCheckedValues("filter-assignee");
 
-    updateCountBadges();
+    // Reconstrói a linha de filtros (opções cascateantes + badges + seleções preservadas)
+    const filtersContainer = document.querySelector("#stories-section .filters-row");
+    if (filtersContainer) filtersContainer.outerHTML = renderFilters();
+
     renderStoriesTable();
 }
 
@@ -128,18 +141,10 @@ function getCheckedValues(wrapperId) {
     return [...wrapper.querySelectorAll("input[type=checkbox]:checked")].map(cb => cb.value);
 }
 
-function updateCountBadges() {
-    ["filter-project", "filter-status", "filter-assignee"].forEach(id => {
-        const count = getCheckedValues(id).length;
-        const badge = document.getElementById(id + "-count");
-        if (badge) badge.textContent = count > 0 ? `(${count})` : "";
-    });
-}
-
 function clearFilters() {
     filters = { project: [], status: [], assignee: [] };
-    document.querySelectorAll(".dd-wrapper input[type=checkbox]").forEach(cb => cb.checked = false);
-    updateCountBadges();
+    const filtersContainer = document.querySelector("#stories-section .filters-row");
+    if (filtersContainer) filtersContainer.outerHTML = renderFilters();
     renderStoriesTable();
 }
 
@@ -383,9 +388,6 @@ async function loadEpicDetail(key) {
         const stories = tree.epic ? tree.epic.stories || [] : [];
         allStories = stories;
 
-        // Build filter options
-        const filterOpts = buildFilterOptions(stories);
-
         // Cabeçalhos com sort
         const thSort = (label, col) => `<th class="sortable" onclick="handleSort('${col}')">${label}${sortIndicator(col)}</th>`;
 
@@ -396,6 +398,16 @@ async function loadEpicDetail(key) {
                 <div class="chart-container">
                     <canvas id="throughput-chart"></canvas>
                 </div>
+                ${(() => {
+                    const somaBarras = (tp.pending_monthly || []).reduce((a, p) => a + (p.pending || 0), 0);
+                    const semData = pr.no_duedate_count || 0;
+                    const foraCalendario = Math.max(0, (pr.pending_count || 0) - somaBarras - semData);
+                    if (semData === 0 && foraCalendario === 0) return "";
+                    const partes = [];
+                    if (semData > 0) partes.push(`<strong>${semData} sem due date</strong> (coluna cinza "Sem data")`);
+                    if (foraCalendario > 0) partes.push(`<strong>${foraCalendario} com due date fora de 2026</strong> (nao cabem no calendario do grafico)`);
+                    return `<div class="pending-alert"><span class="pending-alert-icon">⚠</span><span>Das <strong>${pr.pending_count}</strong> pendentes, ${partes.join(" e ")} nao aparecem nas barras amarelas. Todas contam em "Atividades Pendentes"; apenas as com due date nos proximos 35 dias entram no "Progresso Planejado".</span></div>`;
+                })()}
             </div>
 
             <div class="metric-section glass">
@@ -430,10 +442,10 @@ async function loadEpicDetail(key) {
                 </details>
             </div>
 
-            <div class="metric-section glass">
+            <div class="metric-section glass" id="stories-section">
                 <h2>Stories (<span id="stories-count">${stories.length}/${stories.length}</span>)</h2>
-                <p class="metric-desc">Lista completa de stories filhas deste epico. Use os filtros para refinar.</p>
-                ${renderFilters(filterOpts)}
+                <p class="metric-desc">Lista completa de stories filhas deste epico. Use os filtros para refinar (filtros aninhados: Projeto → Status → Assignee).</p>
+                ${renderFilters()}
                 <table class="metric-table">
                     <thead>
                         <tr>
@@ -466,8 +478,8 @@ async function loadEpicDetail(key) {
         // Bind filter events
         bindFilterEvents();
 
-        // Render throughput chart (mensal) com pendentes por due_date
-        renderThroughputChart(tp.monthly || tp.weekly, tp.pending_monthly || []);
+        // Render throughput chart (mensal) com pendentes por due_date + pendentes sem data
+        renderThroughputChart(tp.monthly || tp.weekly, tp.pending_monthly || [], pr.no_duedate_count || 0);
 
     } catch (err) {
         container.innerHTML = `<p class="empty-state">Erro ao carregar detalhes: ${err.message}</p>`;
@@ -475,32 +487,40 @@ async function loadEpicDetail(key) {
     }
 }
 
-function renderThroughputChart(data, pendingData) {
+function renderThroughputChart(data, pendingData, noDueDateCount) {
     const ctx = document.getElementById("throughput-chart");
     if (!ctx) return;
 
     pendingData = pendingData || [];
+    noDueDateCount = noDueDateCount || 0;
 
-    // Calendário fixo 2026 (Jan-Dez) — mesmo padrão do initiative-health
-    const labels = [];
-    for (let m = 1; m <= 12; m++) labels.push(`2026-${String(m).padStart(2, "0")}`);
+    // Calendário fixo 2026 (Jan-Dez) — mesmo padrão do initiative-health.
+    // Se houver pendentes sem due_date, adiciona uma coluna extra "Sem data" ao final.
+    const monthLabels = [];
+    for (let m = 1; m <= 12; m++) monthLabels.push(`2026-${String(m).padStart(2, "0")}`);
+    const hasNoDate = noDueDateCount > 0;
+    const labels = hasNoDate ? [...monthLabels, "Sem data"] : monthLabels;
+    const extra = hasNoDate ? 1 : 0; // slot extra no fim dos arrays
 
-    const doneValues = labels.map(label => {
+    const doneValues = monthLabels.map(label => {
         const match = data.find(d => d.month === label);
         return match ? (match.done !== undefined ? match.done : (match.count || 0)) : 0;
-    });
-    const canceledValues = labels.map(label => {
+    }).concat(Array(extra).fill(0));
+    const canceledValues = monthLabels.map(label => {
         const match = data.find(d => d.month === label);
         return match ? (match.canceled || 0) : 0;
-    });
+    }).concat(Array(extra).fill(0));
     const hasCanceled = canceledValues.some(v => v > 0);
 
     // Pending stories por due_date (calendário fixo 2026) — barra amarela, stack separado
-    const pendingValues = labels.map(label => {
+    const pendingValues = monthLabels.map(label => {
         const match = pendingData.find(p => p.month === label);
         return match ? match.pending : 0;
-    });
+    }).concat(Array(extra).fill(0));
     const hasPending = pendingValues.some(v => v > 0);
+
+    // Pendentes SEM due_date — barra cinza, só na coluna "Sem data"
+    const noDateValues = hasNoDate ? [...Array(12).fill(0), noDueDateCount] : [];
 
     if (throughputChart) throughputChart.destroy();
 
@@ -540,6 +560,18 @@ function renderThroughputChart(data, pendingData) {
         });
     }
 
+    if (hasNoDate) {
+        datasets.push({
+            label: "Pendentes sem due date",
+            data: noDateValues,
+            backgroundColor: "rgba(148, 163, 184, 0.6)",
+            borderColor: "rgba(148, 163, 184, 1)",
+            borderWidth: 1,
+            borderRadius: 4,
+            stack: "pending",
+        });
+    }
+
     throughputChart = new Chart(ctx, {
         type: "bar",
         data: { labels, datasets },
@@ -547,7 +579,7 @@ function renderThroughputChart(data, pendingData) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: hasCanceled || hasPending, position: "bottom", labels: { color: "#f8fafc", font: { size: 11 } } },
+                legend: { display: hasCanceled || hasPending || hasNoDate, position: "bottom", labels: { color: "#f8fafc", font: { size: 11 } } },
                 datalabels: {
                     color: "#f8fafc",
                     font: { size: 16, weight: "bold" },

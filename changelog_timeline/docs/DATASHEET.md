@@ -1,6 +1,19 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.2.0 · **Status:** produtivo · **Atualizado:** 2026-09-22
+> **Versao:** v2.2.1 · **Status:** produtivo · **Atualizado:** 2026-09-22
+>
+> A **v2.2.1** ajustou a hierarquia (correcoes e performance):
+> - **Epic Health / filtros da tabela Stories**: bug corrigido — os filtros (Projeto, Status,
+>   Assignee) agora sao **aninhados e cascateantes nos dois sentidos**: selecionar um valor em
+>   qualquer campo recalcula as opcoes dos demais (ex.: escolher Status="In Progress" remove do
+>   dropdown de Projeto os projetos que nao tem stories nesse status), preservando selecoes validas.
+> - **Epic Health / pendentes sem due date**: o grafico de throughput ganhou uma coluna cinza
+>   **"Sem data"** para pendentes sem due_date, e um **alerta visivel** (box ambar) explica quantas
+>   pendentes nao aparecem nas barras amarelas (sem due date ou com due date fora do calendario 2026).
+> - **Roadmap / performance**: epicos agora **iniciam recolhidos** (abre rapido; ~90% menos DOM
+>   inicial), com clique para expandir, botoes **"Expandir tudo / Colapsar tudo"** e auto-expansao ao
+>   filtrar. Otimizacoes: sort das stories feito uma vez (fora do loop de render) e tooltips via
+>   **event delegation** (sem handlers inline por barra).
 >
 > A **v2.2.0** trouxe melhorias de fluxo e hierarquia:
 > - **Wave 1 / Flow Efficiency semanal**: novo endpoint `/api/metrics/wave1/flow-efficiency-weekly`

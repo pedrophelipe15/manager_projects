@@ -67,9 +67,18 @@
         .initiative-name { padding: 0.6rem 0.75rem; font-size: 0.9rem; font-weight: 700; color: #f59e0b; }
 
         /* Epic Header */
-        .epic-header { display: grid; grid-template-columns: var(--info-col-width) 1fr; background: rgba(59, 130, 246, 0.04); border-bottom: 1px solid rgba(255,255,255,0.03); align-items: center; }
+        .epic-header { display: grid; grid-template-columns: var(--info-col-width) 1fr; background: rgba(59, 130, 246, 0.04); border-bottom: 1px solid rgba(255,255,255,0.03); align-items: center; cursor: pointer; transition: background 0.15s; }
+        .epic-header:hover { background: rgba(59, 130, 246, 0.1); }
+        .epic-header.expanded { background: rgba(59, 130, 246, 0.08); }
         .epic-name { padding: 0.5rem 0.75rem 0.5rem 1.5rem; font-size: 0.88rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
         .epic-name .epic-key { font-size: 0.78rem; color: var(--text-muted); }
+        .epic-caret { font-size: 0.7rem; color: var(--text-muted); width: 0.9rem; display: inline-block; }
+        .epic-count-hint { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; }
+
+        /* Toolbar do roadmap (dica + expandir/colapsar) */
+        .roadmap-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.75rem; background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
+        .roadmap-hint { font-size: 0.8rem; color: var(--text-muted); }
+        .roadmap-toolbar-actions { display: flex; gap: 0.5rem; }
 
         /* Header stats */
         .header-stats { padding: 0.5rem 1rem; font-size: 0.82rem; font-weight: 500; color: var(--text-muted); text-align: left; }
@@ -134,6 +143,6 @@
     <div id="tooltip" class="tooltip"></div>
 
     <script src="nav.js?v=3"></script>
-    <script src="roadmap.js?v=2"></script>
+    <script src="roadmap.js?v=3"></script>
 </body>
 </html>

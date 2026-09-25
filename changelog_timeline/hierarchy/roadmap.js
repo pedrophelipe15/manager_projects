@@ -8,6 +8,16 @@ let dataInitiatives = [];
 let dataOrphans = [];
 let filtersIni = { initiative: [], epic: [], project: [], status: [], assignee: [] };
 let filtersOrphan = { epic: [], project: [], status: [], assignee: [] };
+// Epicos expandidos (por key). Por padrao tudo colapsado — abre rapido e o gestor
+// expande so o que interessa. Filtrar auto-expande os epicos do resultado.
+let expandedEpics = new Set();
+
+function toggleEpic(key) {
+    if (expandedEpics.has(key)) expandedEpics.delete(key);
+    else expandedEpics.add(key);
+    renderInitiativesSection();
+    renderOrphansSection();
+}
 
 // ==================== HELPERS ====================
 
@@ -253,8 +263,37 @@ function filterOrphans() {
 
 // ==================== RENDER ====================
 
+function allEpicKeys() {
+    const keys = [];
+    for (const ini of dataInitiatives) for (const e of ini.epics) keys.push(e.key);
+    for (const e of dataOrphans) keys.push(e.key);
+    return keys;
+}
+
+function expandAll() {
+    expandedEpics = new Set(allEpicKeys());
+    renderInitiativesSection();
+    renderOrphansSection();
+}
+
+function collapseAll() {
+    expandedEpics.clear();
+    renderInitiativesSection();
+    renderOrphansSection();
+}
+
 function renderAll() {
     let html = "";
+
+    if (dataInitiatives.length > 0 || dataOrphans.length > 0) {
+        html += `<div class="roadmap-toolbar">
+            <span class="roadmap-hint">Epicos iniciam recolhidos para carregar rapido. Clique em um epico para expandir, ou use os botoes / filtros.</span>
+            <span class="roadmap-toolbar-actions">
+                <button class="btn-clear-filters" onclick="expandAll()">Expandir tudo</button>
+                <button class="btn-clear-filters" onclick="collapseAll()">Colapsar tudo</button>
+            </span>
+        </div>`;
+    }
 
     if (dataInitiatives.length > 0) {
         html += `<div class="roadmap-section" id="section-initiatives">`;
@@ -293,6 +332,10 @@ function renderInitiativesSection() {
         return;
     }
 
+    // Com filtro de story-level ativo, expande automaticamente os epicos do
+    // resultado (senao o filtro pareceria nao fazer nada, pois abre colapsado).
+    const iniFilterActive = (filtersIni.project.length + filtersIni.status.length + filtersIni.assignee.length + filtersIni.epic.length) > 0;
+
     let html = `<div class="roadmap-container" style="--month-count:${months.length}">`;
     html += renderTimelineHeader(months, currentMonthKey);
     for (const ini of initiatives) {
@@ -303,9 +346,13 @@ function renderInitiativesSection() {
         for (const epic of ini.epics) {
             const origEpic = origIni ? origIni.epics.find(e => e.key === epic.key) : null;
             const epicStats = countDone(origEpic ? origEpic.stories : []);
-            html += `<div class="epic-header"><div class="epic-name"><span class="epic-key">${epic.key}</span> ${epic.summary}</div><div class="header-stats">${epicStats.done} de ${epicStats.total} Atividades — ${epicStats.pct}%</div></div>`;
-            for (const story of epic.stories.sort((a, b) => (getTimelineDate(a) || "").localeCompare(getTimelineDate(b) || ""))) {
-                html += renderStoryRow(story, months);
+            const isOpen = iniFilterActive || expandedEpics.has(epic.key);
+            const caret = isOpen ? "▼" : "▶";
+            html += `<div class="epic-header${isOpen ? " expanded" : ""}" data-epic="${epic.key}"><div class="epic-name"><span class="epic-caret">${caret}</span> <span class="epic-key">${epic.key}</span> ${epic.summary} <span class="epic-count-hint">(${epic.stories.length})</span></div><div class="header-stats">${epicStats.done} de ${epicStats.total} Atividades — ${epicStats.pct}%</div></div>`;
+            if (isOpen) {
+                for (const story of epic.stories) {
+                    html += renderStoryRow(story, months);
+                }
             }
         }
     }
@@ -325,15 +372,21 @@ function renderOrphansSection() {
         return;
     }
 
+    const orpFilterActive = (filtersOrphan.project.length + filtersOrphan.status.length + filtersOrphan.assignee.length + filtersOrphan.epic.length) > 0;
+
     let html = `<div class="roadmap-container" style="--month-count:${months.length}">`;
     html += renderTimelineHeader(months, currentMonthKey);
     for (const epic of orphans) {
         // Stats FIXAS: usa dados originais
         const origEpic = dataOrphans.find(e => e.key === epic.key);
         const epicStats = countDone(origEpic ? origEpic.stories : []);
-        html += `<div class="epic-header"><div class="epic-name"><span class="epic-key">${epic.key}</span> ${epic.summary}</div><div class="header-stats">${epicStats.done} de ${epicStats.total} Atividades — ${epicStats.pct}%</div></div>`;
-        for (const story of epic.stories.sort((a, b) => (getTimelineDate(a) || "").localeCompare(getTimelineDate(b) || ""))) {
-            html += renderStoryRow(story, months);
+        const isOpen = orpFilterActive || expandedEpics.has(epic.key);
+        const caret = isOpen ? "▼" : "▶";
+        html += `<div class="epic-header${isOpen ? " expanded" : ""}" data-epic="${epic.key}"><div class="epic-name"><span class="epic-caret">${caret}</span> <span class="epic-key">${epic.key}</span> ${epic.summary} <span class="epic-count-hint">(${epic.stories.length})</span></div><div class="header-stats">${epicStats.done} de ${epicStats.total} Atividades — ${epicStats.pct}%</div></div>`;
+        if (isOpen) {
+            for (const story of epic.stories) {
+                html += renderStoryRow(story, months);
+            }
         }
     }
     html += `</div>`;
@@ -375,8 +428,7 @@ function renderStoryRow(story, months) {
             html += `<div class="gantt-bar ${barClass}"
                 data-story="${story.summary}" data-key="${story.key}"
                 data-project="${story.project_key}" data-status="${story.status}"
-                data-date="${fullDate}" data-assignee="${story.assignee_name || '—'}"
-                onmouseenter="showTooltip(event,this)" onmouseleave="hideTooltip()">${shortDate}</div>`;
+                data-date="${fullDate}" data-assignee="${story.assignee_name || '—'}">${shortDate}</div>`;
         }
         html += `</div>`;
     }
@@ -420,11 +472,40 @@ async function init() {
         const res = await fetch("/api/hierarchy/roadmap");
         const data = await res.json();
         dataInitiatives = data.initiatives || [];
-        dataOrphans = data.orphan_epics || [];
+        dataOrphans = data.orphan_epics || data.orphans || [];
+
+        // Otimização: ordena as stories UMA vez (por data de timeline), em vez de
+        // reordenar a cada render. Evita sort dentro do loop de renderização.
+        const sortStories = (arr) => arr.sort((a, b) => (getTimelineDate(a) || "").localeCompare(getTimelineDate(b) || ""));
+        for (const ini of dataInitiatives) for (const e of ini.epics) sortStories(e.stories);
+        for (const e of dataOrphans) sortStories(e.stories);
+
+        bindTimelineDelegation();
         renderAll();
     } catch (err) {
         document.getElementById("roadmap-content").innerHTML = `<p class="empty-state">Erro ao carregar: ${err.message}</p>`;
     }
+}
+
+// Event delegation: um unico par de listeners no container em vez de handlers
+// inline (onmouseenter/onmouseleave) em cada barra. Menos DOM/parse e menos memoria.
+function bindTimelineDelegation() {
+    const root = document.getElementById("roadmap-content");
+    if (!root || root.dataset.tipBound) return;
+    root.dataset.tipBound = "1";
+    root.addEventListener("mouseover", (e) => {
+        const bar = e.target.closest(".gantt-bar");
+        if (bar) showTooltip(e, bar);
+    });
+    root.addEventListener("mouseout", (e) => {
+        const bar = e.target.closest(".gantt-bar");
+        if (bar) hideTooltip();
+    });
+    // Expandir/colapsar epico ao clicar no header
+    root.addEventListener("click", (e) => {
+        const header = e.target.closest(".epic-header[data-epic]");
+        if (header) toggleEpic(header.dataset.epic);
+    });
 }
 
 init();

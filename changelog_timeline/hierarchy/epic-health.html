@@ -61,6 +61,19 @@
         /* Sortable headers */
         .sortable { cursor: pointer; user-select: none; white-space: nowrap; }
         .sortable:hover { color: #f8fafc; }
+
+        /* Alerta de pendentes fora das barras (visivel) */
+        .pending-alert {
+            display: flex; align-items: flex-start; gap: 0.6rem;
+            margin-top: 1rem; padding: 0.85rem 1rem;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            border-left: 4px solid #f59e0b;
+            border-radius: 8px;
+            color: #fde68a; font-size: 0.85rem; line-height: 1.5;
+        }
+        .pending-alert .pending-alert-icon { font-size: 1.1rem; line-height: 1.3; flex-shrink: 0; }
+        .pending-alert strong { color: #fbbf24; }
     </style>
 </head>
 <body>
@@ -83,6 +96,6 @@
     </div>
 
     <script src="nav.js?v=3"></script>
-    <script src="epic-health.js?v=4"></script>
+    <script src="epic-health.js?v=8"></script>
 </body>
 </html>

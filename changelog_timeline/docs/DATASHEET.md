@@ -1,6 +1,24 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.2.1 · **Status:** produtivo · **Atualizado:** 2026-09-22
+> **Versao:** v2.3.0 · **Status:** produtivo · **Atualizado:** 2026-09-28
+>
+> A **v2.3.0** trouxe o **painel de detalhe por big number** para a hierarquia (Epic
+> Health e Initiative Health), no mesmo padrao inline da home Minha Visao:
+> - **Epic Health / big numbers clicaveis**: os KPIs **Progresso Atual**, **Progresso
+>   Planejado (5 semanas)**, **Stories Done**, **Atividades Pendentes** e **Pendentes sem
+>   Due Date** viraram clicaveis. Clicar abre um **painel de detalhe inline logo abaixo do
+>   grafico** de throughput, listando as issues do indicador com filtros dropdown-checkbox
+>   (Assignee, Status) cascateantes, ordenacao por coluna e paginacao (15/pag). Colunas:
+>   Issue, Resumo, Assignee, Status, Due Date, **Criado em** e **Atualizado em**.
+> - **Epic Health / "Pendentes sem Due Date"**: novo big number (vermelho quando > 0) que
+>   **substituiu o alerta ambar** abaixo do grafico. Ao clicar, lista as stories pendentes
+>   sem due date. A antiga tabela "Stories (N/N)" foi **removida** (redundante com o painel).
+> - **Epic Health / limpeza**: removidos os big numbers **Forecast P85** e a secao
+>   **Forecast Monte Carlo** da tela de detalhe do epico (o Forecast P85 permanece na tabela
+>   geral de epicos).
+> - **Initiative Health**: recebeu o big number **"Pendentes sem Due Date"** (vermelho,
+>   clicavel) com o mesmo painel de detalhe abaixo do grafico. As stories sao agregadas de
+>   todos os epicos da iniciativa via `/api/hierarchy/tree`.
 >
 > A **v2.2.1** ajustou a hierarquia (correcoes e performance):
 > - **Epic Health / filtros da tabela Stories**: bug corrigido — os filtros (Projeto, Status,

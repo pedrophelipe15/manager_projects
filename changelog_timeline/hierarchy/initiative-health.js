@@ -6,6 +6,7 @@
 
 const MS_TO_DAYS = 1 / 86400000;
 let throughputChart = null;
+let allStories = []; // stories agregadas de todos os epicos da iniciativa (fonte do painel de detalhe)
 
 function formatDays(ms) {
     if (!ms || ms <= 0) return "—";
@@ -17,6 +18,24 @@ function formatDateBR(isoDate) {
     if (!isoDate) return "—";
     const [y, m, d] = isoDate.split("-");
     return `${d}/${m}/${y}`;
+}
+
+// Formata timestamp ISO (com ou sem hora) -> 'DD/MM/YYYY'.
+function formatTimestampBR(iso) {
+    if (!iso) return "—";
+    return formatDateBR(String(iso).split("T")[0]);
+}
+
+function statusRowClass(status) {
+    switch (status) {
+        case "Done": return "row-done";
+        case "In Progress": return "row-in-progress";
+        case "Blocked": return "row-blocked";
+        case "Test": return "row-test";
+        case "Waiting for Delivery": return "row-waiting";
+        case "Canceled": case "Reject": return "row-canceled";
+        default: return "";
+    }
 }
 
 function riskBadge(risk) {
@@ -120,7 +139,10 @@ async function loadInitiativeDetail(key) {
     const subtitleEl = document.getElementById("page-subtitle");
 
     try {
-        const res = await fetch(`/api/hierarchy/initiative-health?key=${key}`);
+        const [res, treeRes] = await Promise.all([
+            fetch(`/api/hierarchy/initiative-health?key=${key}`),
+            fetch(`/api/hierarchy/tree?key=${key}`),
+        ]);
         if (!res.ok) {
             container.innerHTML = `<p class="empty-state">Iniciativa "${key}" nao encontrada.</p>`;
             return;
@@ -132,6 +154,20 @@ async function loadInitiativeDetail(key) {
         const fc = data.forecast;
         const tp = data.throughput;
         const mt = data.metrics;
+
+        // Agrega as stories de todos os epicos da iniciativa (fonte do painel de detalhe).
+        const tree = treeRes.ok ? await treeRes.json() : null;
+        allStories = [];
+        if (tree && Array.isArray(tree.epics)) {
+            for (const ep of tree.epics) {
+                for (const s of (ep.stories || [])) allStories.push(s);
+            }
+        }
+        plannedRange = pr.planned_range || null;
+        kpiActiveMetric = null;
+        kpiDetailState = null;
+        const kpiPanelReset = document.getElementById("kpi-detail-panel");
+        if (kpiPanelReset) { kpiPanelReset.style.display = "none"; kpiPanelReset.innerHTML = ""; }
 
         // Header
         titleEl.textContent = `${ini.key}: ${ini.summary}`;
@@ -156,6 +192,10 @@ async function loadInitiativeDetail(key) {
             <div class="kpi-card">
                 <div class="kpi-value warning">${pr.pending_count}</div>
                 <div class="kpi-label">Atividades Pendentes</div>
+            </div>
+            <div class="kpi-card kpi-clickable" data-metric="no_duedate" onclick="showKpiDetail('no_duedate')" title="Ver pendentes sem due date">
+                <div class="kpi-value ${(pr.no_duedate_count ?? 0) > 0 ? 'danger' : ''}">${pr.no_duedate_count ?? 0}</div>
+                <div class="kpi-label">Pendentes sem Due Date</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${riskBadge(data.risk)}</div>
@@ -220,6 +260,13 @@ async function loadInitiativeDetail(key) {
                 <a href="/hierarchy/dashboard-v2.html" class="nav-link" style="color:var(--accent)">&larr; Voltar para todas as iniciativas</a>
             </div>
         `;
+
+        // Move o painel de detalhe para logo abaixo do grafico (primeira metric-section).
+        const kpiPanel = document.getElementById("kpi-detail-panel");
+        if (kpiPanel) {
+            const chartSection = container.querySelector(".metric-section");
+            if (chartSection) chartSection.insertAdjacentElement("afterend", kpiPanel);
+        }
 
         // Render throughput chart (mensal) com pending stories por due_date
         renderThroughputChart(tp.monthly || tp.weekly, tp.pending_monthly || []);
@@ -335,5 +382,250 @@ function renderThroughputChart(data, pendingData) {
         plugins: [ChartDataLabels],
     });
 }
+
+// ==================== PAINEL DE DETALHE DOS BIG NUMBERS (KPIs) ====================
+// Mesmo padrao de epic-health.js: ao clicar num KPI, abre um painel inline abaixo
+// do grafico listando as issues correspondentes, com filtros dropdown, ordenacao e paginacao.
+
+let kpiActiveMetric = null;
+let kpiDetailState = null;
+let plannedRange = null;
+
+const KPI_METRICS = {
+    no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — nao entram no calendario do grafico nem no Progresso Planejado." },
+};
+
+const DONE_STATUS = new Set(["Done"]);
+const CANCELED_STATUS = new Set(["Canceled", "Reject"]);
+function isDone(s) { return DONE_STATUS.has(s.status); }
+function isCanceled(s) { return CANCELED_STATUS.has(s.status); }
+function isPending(s) { return !isDone(s) && !isCanceled(s); }
+
+function storiesForMetric(metric) {
+    switch (metric) {
+        case "no_duedate": return allStories.filter(s => isPending(s) && !s.due_date);
+        default: return allStories.slice();
+    }
+}
+
+function markActiveKpi(metric) {
+    document.querySelectorAll(".kpi-card.kpi-clickable.active").forEach(c => c.classList.remove("active"));
+    if (!metric) return;
+    const card = document.querySelector(`.kpi-card.kpi-clickable[data-metric="${metric}"]`);
+    if (card) card.classList.add("active");
+}
+
+function showKpiDetail(metric) {
+    const panel = document.getElementById("kpi-detail-panel");
+    if (!panel) return;
+
+    if (kpiActiveMetric === metric) {
+        kpiActiveMetric = null;
+        kpiDetailState = null;
+        markActiveKpi(null);
+        panel.style.display = "none";
+        panel.innerHTML = "";
+        return;
+    }
+
+    kpiActiveMetric = metric;
+    markActiveKpi(metric);
+
+    const meta = KPI_METRICS[metric] || { title: "Detalhe", desc: "" };
+    kpiDetailState = {
+        title: meta.title,
+        description: meta.desc,
+        all: storiesForMetric(metric),
+        filters: { assignee: [], status: [] },
+        sort: { col: null, dir: "asc" },
+        page: 1, pageSize: 15,
+    };
+    panel.style.display = "block";
+    renderKpiDetail();
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+const KPI_DETAIL_COLS = [
+    { key: "key",        label: "Issue",         type: "text" },
+    { key: "summary",    label: "Resumo",        type: "text" },
+    { key: "assignee",   label: "Assignee",      type: "text" },
+    { key: "status",     label: "Status",        type: "text" },
+    { key: "due_date",   label: "Due Date",      type: "date" },
+    { key: "created_at", label: "Criado em",     type: "date" },
+    { key: "updated_at", label: "Atualizado em", type: "date" },
+];
+
+function kpiCell(s, col) {
+    switch (col) {
+        case "assignee": return s.assignee_name || "";
+        case "due_date": return s.due_date || "";
+        case "created_at": return s.created_at || "";
+        case "updated_at": return s.updated_at || "";
+        default: return s[col] == null ? "" : s[col];
+    }
+}
+
+function kpiFiltered(exceptCol) {
+    let rows = kpiDetailState.all;
+    for (const col of ["assignee", "status"]) {
+        if (col === exceptCol) continue;
+        const sel = kpiDetailState.filters[col];
+        if (sel && sel.length) rows = rows.filter(r => sel.includes(kpiCell(r, col)));
+    }
+    return rows;
+}
+
+function kpiOptions(col) {
+    const ctx = kpiFiltered(col);
+    return [...new Set(ctx.map(r => kpiCell(r, col)).filter(v => v !== ""))].sort();
+}
+
+function kpiVisibleRows() {
+    let rows = kpiFiltered(null);
+    const s = kpiDetailState.sort;
+    if (s.col) {
+        rows = rows.slice().sort((a, b) => {
+            const va = String(kpiCell(a, s.col));
+            const vb = String(kpiCell(b, s.col));
+            const cmp = va.localeCompare(vb, "pt-BR", { numeric: true });
+            return s.dir === "asc" ? cmp : -cmp;
+        });
+    }
+    return rows;
+}
+
+function renderKpiDetail() {
+    const panel = document.getElementById("kpi-detail-panel");
+    if (!panel || !kpiDetailState) return;
+    const st = kpiDetailState;
+
+    const head = `<div class="detail-head">
+        <div>
+            <h2>${st.title} <span class="detail-count">${st.all.length}</span></h2>
+            <p class="metric-desc" style="margin:0">${st.description}</p>
+        </div>
+        <button class="btn-clear-filters" onclick="showKpiDetail('${kpiActiveMetric}')">Fechar</button>
+    </div>`;
+
+    if (!st.all.length) {
+        panel.innerHTML = head + `<p class="empty-state">Nenhuma issue neste indicador.</p>`;
+        return;
+    }
+
+    const rows = kpiVisibleRows();
+    const total = rows.length;
+    const totalPages = Math.max(1, Math.ceil(total / st.pageSize));
+    if (st.page > totalPages) st.page = totalPages;
+    if (st.page < 1) st.page = 1;
+    const start = (st.page - 1) * st.pageSize;
+    const pageRows = rows.slice(start, start + st.pageSize);
+    const shownFrom = total ? start + 1 : 0;
+    const shownTo = Math.min(start + st.pageSize, total);
+
+    const anyFilter = st.filters.assignee.length || st.filters.status.length;
+    const pager = `<div class="detail-pager">
+        <span class="detail-pager-info">${shownFrom}–${shownTo} de ${total}</span>
+        <button class="detail-pager-btn" onclick="kpiDetailPage(-1)"${st.page <= 1 ? " disabled" : ""} title="Anterior">&#8249;</button>
+        <span class="detail-pager-page">Pag. ${st.page}/${totalPages}</span>
+        <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Proxima">&#8250;</button>
+    </div>`;
+    const filtersBar = `<div class="filters-row">
+        ${kpiDropdown("assignee", "Assignee")}
+        ${kpiDropdown("status", "Status")}
+        <button class="btn-clear-filters" onclick="clearKpiFilters()"${anyFilter ? "" : " disabled"}>Limpar filtros</button>
+        ${pager}
+    </div>`;
+
+    const ind = (col) => st.sort.col === col ? (st.sort.dir === "asc" ? "↑" : "↓") : "↕";
+    const ths = KPI_DETAIL_COLS.map(c =>
+        `<th class="sortable" onclick="sortKpiDetail('${c.key}')">${c.label} <span class="sort-ind">${ind(c.key)}</span></th>`
+    ).join("");
+
+    const body = pageRows.length
+        ? pageRows.map(i => `<tr class="${statusRowClass(i.status)}">
+            <td>${jiraLink(i.key)}</td>
+            <td class="mm-summary" title="${(i.summary || '').replace(/"/g, '&quot;')}">${i.summary || ''}</td>
+            <td>${i.assignee_name || "—"}</td>
+            <td>${i.status || "—"}</td>
+            <td class="mm-date">${formatDateBR(i.due_date)}</td>
+            <td class="mm-date">${formatTimestampBR(i.created_at)}</td>
+            <td class="mm-date">${formatTimestampBR(i.updated_at)}</td>
+        </tr>`).join("")
+        : `<tr><td colspan="7" class="empty-state">Nenhuma issue no filtro atual.</td></tr>`;
+
+    panel.innerHTML = head + filtersBar + `<div class="detail-table-wrap"><table class="data-table">
+        <thead><tr>${ths}</tr></thead>
+        <tbody>${body}</tbody>
+    </table></div>`;
+}
+
+function kpiDropdown(col, label) {
+    const sel = kpiDetailState.filters[col];
+    const opts = kpiOptions(col);
+    const count = sel.length ? `<span class="dd-count">(${sel.length})</span>` : "";
+    const items = opts.length
+        ? opts.map(o => {
+            const checked = sel.includes(o) ? "checked" : "";
+            return `<label class="dd-option">
+                <input type="checkbox" value="${String(o).replace(/"/g, '&quot;')}" ${checked} onchange="onKpiFilterChange('${col}', this)">
+                <span>${o}</span>
+            </label>`;
+        }).join("")
+        : `<div class="dd-option" style="opacity:.6">Sem opcoes</div>`;
+    return `<div class="dd-wrapper" id="kpi-dd-${col}">
+        <button class="dd-toggle" onclick="toggleKpiDropdown('kpi-dd-${col}')">
+            <span class="dd-label">${label}</span> ${count}
+            <span class="dd-arrow">&#9662;</span>
+        </button>
+        <div class="dd-menu">${items}</div>
+    </div>`;
+}
+
+function toggleKpiDropdown(id) {
+    const menu = document.getElementById(id).querySelector(".dd-menu");
+    const open = menu.classList.contains("open");
+    document.querySelectorAll("#kpi-detail-panel .dd-menu.open").forEach(m => m.classList.remove("open"));
+    if (!open) menu.classList.add("open");
+}
+
+function onKpiFilterChange(col, input) {
+    const v = input.value;
+    const sel = kpiDetailState.filters[col];
+    if (input.checked) { if (!sel.includes(v)) sel.push(v); }
+    else { kpiDetailState.filters[col] = sel.filter(x => x !== v); }
+    for (const other of ["assignee", "status"]) {
+        if (other === col) continue;
+        const valid = kpiOptions(other);
+        kpiDetailState.filters[other] = kpiDetailState.filters[other].filter(x => valid.includes(x));
+    }
+    kpiDetailState.page = 1;
+    renderKpiDetail();
+}
+
+function clearKpiFilters() {
+    kpiDetailState.filters = { assignee: [], status: [] };
+    kpiDetailState.page = 1;
+    renderKpiDetail();
+}
+
+function sortKpiDetail(col) {
+    const s = kpiDetailState.sort;
+    if (s.col === col) { s.dir = s.dir === "asc" ? "desc" : "asc"; }
+    else { s.col = col; s.dir = "asc"; }
+    kpiDetailState.page = 1;
+    renderKpiDetail();
+}
+
+function kpiDetailPage(delta) {
+    kpiDetailState.page += delta;
+    renderKpiDetail();
+}
+
+// Fecha dropdowns do painel de detalhe ao clicar fora.
+document.addEventListener("click", (e) => {
+    if (!e.target.closest("#kpi-detail-panel .dd-wrapper")) {
+        document.querySelectorAll("#kpi-detail-panel .dd-menu.open").forEach(m => m.classList.remove("open"));
+    }
+});
 
 init();

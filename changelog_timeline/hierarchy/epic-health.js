@@ -2,14 +2,12 @@
  * Epic Health — Detalhes de saúde de um épico específico ou visão geral.
  * Se ?key=EPIC-123 na URL, mostra detalhes desse épico.
  * Caso contrário, mostra tabela geral.
- * Inclui: filtros multi-select (projeto, status, assignee) + ordenação em todas as colunas.
+ * As stories do épico são exploradas via painel de detalhe dos big numbers (KPIs).
  */
 
 const MS_TO_DAYS = 1 / 86400000;
 let throughputChart = null;
-let allStories = []; // dados brutos para filtros/ordenação
-let currentSort = { col: null, asc: true };
-let filters = { project: [], status: [], assignee: [] };
+let allStories = []; // dados brutos das stories do épico (fonte do painel de detalhe dos KPIs)
 
 function formatDays(ms) {
     if (!ms || ms <= 0) return "—";
@@ -17,19 +15,18 @@ function formatDays(ms) {
     return days < 1 ? `${Math.round(days * 24)}h` : `${Math.round(days)}d`;
 }
 
-function formatDate(dateStr) {
-    if (!dateStr) return "—";
-    try {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString("pt-BR");
-    } catch { return "—"; }
-}
-
 // Formata 'YYYY-MM-DD' -> 'DD/MM/YYYY' sem shift de fuso (mesmo padrão do initiative-health)
 function formatDateBR(isoDate) {
     if (!isoDate) return "—";
     const [y, m, d] = isoDate.split("-");
     return `${d}/${m}/${y}`;
+}
+
+// Formata timestamp ISO (com ou sem hora) -> 'DD/MM/YYYY'. Usa só a parte da data.
+function formatTimestampBR(iso) {
+    if (!iso) return "—";
+    const datePart = String(iso).split("T")[0];
+    return formatDateBR(datePart);
 }
 
 function statusRowClass(status) {
@@ -60,199 +57,6 @@ function progressBar(pct, width = 80) {
     else if (pct >= 25) color = "amber";
     else color = "red";
     return `<div class="progress-bar" style="width:${width}px"><div class="progress-fill ${color}" style="width:${Math.min(pct, 100)}%"></div></div><span class="progress-label">${pct}%</span>`;
-}
-
-// ==================== FILTROS MULTI-SELECT (Dropdown com Checkboxes) ====================
-
-// Filtros dinâmicos e cascateantes (hierarquia: Projeto → Status → Assignee).
-// Cada nível recalcula as opções dos níveis inferiores com base no que já foi
-// selecionado acima, preservando as seleções válidas. Padrão: hierarchy/roadmap.js.
-
-function buildDropdown(id, label, options, selected) {
-    const cbs = options.map(o => {
-        const checked = selected.includes(o) ? " checked" : "";
-        return `<label class="dd-option"><input type="checkbox" value="${o}"${checked} onchange="onFilterChange()"><span>${o}</span></label>`;
-    }).join("");
-    const count = selected.length;
-    const countHtml = count > 0 ? `(${count})` : "";
-    return `<div class="dd-wrapper" id="${id}"><button class="dd-toggle" onclick="toggleDropdown('${id}')"><span class="dd-label">${label}</span><span class="dd-count" id="${id}-count">${countHtml}</span><span class="dd-arrow">&#9662;</span></button><div class="dd-menu">${cbs}</div></div>`;
-}
-
-// Aplica todos os filtros EXCETO o informado em `except`.
-// Assim cada dropdown mostra apenas opções coerentes com as seleções dos demais
-// (cascata bidirecional: selecionar Status limita os Projetos, e vice-versa).
-function storiesFilteredExcept(except) {
-    return allStories.filter(s => {
-        if (except !== "project" && filters.project.length > 0 && !filters.project.includes(s.project_key)) return false;
-        if (except !== "status" && filters.status.length > 0 && !filters.status.includes(s.status)) return false;
-        if (except !== "assignee" && filters.assignee.length > 0 && !filters.assignee.includes(s.assignee_name)) return false;
-        return true;
-    });
-}
-
-function renderFilters() {
-    // Cada campo considera os filtros dos OUTROS campos (não o próprio),
-    // permitindo múltipla seleção dentro de um mesmo campo sem se autoexcluir.
-    const projectOptions = [...new Set(storiesFilteredExcept("project").map(s => s.project_key).filter(Boolean))].sort();
-    const statusOptions = [...new Set(storiesFilteredExcept("status").map(s => s.status).filter(Boolean))].sort();
-    const assigneeOptions = [...new Set(storiesFilteredExcept("assignee").map(s => s.assignee_name).filter(Boolean))].sort();
-
-    // Remove seleções que deixaram de existir no contexto atual.
-    filters.project = filters.project.filter(p => projectOptions.includes(p));
-    filters.status = filters.status.filter(s => statusOptions.includes(s));
-    filters.assignee = filters.assignee.filter(a => assigneeOptions.includes(a));
-
-    return `
-        <div class="filters-row">
-            ${buildDropdown("filter-project", "Projeto", projectOptions, filters.project)}
-            ${buildDropdown("filter-status", "Status", statusOptions, filters.status)}
-            ${buildDropdown("filter-assignee", "Assignee", assigneeOptions, filters.assignee)}
-            <button class="btn-clear-filters" onclick="clearFilters()">Limpar</button>
-        </div>
-    `;
-}
-
-function toggleDropdown(id) {
-    const wrapper = document.getElementById(id);
-    const menu = wrapper.querySelector(".dd-menu");
-    const isOpen = menu.classList.contains("open");
-
-    // Fecha todos
-    document.querySelectorAll(".dd-menu.open").forEach(m => m.classList.remove("open"));
-
-    if (!isOpen) menu.classList.add("open");
-}
-
-function onFilterChange() {
-    filters.project = getCheckedValues("filter-project");
-    filters.status = getCheckedValues("filter-status");
-    filters.assignee = getCheckedValues("filter-assignee");
-
-    // Reconstrói a linha de filtros (opções cascateantes + badges + seleções preservadas)
-    const filtersContainer = document.querySelector("#stories-section .filters-row");
-    if (filtersContainer) filtersContainer.outerHTML = renderFilters();
-
-    renderStoriesTable();
-}
-
-function getCheckedValues(wrapperId) {
-    const wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return [];
-    return [...wrapper.querySelectorAll("input[type=checkbox]:checked")].map(cb => cb.value);
-}
-
-function clearFilters() {
-    filters = { project: [], status: [], assignee: [] };
-    const filtersContainer = document.querySelector("#stories-section .filters-row");
-    if (filtersContainer) filtersContainer.outerHTML = renderFilters();
-    renderStoriesTable();
-}
-
-function bindFilterEvents() {
-    // Fecha dropdown ao clicar fora
-    document.addEventListener("click", (e) => {
-        if (!e.target.closest(".dd-wrapper")) {
-            document.querySelectorAll(".dd-menu.open").forEach(m => m.classList.remove("open"));
-        }
-    });
-}
-
-// ==================== ORDENAÇÃO ====================
-
-function sortStories(stories, col, asc) {
-    return [...stories].sort((a, b) => {
-        let va = getSortValue(a, col);
-        let vb = getSortValue(b, col);
-        if (va === null || va === undefined || va === "—") va = "";
-        if (vb === null || vb === undefined || vb === "—") vb = "";
-        if (typeof va === "number" && typeof vb === "number") {
-            return asc ? va - vb : vb - va;
-        }
-        return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-    });
-}
-
-function getSortValue(story, col) {
-    switch (col) {
-        case "key": return story.key;
-        case "linked_key": return (story.issue_links || []).map(l => l.linked_key).join(",");
-        case "summary": return story.summary;
-        case "status": return story.status;
-        case "assignee": return story.assignee_name || "";
-        case "project": return story.project_key || "";
-        case "created": return story.created_at || "";
-        case "resolved": return story.resolved_at || "";
-        case "due_date": return story.due_date || "";
-        case "cycle_time": return story.cycle_time_ms || 0;
-        case "lead_time": return story.lead_time_ms || 0;
-        case "subtasks": return (story.subtasks || []).length;
-        default: return "";
-    }
-}
-
-function handleSort(col) {
-    if (currentSort.col === col) {
-        currentSort.asc = !currentSort.asc;
-    } else {
-        currentSort.col = col;
-        currentSort.asc = true;
-    }
-    renderStoriesTable();
-}
-
-function sortIndicator(col) {
-    if (currentSort.col !== col) return " ↕";
-    return currentSort.asc ? " ↑" : " ↓";
-}
-
-// ==================== RENDER TABELA STORIES ====================
-
-function renderStoriesTable() {
-    const tbody = document.getElementById("stories-tbody");
-    const countEl = document.getElementById("stories-count");
-    if (!tbody) return;
-
-    // Aplica filtros
-    let filtered = allStories;
-    if (filters.project.length > 0) filtered = filtered.filter(s => filters.project.includes(s.project_key));
-    if (filters.status.length > 0) filtered = filtered.filter(s => filters.status.includes(s.status));
-    if (filters.assignee.length > 0) filtered = filtered.filter(s => filters.assignee.includes(s.assignee_name));
-
-    // Aplica ordenação
-    if (currentSort.col) {
-        filtered = sortStories(filtered, currentSort.col, currentSort.asc);
-    }
-
-    // Atualiza contador
-    if (countEl) countEl.textContent = `${filtered.length}/${allStories.length}`;
-
-    // Render
-    tbody.innerHTML = filtered.map(s => {
-        const lt = formatDays(s.lead_time_ms);
-        const ct = formatDays(s.cycle_time_ms);
-        const subtaskCount = (s.subtasks || []).length;
-        const rowClass = statusRowClass(s.status);
-        const created = formatDate(s.created_at);
-        const resolved = formatDate(s.resolved_at);
-        const dueDate = formatDate(s.due_date);
-        const linkedKeys = (s.issue_links || []).map(l => jiraLink(l.linked_key)).join(", ") || "—";
-        return `
-            <tr class="${rowClass}">
-                <td><strong>${jiraLink(s.key)}</strong></td>
-                <td>${linkedKeys}</td>
-                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(s.summary || '').replace(/"/g, '&quot;')}">${s.summary}</td>
-                <td>${s.status}</td>
-                <td style="text-align:center">${s.assignee_name || "—"}</td>
-                <td style="text-align:center">${s.project_key || "—"}</td>
-                <td style="text-align:center">${created}</td>
-                <td style="text-align:center">${resolved}</td>
-                <td style="text-align:center">${dueDate}</td>
-                <td style="text-align:center">${ct}</td>
-                <td style="text-align:center">${lt}</td>
-                <td style="text-align:center">${subtaskCount}</td>
-            </tr>
-        `;
-    }).join("");
 }
 
 // ==================== PAGES ====================
@@ -348,27 +152,28 @@ async function loadEpicDetail(key) {
 
         // KPIs
         kpiContainer.style.display = "grid";
+        // Cards com data-metric sao clicaveis e abrem o painel de detalhe abaixo.
         kpiContainer.innerHTML = `
-            <div class="kpi-card">
+            <div class="kpi-card kpi-clickable" data-metric="all" onclick="showKpiDetail('all')" title="Ver todas as stories">
                 <div class="kpi-value accent">${pr.progress_pct}%</div>
                 <div class="kpi-label">Progresso Atual</div>
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card kpi-clickable" data-metric="planned" onclick="showKpiDetail('planned')" title="Ver stories pendentes com due date nas proximas 5 semanas">
                 <div class="kpi-value accent">${pr.planned_progress_pct ?? 0}%</div>
                 <div class="kpi-label">Progresso Planejado Proximas 5 Semanas</div>
                 ${pr.planned_range ? `<div class="kpi-sublabel">${formatDateBR(pr.planned_range.start)} a ${formatDateBR(pr.planned_range.end)}</div>` : ""}
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card kpi-clickable" data-metric="done" onclick="showKpiDetail('done')" title="Ver stories concluidas">
                 <div class="kpi-value">${pr.done}/${pr.total}</div>
                 <div class="kpi-label">Stories Done</div>
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card kpi-clickable" data-metric="pending" onclick="showKpiDetail('pending')" title="Ver atividades pendentes">
                 <div class="kpi-value warning">${pr.pending_count ?? 0}</div>
                 <div class="kpi-label">Atividades Pendentes</div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-value ${fc.p85 >= 12 ? 'danger' : fc.p85 >= 8 ? 'warning' : ''}">${fc.p85 > 0 ? fc.p85 + "w" : "—"}</div>
-                <div class="kpi-label">Forecast P85</div>
+            <div class="kpi-card kpi-clickable" data-metric="no_duedate" onclick="showKpiDetail('no_duedate')" title="Ver pendentes sem due date">
+                <div class="kpi-value ${(pr.no_duedate_count ?? 0) > 0 ? 'danger' : ''}">${pr.no_duedate_count ?? 0}</div>
+                <div class="kpi-label">Pendentes sem Due Date</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${riskBadge(health.risk)}</div>
@@ -388,8 +193,12 @@ async function loadEpicDetail(key) {
         const stories = tree.epic ? tree.epic.stories || [] : [];
         allStories = stories;
 
-        // Cabeçalhos com sort
-        const thSort = (label, col) => `<th class="sortable" onclick="handleSort('${col}')">${label}${sortIndicator(col)}</th>`;
+        // Janela do "Progresso Planejado" + reset do painel de detalhe dos KPIs.
+        plannedRange = pr.planned_range || null;
+        kpiActiveMetric = null;
+        kpiDetailState = null;
+        const kpiPanel = document.getElementById("kpi-detail-panel");
+        if (kpiPanel) { kpiPanel.style.display = "none"; kpiPanel.innerHTML = ""; }
 
         container.innerHTML = `
             <div class="metric-section glass">
@@ -398,73 +207,6 @@ async function loadEpicDetail(key) {
                 <div class="chart-container">
                     <canvas id="throughput-chart"></canvas>
                 </div>
-                ${(() => {
-                    const somaBarras = (tp.pending_monthly || []).reduce((a, p) => a + (p.pending || 0), 0);
-                    const semData = pr.no_duedate_count || 0;
-                    const foraCalendario = Math.max(0, (pr.pending_count || 0) - somaBarras - semData);
-                    if (semData === 0 && foraCalendario === 0) return "";
-                    const partes = [];
-                    if (semData > 0) partes.push(`<strong>${semData} sem due date</strong> (coluna cinza "Sem data")`);
-                    if (foraCalendario > 0) partes.push(`<strong>${foraCalendario} com due date fora de 2026</strong> (nao cabem no calendario do grafico)`);
-                    return `<div class="pending-alert"><span class="pending-alert-icon">⚠</span><span>Das <strong>${pr.pending_count}</strong> pendentes, ${partes.join(" e ")} nao aparecem nas barras amarelas. Todas contam em "Atividades Pendentes"; apenas as com due date nos proximos 35 dias entram no "Progresso Planejado".</span></div>`;
-                })()}
-            </div>
-
-            <div class="metric-section glass">
-                <h2>Forecast Monte Carlo</h2>
-                <p class="metric-desc">Previsao de conclusao baseada em ${tp.weekly.length} semanas de historico (${pr.remaining} stories restantes)</p>
-                <div class="kpi-grid" style="margin-top:1rem">
-                    <div class="kpi-card">
-                        <div class="kpi-value">${fc.p50 > 0 ? fc.p50 + "w" : "—"}</div>
-                        <div class="kpi-label">P50 (otimista)</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-value">${fc.p70 > 0 ? fc.p70 + "w" : "—"}</div>
-                        <div class="kpi-label">P70</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-value accent">${fc.p85 > 0 ? fc.p85 + "w" : "—"}</div>
-                        <div class="kpi-label">P85 (referencia)</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-value">${fc.p95 > 0 ? fc.p95 + "w" : "—"}</div>
-                        <div class="kpi-label">P95 (pessimista)</div>
-                    </div>
-                </div>
-                ${ep.due_date ? `<p class="sync-info" style="margin-top:0.75rem">Due date: ${new Date(ep.due_date).toLocaleDateString("pt-BR")}</p>` : ""}
-                <details class="formula-details">
-                    <summary>Como e calculado?</summary>
-                    <div class="formula-content">
-                        <p><strong>Monte Carlo:</strong> 1000 simulacoes aleatorias usando o throughput semanal historico deste epico.</p>
-                        <p>Cada simulacao sorteia valores de throughput passados ate completar as ${pr.remaining} stories restantes.</p>
-                        <p><strong>P85:</strong> Em 85% das simulacoes, o epico termina em ate ${fc.p85} semanas.</p>
-                    </div>
-                </details>
-            </div>
-
-            <div class="metric-section glass" id="stories-section">
-                <h2>Stories (<span id="stories-count">${stories.length}/${stories.length}</span>)</h2>
-                <p class="metric-desc">Lista completa de stories filhas deste epico. Use os filtros para refinar (filtros aninhados: Projeto → Status → Assignee).</p>
-                ${renderFilters()}
-                <table class="metric-table">
-                    <thead>
-                        <tr>
-                            ${thSort("Key", "key")}
-                            ${thSort("Linked Key", "linked_key")}
-                            ${thSort("Story", "summary")}
-                            ${thSort("Status", "status")}
-                            ${thSort("Assignee", "assignee")}
-                            ${thSort("Projeto", "project")}
-                            ${thSort("Created", "created")}
-                            ${thSort("Resolved", "resolved")}
-                            ${thSort("Due Date", "due_date")}
-                            ${thSort("Cycle Time", "cycle_time")}
-                            ${thSort("Lead Time", "lead_time")}
-                            ${thSort("Subtasks", "subtasks")}
-                        </tr>
-                    </thead>
-                    <tbody id="stories-tbody"></tbody>
-                </table>
             </div>
 
             <div style="text-align:center; margin-top:1rem;">
@@ -472,11 +214,11 @@ async function loadEpicDetail(key) {
             </div>
         `;
 
-        // Render tabela inicial
-        renderStoriesTable();
-
-        // Bind filter events
-        bindFilterEvents();
+        // Move o painel de detalhe para logo abaixo do grafico (primeira metric-section).
+        if (kpiPanel) {
+            const chartSection = container.querySelector(".metric-section");
+            if (chartSection) chartSection.insertAdjacentElement("afterend", kpiPanel);
+        }
 
         // Render throughput chart (mensal) com pendentes por due_date + pendentes sem data
         renderThroughputChart(tp.monthly || tp.weekly, tp.pending_monthly || [], pr.no_duedate_count || 0);
@@ -609,5 +351,272 @@ function renderThroughputChart(data, pendingData, noDueDateCount) {
         plugins: [ChartDataLabels],
     });
 }
+
+// ==================== PAINEL DE DETALHE DOS BIG NUMBERS (KPIs) ====================
+// Mesmo padrao de minha-visao.js: ao clicar num KPI, abre um painel inline abaixo
+// listando as issues correspondentes, com filtros dropdown, ordenacao e paginacao.
+
+let kpiActiveMetric = null;   // metric atualmente aberto
+let kpiDetailState = null;    // { all, filters, sort, page, pageSize }
+let plannedRange = null;      // { start, end } — janela do "Progresso Planejado"
+
+const KPI_METRICS = {
+    all:     { title: "Todas as stories",        desc: "Todas as stories filhas deste epico." },
+    planned: { title: "Progresso Planejado (5 semanas)", desc: "Stories pendentes com due date dentro da janela planejada." },
+    done:    { title: "Stories Done",            desc: "Stories concluidas neste epico." },
+    pending: { title: "Atividades Pendentes",    desc: "Stories que ainda nao foram concluidas nem canceladas." },
+    no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — nao entram no calendario do grafico nem no Progresso Planejado." },
+};
+
+const DONE_STATUS = new Set(["Done"]);
+const CANCELED_STATUS = new Set(["Canceled", "Reject"]);
+
+function isDone(s) { return DONE_STATUS.has(s.status); }
+function isCanceled(s) { return CANCELED_STATUS.has(s.status); }
+function isPending(s) { return !isDone(s) && !isCanceled(s); }
+
+// Retorna o subconjunto de allStories correspondente ao metric clicado.
+function storiesForMetric(metric) {
+    switch (metric) {
+        case "done": return allStories.filter(isDone);
+        case "pending": return allStories.filter(isPending);
+        case "no_duedate": return allStories.filter(s => isPending(s) && !s.due_date);
+        case "planned": {
+            const inWindow = (s) => {
+                if (!s.due_date) return false;
+                if (!plannedRange) return isPending(s);
+                return isPending(s) && s.due_date >= plannedRange.start && s.due_date <= plannedRange.end;
+            };
+            return allStories.filter(inWindow);
+        }
+        case "all":
+        default: return allStories.slice();
+    }
+}
+
+function markActiveKpi(metric) {
+    document.querySelectorAll(".kpi-card.kpi-clickable.active").forEach(c => c.classList.remove("active"));
+    if (!metric) return;
+    const card = document.querySelector(`.kpi-card.kpi-clickable[data-metric="${metric}"]`);
+    if (card) card.classList.add("active");
+}
+
+function showKpiDetail(metric) {
+    const panel = document.getElementById("kpi-detail-panel");
+    if (!panel) return;
+
+    // Toggle: clicar de novo no mesmo KPI fecha o painel.
+    if (kpiActiveMetric === metric) {
+        kpiActiveMetric = null;
+        kpiDetailState = null;
+        markActiveKpi(null);
+        panel.style.display = "none";
+        panel.innerHTML = "";
+        return;
+    }
+
+    kpiActiveMetric = metric;
+    markActiveKpi(metric);
+
+    const meta = KPI_METRICS[metric] || KPI_METRICS.all;
+    const rows = storiesForMetric(metric);
+    kpiDetailState = {
+        title: meta.title,
+        description: meta.desc,
+        all: rows,
+        filters: { assignee: [], status: [] },
+        sort: { col: null, dir: "asc" },
+        page: 1, pageSize: 15,
+    };
+    panel.style.display = "block";
+    renderKpiDetail();
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+const KPI_DETAIL_COLS = [
+    { key: "key",        label: "Issue",       type: "text" },
+    { key: "summary",    label: "Resumo",      type: "text" },
+    { key: "assignee",   label: "Assignee",    type: "text" },
+    { key: "status",     label: "Status",      type: "text" },
+    { key: "due_date",   label: "Due Date",    type: "date" },
+    { key: "created_at", label: "Criado em",   type: "date" },
+    { key: "updated_at", label: "Atualizado em", type: "date" },
+];
+
+// Valor de uma coluna do detalhe (normaliza assignee).
+function kpiCell(s, col) {
+    switch (col) {
+        case "assignee": return s.assignee_name || "";
+        case "due_date": return s.due_date || "";
+        case "created_at": return s.created_at || "";
+        case "updated_at": return s.updated_at || "";
+        default: return s[col] == null ? "" : s[col];
+    }
+}
+
+// Aplica filtros ativos, opcionalmente ignorando uma coluna (para cascata).
+function kpiFiltered(exceptCol) {
+    let rows = kpiDetailState.all;
+    for (const col of ["assignee", "status"]) {
+        if (col === exceptCol) continue;
+        const sel = kpiDetailState.filters[col];
+        if (sel && sel.length) rows = rows.filter(r => sel.includes(kpiCell(r, col)));
+    }
+    return rows;
+}
+
+function kpiOptions(col) {
+    const ctx = kpiFiltered(col);
+    return [...new Set(ctx.map(r => kpiCell(r, col)).filter(v => v !== ""))].sort();
+}
+
+function kpiVisibleRows() {
+    let rows = kpiFiltered(null);
+    const s = kpiDetailState.sort;
+    if (s.col) {
+        rows = rows.slice().sort((a, b) => {
+            const va = String(kpiCell(a, s.col));
+            const vb = String(kpiCell(b, s.col));
+            const cmp = va.localeCompare(vb, "pt-BR", { numeric: true });
+            return s.dir === "asc" ? cmp : -cmp;
+        });
+    }
+    return rows;
+}
+
+function renderKpiDetail() {
+    const panel = document.getElementById("kpi-detail-panel");
+    if (!panel || !kpiDetailState) return;
+    const st = kpiDetailState;
+
+    const head = `<div class="detail-head">
+        <div>
+            <h2>${st.title} <span class="detail-count">${st.all.length}</span></h2>
+            <p class="metric-desc" style="margin:0">${st.description}</p>
+        </div>
+        <button class="btn-clear-filters" onclick="showKpiDetail('${kpiActiveMetric}')">Fechar</button>
+    </div>`;
+
+    if (!st.all.length) {
+        panel.innerHTML = head + `<p class="empty-state">Nenhuma issue neste indicador.</p>`;
+        return;
+    }
+
+    const rows = kpiVisibleRows();
+    const total = rows.length;
+    const totalPages = Math.max(1, Math.ceil(total / st.pageSize));
+    if (st.page > totalPages) st.page = totalPages;
+    if (st.page < 1) st.page = 1;
+    const start = (st.page - 1) * st.pageSize;
+    const pageRows = rows.slice(start, start + st.pageSize);
+    const shownFrom = total ? start + 1 : 0;
+    const shownTo = Math.min(start + st.pageSize, total);
+
+    const anyFilter = st.filters.assignee.length || st.filters.status.length;
+    const pager = `<div class="detail-pager">
+        <span class="detail-pager-info">${shownFrom}–${shownTo} de ${total}</span>
+        <button class="detail-pager-btn" onclick="kpiDetailPage(-1)"${st.page <= 1 ? " disabled" : ""} title="Anterior">&#8249;</button>
+        <span class="detail-pager-page">Pag. ${st.page}/${totalPages}</span>
+        <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Proxima">&#8250;</button>
+    </div>`;
+    const filtersBar = `<div class="filters-row">
+        ${kpiDropdown("assignee", "Assignee")}
+        ${kpiDropdown("status", "Status")}
+        <button class="btn-clear-filters" onclick="clearKpiFilters()"${anyFilter ? "" : " disabled"}>Limpar filtros</button>
+        ${pager}
+    </div>`;
+
+    const ind = (col) => st.sort.col === col ? (st.sort.dir === "asc" ? "↑" : "↓") : "↕";
+    const ths = KPI_DETAIL_COLS.map(c =>
+        `<th class="sortable" onclick="sortKpiDetail('${c.key}')">${c.label} <span class="sort-ind">${ind(c.key)}</span></th>`
+    ).join("");
+
+    const body = pageRows.length
+        ? pageRows.map(i => `<tr class="${statusRowClass(i.status)}">
+            <td>${jiraLink(i.key)}</td>
+            <td class="mm-summary" title="${(i.summary || '').replace(/"/g, '&quot;')}">${i.summary || ''}</td>
+            <td>${i.assignee_name || "—"}</td>
+            <td>${i.status || "—"}</td>
+            <td class="mm-date">${formatDateBR(i.due_date)}</td>
+            <td class="mm-date">${formatTimestampBR(i.created_at)}</td>
+            <td class="mm-date">${formatTimestampBR(i.updated_at)}</td>
+        </tr>`).join("")
+        : `<tr><td colspan="7" class="empty-state">Nenhuma issue no filtro atual.</td></tr>`;
+
+    panel.innerHTML = head + filtersBar + `<div class="detail-table-wrap"><table class="data-table">
+        <thead><tr>${ths}</tr></thead>
+        <tbody>${body}</tbody>
+    </table></div>`;
+}
+
+function kpiDropdown(col, label) {
+    const sel = kpiDetailState.filters[col];
+    const opts = kpiOptions(col);
+    const count = sel.length ? `<span class="dd-count">(${sel.length})</span>` : "";
+    const items = opts.length
+        ? opts.map(o => {
+            const checked = sel.includes(o) ? "checked" : "";
+            return `<label class="dd-option">
+                <input type="checkbox" value="${String(o).replace(/"/g, '&quot;')}" ${checked} onchange="onKpiFilterChange('${col}', this)">
+                <span>${o}</span>
+            </label>`;
+        }).join("")
+        : `<div class="dd-option" style="opacity:.6">Sem opcoes</div>`;
+    return `<div class="dd-wrapper" id="kpi-dd-${col}">
+        <button class="dd-toggle" onclick="toggleKpiDropdown('kpi-dd-${col}')">
+            <span class="dd-label">${label}</span> ${count}
+            <span class="dd-arrow">&#9662;</span>
+        </button>
+        <div class="dd-menu">${items}</div>
+    </div>`;
+}
+
+function toggleKpiDropdown(id) {
+    const menu = document.getElementById(id).querySelector(".dd-menu");
+    const open = menu.classList.contains("open");
+    document.querySelectorAll("#kpi-detail-panel .dd-menu.open").forEach(m => m.classList.remove("open"));
+    if (!open) menu.classList.add("open");
+}
+
+function onKpiFilterChange(col, input) {
+    const v = input.value;
+    const sel = kpiDetailState.filters[col];
+    if (input.checked) { if (!sel.includes(v)) sel.push(v); }
+    else { kpiDetailState.filters[col] = sel.filter(x => x !== v); }
+    // Poda selecoes que se tornaram invalidas no outro filtro (cascata).
+    for (const other of ["assignee", "status"]) {
+        if (other === col) continue;
+        const valid = kpiOptions(other);
+        kpiDetailState.filters[other] = kpiDetailState.filters[other].filter(x => valid.includes(x));
+    }
+    kpiDetailState.page = 1;
+    renderKpiDetail();
+}
+
+function clearKpiFilters() {
+    kpiDetailState.filters = { assignee: [], status: [] };
+    kpiDetailState.page = 1;
+    renderKpiDetail();
+}
+
+function sortKpiDetail(col) {
+    const s = kpiDetailState.sort;
+    if (s.col === col) { s.dir = s.dir === "asc" ? "desc" : "asc"; }
+    else { s.col = col; s.dir = "asc"; }
+    kpiDetailState.page = 1;
+    renderKpiDetail();
+}
+
+function kpiDetailPage(delta) {
+    kpiDetailState.page += delta;
+    renderKpiDetail();
+}
+
+// Fecha dropdowns do painel de detalhe ao clicar fora.
+document.addEventListener("click", (e) => {
+    if (!e.target.closest("#kpi-detail-panel .dd-wrapper")) {
+        document.querySelectorAll("#kpi-detail-panel .dd-menu.open").forEach(m => m.classList.remove("open"));
+    }
+});
 
 init();

@@ -1,6 +1,11 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.3.0 · **Status:** produtivo · **Atualizado:** 2026-09-28
+> **Versao:** v2.3.1 · **Status:** produtivo · **Atualizado:** 2026-09-30
+>
+> A **v2.3.1** adicionou o filtro **Projeto** ao painel de detalhe dos big numbers do
+> **Epic Health**. O painel agora oferece tres dropdowns cascateantes — **Projeto**,
+> **Assignee** e **Status** — em vez de apenas Assignee e Status. O novo filtro usa
+> `project_key` das stories e integra-se ao "Limpar filtros".
 >
 > A **v2.3.0** trouxe o **painel de detalhe por big number** para a hierarquia (Epic
 > Health e Initiative Health), no mesmo padrao inline da home Minha Visao:
@@ -8,7 +13,7 @@
 >   Planejado (5 semanas)**, **Stories Done**, **Atividades Pendentes** e **Pendentes sem
 >   Due Date** viraram clicaveis. Clicar abre um **painel de detalhe inline logo abaixo do
 >   grafico** de throughput, listando as issues do indicador com filtros dropdown-checkbox
->   (Assignee, Status) cascateantes, ordenacao por coluna e paginacao (15/pag). Colunas:
+>   (Projeto, Assignee, Status) cascateantes, ordenacao por coluna e paginacao (15/pag). Colunas:
 >   Issue, Resumo, Assignee, Status, Due Date, **Criado em** e **Atualizado em**.
 > - **Epic Health / "Pendentes sem Due Date"**: novo big number (vermelho quando > 0) que
 >   **substituiu o alerta ambar** abaixo do grafico. Ao clicar, lista as stories pendentes

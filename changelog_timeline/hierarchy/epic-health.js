@@ -424,7 +424,7 @@ function showKpiDetail(metric) {
         title: meta.title,
         description: meta.desc,
         all: rows,
-        filters: { assignee: [], status: [] },
+        filters: { project: [], assignee: [], status: [] },
         sort: { col: null, dir: "asc" },
         page: 1, pageSize: 15,
     };
@@ -446,6 +446,7 @@ const KPI_DETAIL_COLS = [
 // Valor de uma coluna do detalhe (normaliza assignee).
 function kpiCell(s, col) {
     switch (col) {
+        case "project": return s.project_key || "";
         case "assignee": return s.assignee_name || "";
         case "due_date": return s.due_date || "";
         case "created_at": return s.created_at || "";
@@ -457,7 +458,7 @@ function kpiCell(s, col) {
 // Aplica filtros ativos, opcionalmente ignorando uma coluna (para cascata).
 function kpiFiltered(exceptCol) {
     let rows = kpiDetailState.all;
-    for (const col of ["assignee", "status"]) {
+    for (const col of ["project", "assignee", "status"]) {
         if (col === exceptCol) continue;
         const sel = kpiDetailState.filters[col];
         if (sel && sel.length) rows = rows.filter(r => sel.includes(kpiCell(r, col)));
@@ -512,7 +513,7 @@ function renderKpiDetail() {
     const shownFrom = total ? start + 1 : 0;
     const shownTo = Math.min(start + st.pageSize, total);
 
-    const anyFilter = st.filters.assignee.length || st.filters.status.length;
+    const anyFilter = st.filters.project.length || st.filters.assignee.length || st.filters.status.length;
     const pager = `<div class="detail-pager">
         <span class="detail-pager-info">${shownFrom}–${shownTo} de ${total}</span>
         <button class="detail-pager-btn" onclick="kpiDetailPage(-1)"${st.page <= 1 ? " disabled" : ""} title="Anterior">&#8249;</button>
@@ -520,6 +521,7 @@ function renderKpiDetail() {
         <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Proxima">&#8250;</button>
     </div>`;
     const filtersBar = `<div class="filters-row">
+        ${kpiDropdown("project", "Projeto")}
         ${kpiDropdown("assignee", "Assignee")}
         ${kpiDropdown("status", "Status")}
         <button class="btn-clear-filters" onclick="clearKpiFilters()"${anyFilter ? "" : " disabled"}>Limpar filtros</button>
@@ -583,8 +585,8 @@ function onKpiFilterChange(col, input) {
     const sel = kpiDetailState.filters[col];
     if (input.checked) { if (!sel.includes(v)) sel.push(v); }
     else { kpiDetailState.filters[col] = sel.filter(x => x !== v); }
-    // Poda selecoes que se tornaram invalidas no outro filtro (cascata).
-    for (const other of ["assignee", "status"]) {
+    // Poda selecoes que se tornaram invalidas nos outros filtros (cascata).
+    for (const other of ["project", "assignee", "status"]) {
         if (other === col) continue;
         const valid = kpiOptions(other);
         kpiDetailState.filters[other] = kpiDetailState.filters[other].filter(x => valid.includes(x));
@@ -594,7 +596,7 @@ function onKpiFilterChange(col, input) {
 }
 
 function clearKpiFilters() {
-    kpiDetailState.filters = { assignee: [], status: [] };
+    kpiDetailState.filters = { project: [], assignee: [], status: [] };
     kpiDetailState.page = 1;
     renderKpiDetail();
 }

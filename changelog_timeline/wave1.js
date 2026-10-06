@@ -526,7 +526,7 @@ function renderPercentilesWeeklyChart(data) {
                 y: {
                     title: { display: true, text: 'Dias', color: T('--text-2'), font: { size: 11 } },
                     ticks: { color: T('--text-2') },
-                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    grid: { color: T('--chart-grid') },
                     beginAtZero: true,
                 }
             }
@@ -658,7 +658,7 @@ function renderFlowEfficiencyWeeklyChart(data, flowData) {
                 y: {
                     title: { display: true, text: 'Flow Efficiency (%)', color: T('--text-2'), font: { size: 11 } },
                     ticks: { color: T('--text-2'), callback: (v) => v + '%' },
-                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    grid: { color: T('--chart-grid') },
                     beginAtZero: true,
                     max: 100,
                 }
@@ -738,7 +738,7 @@ function renderCFDChart(data) {
                 y: {
                     stacked: true,
                     ticks: { color: T('--text-2') },
-                    grid: { color: 'rgba(255,255,255,0.05)' }
+                    grid: { color: T('--chart-grid') }
                 }
             }
         }

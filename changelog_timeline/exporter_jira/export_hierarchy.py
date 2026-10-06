@@ -217,7 +217,7 @@ def main():
     for i in range(0, len(epic_keys_to_fetch), 50):
         batch = epic_keys_to_fetch[i:i+50]
         keys_str = ",".join(batch)
-        jql_stories = f"(parent in ({keys_str}) OR linkedissue in ({keys_str})) AND issuetype in (Story, Task, Improvement, Bug, Kaizen, Support, Spikes)"
+        jql_stories = f'(parent in ({keys_str}) OR linkedissue in ({keys_str})) AND issuetype in (Story, Task, Improvement, Bug, Kaizen, Support, Spikes, "Audit")'
         raw_stories = client.fetch_issues_raw(jql_stories, fields=FIELDS_METADATA, expand="changelog")
         all_stories_raw.extend(raw_stories)
     
@@ -394,6 +394,31 @@ def main():
         ))
 
     # Stories
+    # Limpeza de ORFAOS: remove de h_stories as stories que estavam vinculadas a
+    # algum epico sincronizado mas que NAO vieram mais nesta extracao (ex.: o parent
+    # foi removido no Jira). Sem isso, o upsert nunca apagaria o vinculo antigo.
+    if epic_keys_to_fetch:
+        current_story_keys = {s["key"] for s in stories_data}
+        epic_ph = ",".join(["?"] * len(epic_keys_to_fetch))
+        cursor.execute(
+            f"SELECT key FROM h_stories WHERE parent_key IN ({epic_ph})",
+            epic_keys_to_fetch,
+        )
+        existing = {r[0] for r in cursor.fetchall()}
+        orphan_story_keys = existing - current_story_keys
+        if orphan_story_keys:
+            orph_list = list(orphan_story_keys)
+            print(f"  Removendo {len(orph_list)} story(ies) orfa(s) (vinculo removido no Jira): {', '.join(orph_list[:10])}{'...' if len(orph_list) > 10 else ''}")
+            for i in range(0, len(orph_list), 500):
+                batch = orph_list[i:i+500]
+                bph = ",".join(["?"] * len(batch))
+                # Remove as stories orfas, suas subtasks, metrics, changelogs e links.
+                cursor.execute(f"DELETE FROM h_subtasks WHERE parent_key IN ({bph})", batch)
+                cursor.execute(f"DELETE FROM h_metrics WHERE issue_key IN ({bph})", batch)
+                cursor.execute(f"DELETE FROM h_changelogs WHERE issue_key IN ({bph})", batch)
+                cursor.execute(f"DELETE FROM h_issue_links WHERE issue_key IN ({bph})", batch)
+                cursor.execute(f"DELETE FROM h_stories WHERE key IN ({bph})", batch)
+
     for story in stories_data:
         cursor.execute('''
             INSERT OR REPLACE INTO h_stories

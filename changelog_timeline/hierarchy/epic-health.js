@@ -6,6 +6,17 @@
  */
 
 const MS_TO_DAYS = 1 / 86400000;
+
+// Le um token de cor do design system (tokens.css) com fallback.
+function CT(name, fallback) {
+    try {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
 let throughputChart = null;
 let allStories = []; // dados brutos das stories do épico (fonte do painel de detalhe dos KPIs)
 
@@ -31,7 +42,7 @@ function formatTimestampBR(iso) {
 
 function statusRowClass(status) {
     switch (status) {
-        case "Done": return "row-done";
+        case "Done": case "Resolved": return "row-done";
         case "In Progress": return "row-in-progress";
         case "Blocked": return "row-blocked";
         case "Test": return "row-test";
@@ -208,11 +219,11 @@ async function loadEpicDetail(key) {
                     <canvas id="throughput-chart"></canvas>
                 </div>
             </div>
-
-            <div style="text-align:center; margin-top:1rem;">
-                <a href="/hierarchy/dashboard-v2.html" class="nav-link" style="color:var(--accent)">&larr; Voltar para todos os epicos</a>
-            </div>
         `;
+
+        // "← VOLTAR" (nav do modulo) assume a funcao de voltar para a lista de
+        // epicos quando estamos no detalhe de um epico (?key=...).
+        retargetNavBackToEpics();
 
         // Move o painel de detalhe para logo abaixo do grafico (primeira metric-section).
         if (kpiPanel) {
@@ -227,6 +238,25 @@ async function loadEpicDetail(key) {
         container.innerHTML = `<p class="empty-state">Erro ao carregar detalhes: ${err.message}</p>`;
         console.error(err);
     }
+}
+
+// No detalhe de um epico, o botao "← VOLTAR" da nav do modulo passa a voltar
+// para a LISTA de epicos (dashboard-v2) em vez do projeto principal. Substitui
+// o antigo link textual "Voltar para todos os epicos".
+function retargetNavBackToEpics() {
+    const apply = () => {
+        const back = document.querySelector("#hierarchy-nav .nav-back");
+        if (!back) return false;
+        back.setAttribute("href", "/hierarchy/dashboard-v2.html");
+        back.setAttribute("title", "Voltar para todos os epicos");
+        return true;
+    };
+    if (apply()) return;
+    // A nav e injetada por nav.js; se ainda nao estiver pronta, tenta de novo.
+    let tries = 0;
+    const t = setInterval(() => {
+        if (apply() || ++tries > 20) clearInterval(t);
+    }, 50);
 }
 
 function renderThroughputChart(data, pendingData, noDueDateCount) {
@@ -321,9 +351,9 @@ function renderThroughputChart(data, pendingData, noDueDateCount) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: hasCanceled || hasPending || hasNoDate, position: "bottom", labels: { color: "#f8fafc", font: { size: 11 } } },
+                legend: { display: hasCanceled || hasPending || hasNoDate, position: "bottom", labels: { color: CT("--text-1", "#10203a"), font: { size: 11 } } },
                 datalabels: {
-                    color: "#f8fafc",
+                    color: "#ffffff",
                     font: { size: 16, weight: "bold" },
                     anchor: "center",
                     align: "center",
@@ -333,15 +363,15 @@ function renderThroughputChart(data, pendingData, noDueDateCount) {
             scales: {
                 x: {
                     stacked: true,
-                    grid: { color: "rgba(255,255,255,0.05)" },
-                    ticks: { color: "#94a3b8", font: { size: 12 } },
+                    grid: { color: CT("--chart-grid", "rgba(16,32,58,0.08)") },
+                    ticks: { color: CT("--text-2", "#4a5a70"), font: { size: 12 } },
                 },
                 y: {
                     stacked: true,
                     beginAtZero: true,
-                    grid: { color: "rgba(255,255,255,0.05)" },
+                    grid: { color: CT("--chart-grid", "rgba(16,32,58,0.08)") },
                     ticks: {
-                        color: "#94a3b8",
+                        color: CT("--text-2", "#4a5a70"),
                         font: { size: 11 },
                         stepSize: 1,
                     },
@@ -368,7 +398,8 @@ const KPI_METRICS = {
     no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — nao entram no calendario do grafico nem no Progresso Planejado." },
 };
 
-const DONE_STATUS = new Set(["Done"]);
+// "Resolved" é tratado como "Done" (status equivalentes).
+const DONE_STATUS = new Set(["Done", "Resolved"]);
 const CANCELED_STATUS = new Set(["Canceled", "Reject"]);
 
 function isDone(s) { return DONE_STATUS.has(s.status); }

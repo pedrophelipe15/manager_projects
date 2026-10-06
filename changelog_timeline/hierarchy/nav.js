@@ -5,6 +5,7 @@
 (function () {
     const pages = [
         { href: "/hierarchy/dashboard-v2.html", label: "Dashboard" },
+        { href: "/hierarchy/pendencias.html", label: "Pendencias" },
         { href: "/hierarchy/roadmap.html", label: "Roadmap" },
         { href: "/hierarchy/timeline.html", label: "Timeline" },
         { href: "/hierarchy/settings.html", label: "Configuracoes" },

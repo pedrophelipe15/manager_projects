@@ -184,13 +184,17 @@
         .filter-input {
             padding: 0.4rem 0.6rem;
             border-radius: 4px;
-            background: rgba(15, 23, 42, 0.6);
-            color: #f8fafc;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: var(--surface-1);
+            color: var(--text-1);
+            border: 1px solid var(--border-strong);
             font-size: 0.85rem;
         }
         .filter-input::placeholder {
-            color: #64748b;
+            color: var(--text-3);
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--action);
         }
     </style>
 

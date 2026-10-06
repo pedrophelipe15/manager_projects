@@ -1773,11 +1773,21 @@ def api_home_overview(project_keys: str | None = None):
     # Commitment por projeto (dict para lookup)
     commitment = {c["project_key"]: c for c in get_commitment_summary_all(conn).get("projects", [])}
 
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, date
     now = datetime.now()
     stale_cutoff = now - timedelta(days=14)
+    overdue_cutoff = date.today() - timedelta(days=7)  # due date vencido ha mais de 7 dias
     active_states = ("In Progress", "Blocked", "Test", "Waiting for Delivery")
     active_ph = ",".join(["?"] * len(active_states))
+
+    def parse_due(due):
+        """Converte due_date (YYYY-MM-DD ou ISO) para date; None se invalido/vazio."""
+        if not due:
+            return None
+        try:
+            return datetime.fromisoformat(str(due).split("T")[0]).date()
+        except (ValueError, TypeError):
+            return None
 
     projects = []
     for pk in sorted(wanted):
@@ -1788,6 +1798,18 @@ def api_home_overview(project_keys: str | None = None):
             [pk, *active_states],
         )
         active_rows = cursor.fetchall()
+
+        # Vencidas > 7 dias: apenas status ativos, com due date no passado.
+        cursor.execute(
+            f"SELECT due_date FROM issues WHERE project_key = ? AND status IN ({active_ph}) "
+            f"AND due_date IS NOT NULL AND due_date != ''",
+            [pk, *active_states],
+        )
+        overdue = 0
+        for r in cursor.fetchall():
+            dd = parse_due(r["due_date"])
+            if dd is not None and dd < overdue_cutoff:
+                overdue += 1
 
         in_flight = sum(1 for r in active_rows if r["status"] in ("In Progress", "Test", "Waiting for Delivery"))
         blocked = sum(1 for r in active_rows if r["status"] == "Blocked")
@@ -1822,6 +1844,7 @@ def api_home_overview(project_keys: str | None = None):
             "blocked": blocked,
             "no_assignee": no_assignee,
             "stale": stale,
+            "overdue": overdue,
         })
 
     conn.close()
@@ -1839,7 +1862,7 @@ def api_home_detail(project_key: str, metric: str):
     """
     from datetime import datetime, timedelta
 
-    valid = {"pushing", "attention", "blocked", "no_assignee", "in_flight", "stale"}
+    valid = {"pushing", "attention", "blocked", "no_assignee", "in_flight", "stale", "overdue"}
     if metric not in valid:
         return {"error": f"metric invalido. Use um de: {sorted(valid)}", "issues": []}
 
@@ -1860,11 +1883,45 @@ def api_home_detail(project_key: str, metric: str):
         "no_assignee": {"title": "Sem responsavel", "desc": "Issues ativas sem responsavel atribuido."},
         "in_flight": {"title": "Em andamento", "desc": "Issues em In Progress, Test ou Waiting for Delivery."},
         "stale": {"title": "Paradas > 14 dias", "desc": "Issues ativas sem atualizacao ha mais de 14 dias."},
+        "overdue": {"title": "Vencidas > 7 dias", "desc": "Issues ativas (In Progress, Blocked, Test, Waiting for Delivery) com due date vencido ha mais de 7 dias."},
     }
 
     issues = []
 
-    if metric in ("pushing", "attention"):
+    if metric == "overdue":
+        from datetime import date, timedelta
+        overdue_cutoff = date.today() - timedelta(days=7)
+        today = date.today()
+        active_states_ov = ("In Progress", "Blocked", "Test", "Waiting for Delivery")
+        active_ph_ov = ",".join(["?"] * len(active_states_ov))
+        cursor.execute(
+            f"SELECT key, summary, status, assignee_name, due_date FROM issues "
+            f"WHERE project_key = ? AND status IN ({active_ph_ov}) "
+            f"AND due_date IS NOT NULL AND due_date != ''",
+            [project_key, *active_states_ov],
+        )
+        for r in cursor.fetchall():
+            due = r["due_date"]
+            try:
+                dd = datetime.fromisoformat(str(due).split("T")[0]).date()
+            except (ValueError, TypeError):
+                continue
+            if dd >= overdue_cutoff:
+                continue
+            days_late = (today - dd).days
+            issues.append({
+                "key": r["key"],
+                "url": JIRA + r["key"],
+                "summary": r["summary"] or "",
+                "assignee": r["assignee_name"] or "Sem responsavel",
+                "status": r["status"] or "",
+                "due_date": due,
+                "detail": f"vencida ha {days_late}d",
+                "days_late": days_late,
+            })
+        # Mais atrasadas primeiro.
+        issues.sort(key=lambda x: x["days_late"], reverse=True)
+    elif metric in ("pushing", "attention"):
         classification = "pushing" if metric == "pushing" else "attention"
         cursor.execute(
             """
@@ -2611,7 +2668,7 @@ def _get_stories_for_epic(cursor, epic_key: str) -> list[dict]:
 def _aggregate_metrics_for_stories(stories: list[dict]) -> dict:
     """Calcula métricas agregadas para uma lista de stories."""
     total = len(stories)
-    done = sum(1 for s in stories if s.get("status") in ("Done", "Canceled"))
+    done = sum(1 for s in stories if s.get("status") in ("Done", "Resolved", "Canceled"))
     in_progress = sum(1 for s in stories if s.get("status") in ACTIVE_STATES)
 
     lead_times = [s["lead_time_ms"] for s in stories if s.get("lead_time_ms", 0) > 0]
@@ -3069,6 +3126,63 @@ def api_hierarchy_issue_links(issue_key: str | None = None):
     conn.close()
 
     return {"issue_links": [dict(r) for r in rows]}
+
+
+@app.get("/api/hierarchy/pending")
+def api_hierarchy_pending():
+    """Lista as atividades (stories) PENDENTES da hierarquia, para a aba Pendencias.
+
+    Pendente = status que NAO e concluido. "Resolved" e tratado como concluido
+    (= Done), portanto NAO entra. Done/Canceled/Reject tambem ficam de fora.
+    Inclui lead_time_ms e cycle_time_ms (calculados, de h_metrics) para cada issue.
+    Projetos excluidos (projects.yaml) nao sao retornados.
+    """
+    conn = get_hierarchy_connection()
+    cursor = conn.cursor()
+
+    # Status considerados concluidos (nao-pendentes). Resolved = Done.
+    done_states = ("Done", "Resolved", "Canceled", "Reject")
+    ph = ",".join(["?"] * len(done_states))
+
+    cursor.execute(f"""
+        SELECT s.key, s.summary, s.status, s.issuetype_name, s.project_key,
+               s.assignee_name, s.due_date, s.created_at, s.updated_at, s.parent_key,
+               COALESCE(m.lead_time_ms, 0)  AS lead_time_ms,
+               COALESCE(m.cycle_time_ms, 0) AS cycle_time_ms
+        FROM h_stories s
+        LEFT JOIN h_metrics m ON m.issue_key = s.key
+        WHERE s.status NOT IN ({ph})
+    """, done_states)
+
+    excluded = set(get_excluded_projects())
+
+    def _pk(issue_key):
+        if not issue_key:
+            return ""
+        return issue_key.rsplit("-", 1)[0].upper() if "-" in issue_key else str(issue_key).upper()
+
+    issues = []
+    for r in cursor.fetchall():
+        d = dict(r)
+        pk = (d.get("project_key") or _pk(d.get("key"))).upper()
+        if pk in excluded:
+            continue
+        issues.append({
+            "key": d["key"],
+            "summary": d["summary"] or "",
+            "status": d["status"] or "",
+            "project_key": d["project_key"] or _pk(d["key"]),
+            "assignee": d["assignee_name"] or "",
+            "due_date": d["due_date"],
+            "created_at": d["created_at"],
+            "updated_at": d["updated_at"],
+            "parent_key": d["parent_key"] or "",
+            "lead_time_ms": d["lead_time_ms"],
+            "cycle_time_ms": d["cycle_time_ms"],
+        })
+
+    conn.close()
+    return {"issues": issues, "count": len(issues)}
 
 
 # Serve static files from current directory

@@ -10,7 +10,7 @@ const CH = {
     seriesFill: () => CTUI.token('--chart-1') + '99',
     refLine: () => CTUI.token('--text-2'),   // linha de media = referencia neutra
     axis: () => CTUI.token('--text-2'),
-    grid: 'rgba(255,255,255,0.05)',
+    grid: (window.CTUI ? CTUI.token('--chart-grid') : 'rgba(16,32,58,0.08)'),
     legend: () => CTUI.token('--text-1'),
 };
 

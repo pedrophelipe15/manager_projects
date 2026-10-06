@@ -197,7 +197,7 @@ function renderWorkloadChart(data) {
             indexAxis: 'y',
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { color: CTUI.token('--text-2') }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true },
+                x: { ticks: { color: CTUI.token('--text-2') }, grid: { color: CTUI.token('--chart-grid') }, beginAtZero: true },
                 y: { ticks: { color: CTUI.token('--text-1'), font: { size: 11 } }, grid: { display: false } }
             }
         }

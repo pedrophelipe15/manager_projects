@@ -8,42 +8,49 @@
  * cada arquivo. Contrastes de texto medidos sobre --surface-0 (>= 4.5:1 = AA).
  */
 :root {
-    /* ---- Superficies (dessaturadas, 4 degraus) ---- */
-    --surface-0: #0f1420;   /* fundo da pagina */
-    --surface-1: #171e2e;   /* card */
-    --surface-2: #1f2839;   /* card elevado / hover */
-    --surface-3: #35415a;   /* borda ativa / divisor forte */
+    /* ---- Superficies (tema CLARO PagBank, 4 degraus) ---- */
+    --surface-0: #f4f6f8;   /* fundo da pagina (cinza quase branco) */
+    --surface-1: #ffffff;   /* card */
+    --surface-2: #eef1f4;   /* card elevado / hover */
+    --surface-3: #d9e0e6;   /* borda ativa / divisor forte */
 
-    /* ---- Texto (contraste medido sobre --surface-0) ---- */
-    --text-1: #f1f5f9;      /* principal      ~17:1  AAA */
-    --text-2: #a8b4c6;      /* secundario     ~8.8:1 AAA */
-    --text-3: #7d8ba1;      /* terciario/hint ~5.3:1 AA  */
+    /* ---- Texto (contraste medido sobre --surface-1 branco) ---- */
+    --text-1: #10203a;      /* principal      ~15:1  AAA */
+    --text-2: #4a5a70;      /* secundario     ~7.4:1 AAA */
+    --text-3: #7488a0;      /* terciario/hint ~4.6:1 AA  */
 
     /* ---- Bordas ---- */
-    --border-subtle: rgba(255, 255, 255, 0.07);
-    --border-strong: rgba(255, 255, 255, 0.14);
+    --border-subtle: rgba(16, 32, 58, 0.08);
+    --border-strong: rgba(16, 32, 58, 0.16);
 
-    /* ---- Acao (um azul, tres estados) ---- */
-    --action: #4a8ef0;
-    --action-hover: #6ba3f5;
-    --action-quiet: rgba(74, 142, 240, 0.12);
+    /* ---- Acao: VERDE PagBank (um verde, tres estados) ---- */
+    --action: #0f9d58;
+    --action-hover: #0c8a4d;
+    --action-quiet: rgba(15, 157, 88, 0.10);
 
     /* ---- Semantico (SO para significado, nunca decoracao) ---- */
-    --ok: #34c98a;
-    --warn: #e8a93a;
-    --risk: #ef5f5f;
-    --ok-bg: rgba(52, 201, 138, 0.12);
-    --warn-bg: rgba(232, 169, 58, 0.12);
-    --risk-bg: rgba(239, 95, 95, 0.12);
+    --ok: #0f9d58;          /* sucesso = verde da marca */
+    --warn: #f5a623;
+    --risk: #e23b3b;
+    --ok-bg: rgba(15, 157, 88, 0.10);
+    --warn-bg: rgba(245, 166, 35, 0.12);
+    --risk-bg: rgba(226, 59, 59, 0.10);
+
+    /* ---- Cores de marca PagBank (apoio) ----
+       --brand-blue e usado para CLICAVEIS dentro de dados (links de issue,
+       status "In Progress"), reservando o verde para CTA e sucesso. */
+    --brand-yellow: #ffcc00;
+    --brand-blue: #0a66c2;
 
     /* ---- Serie de grafico (categorica) ----
-       Paleta de MAXIMA DISTINCAO (matiz + luminosidade bem separados),
-       inspirada em Okabe-Ito (segura para daltonismo) e ajustada para fundo
-       escuro. Ordem pensada para que series adjacentes/sobrepostas contrastem.
-       1 azul, 2 laranja, 3 verde, 4 rosa/magenta, 5 amarelo, 6 ciano. */
-    --chart-1: #4a8ef0;  --chart-2: #f0883e;
-    --chart-3: #3fca8e;  --chart-4: #e26aa8;
-    --chart-5: #e6c84a;  --chart-6: #45c2d6;
+       Paleta ancorada na marca PagBank, maxima distincao em fundo CLARO.
+       1 verde, 2 azul, 3 ambar, 4 laranja, 5 roxo, 6 ciano. */
+    --chart-1: #0f9d58;  --chart-2: #0a66c2;
+    --chart-3: #f5a623;  --chart-4: #f0883e;
+    --chart-5: #7b5cd6;  --chart-6: #17a2b8;
+
+    /* Linha de grade dos graficos (visivel sobre fundo claro) */
+    --chart-grid: rgba(16, 32, 58, 0.08);
 
     /* ---- Tipografia: escala de 6 degraus (piso 12px) ---- */
     --fs-xs: 0.75rem;    /* 12px — badge, label KPI, header tabela */
@@ -59,6 +66,10 @@
 
     --radius: 6px;
     --radius-lg: 12px;
+
+    /* ---- Sombra (essencial no tema CLARO para elevar sem peso) ---- */
+    --shadow-sm: 0 1px 2px rgba(16, 32, 58, 0.06);
+    --shadow-md: 0 4px 16px rgba(16, 32, 58, 0.08);
 
     /* ================================================================
        ALIASES retrocompativeis — apontam para os tokens acima.
@@ -102,6 +113,7 @@ body {
 .glass {
     background: var(--surface-1) !important;
     border: 1px solid var(--border-subtle) !important;
+    box-shadow: var(--shadow-sm) !important;  /* elevacao no tema claro */
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
 }
@@ -142,7 +154,138 @@ body {
 .btn--secondary:hover:not(:disabled) { border-color: var(--action); background: var(--action-quiet); }
 
 .btn--ghost { background: transparent; color: var(--text-2); }
-.btn--ghost:hover:not(:disabled) { color: var(--text-1); background: rgba(255, 255, 255, 0.05); }
+.btn--ghost:hover:not(:disabled) { color: var(--text-1); background: var(--surface-2); }
 
 .btn--danger { background: transparent; border-color: rgba(239, 95, 95, 0.4); color: var(--risk); }
 .btn--danger:hover:not(:disabled) { background: var(--risk); color: #fff; border-color: var(--risk); }
+
+/* ===================================================================
+   COMPATIBILIDADE TEMA CLARO (PagBank)
+   O CSS legado usava rgba(255,255,255,alpha) — branco translucido —
+   para trilhas de barra, hover de linha e bordas. No fundo claro isso
+   fica invisivel. Aqui remapeamos esses padroes para tokens escuros,
+   de forma centralizada (vence o CSS antigo sem reescrever cada arquivo).
+   =================================================================== */
+
+/* Trilhas de barra (fundo do "vazio") — precisam de cinza visivel */
+.score-bar,
+.progress-bar,
+.mini-bar,
+.wave1-progress-track {
+    background: var(--surface-2) !important;
+}
+
+/* Hover de linha de tabela — tom suave sobre branco */
+.data-table tr:hover,
+.data-table tbody tr:hover,
+.metric-table tr:hover,
+.metric-table tbody tr:hover,
+.inc-table tbody tr:hover,
+.rules-table tbody tr:hover,
+.metrics-table tbody tr:hover,
+#detail-panel .data-table tr:hover {
+    background: var(--surface-2) !important;
+}
+
+/* Hover de opcao em dropdown/multiselect */
+.dd-option:hover,
+.multiselect-options label:hover,
+#detail-panel .dd-option:hover {
+    background: var(--surface-2) !important;
+}
+
+/* Bordas internas de celula que usavam branco translucido */
+.data-table td,
+.metric-table td,
+#detail-panel .data-table td {
+    border-bottom-color: var(--border-subtle) !important;
+}
+
+/* "value-box" e caixas de formula com fundo branco translucido */
+.value-box,
+.formula-details summary,
+.kpi-details-content {
+    background: var(--surface-2) !important;
+}
+
+/* ===================================================================
+   REGRA DO VERDE — clicaveis DENTRO de dados usam AZUL, nao verde.
+   O verde (--action) fica reservado para CTA e sucesso. Links de issue
+   e demais links em celulas de tabela recebem --brand-blue para nao
+   competir com o verde de sucesso (Commitment Score, "ok").
+   =================================================================== */
+.jira-link,
+#detail-panel .jira-link {
+    color: var(--brand-blue) !important;
+}
+
+/* ===================================================================
+   FILTROS E CONTROLES DE FORMULARIO — TEMA CLARO
+   O CSS legado (e alguns :root inline por pagina) pintavam filtros,
+   dropdowns, selects e pagers com azul-escuro rgba(15,23,42,*) e #1e293b,
+   assumindo fundo escuro. No tema claro isso fica ilegivel (campo escuro,
+   placeholder sumido). Centralizamos aqui o override com !important para
+   corrigir TODAS as telas de uma vez, sem editar arquivo por arquivo.
+   =================================================================== */
+
+/* Inputs, selects e campos de filtro */
+.filter-input,
+.filter-bar select,
+.filter-section select,
+.section-filters .filter-input,
+.table-header input,
+input[type="text"].filter-input,
+input[type="date"].filter-input {
+    background: var(--surface-1) !important;
+    color: var(--text-1) !important;
+    border: 1px solid var(--border-strong) !important;
+}
+.filter-input::placeholder,
+.table-header input::placeholder { color: var(--text-3) !important; }
+.filter-bar select option,
+.filter-section select option { background: var(--surface-1) !important; color: var(--text-1) !important; }
+
+/* Dropdown-checkbox (toggle + menu + opcoes) — padrao do design system */
+.dd-toggle {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-1) !important;
+}
+.dd-toggle:hover { border-color: var(--action) !important; }
+.dd-menu {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-strong) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+.dd-option { color: var(--text-1) !important; }
+.dd-option:hover { background: var(--surface-2) !important; }
+
+/* Toolbar de filtros (barra que agrupa os controles) */
+.toolbar-glass,
+.filter-bar,
+.section-filters {
+    background: var(--surface-2) !important;
+}
+
+/* Pagers e botoes pequenos que usavam azul-escuro */
+.worst-pager-btn,
+.detail-pager-btn,
+#kpi-detail-panel .detail-pager-btn {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-1) !important;
+}
+
+/* Tag de multi-select selecionada: verde da marca, nao azul */
+.multiselect-tag {
+    background: var(--action-quiet) !important;
+    border: 1px solid var(--action) !important;
+    color: var(--action) !important;
+}
+
+/* Headers sticky de tabela em paineis de detalhe que usavam #1e293b */
+#kpi-detail-panel .data-table th,
+#detail-panel .data-table th {
+    background: var(--surface-1) !important;
+    color: var(--text-3) !important;
+}

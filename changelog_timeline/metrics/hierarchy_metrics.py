@@ -16,8 +16,13 @@ import yaml
 # Estados considerados "ativos" (issue está sendo trabalhada)
 ACTIVE_STATES = {"In Progress", "Blocked", "Test", "Waiting for Delivery"}
 
-# Estados considerados "concluídos" (issue finalizada)
-DONE_STATES = {"Done", "Canceled"}
+# Estados considerados "concluídos" (issue finalizada).
+# "Resolved" é tratado internamente como "Done" (agregação de status equivalentes).
+DONE_STATES = {"Done", "Resolved", "Canceled"}
+
+# Status que contam como entrega efetiva (Done) para o throughput — "Resolved"
+# é agregado a "Done". "Canceled" é contabilizado à parte (não é entrega).
+DONE_EQUIVALENT = {"Done", "Resolved"}
 
 # Caminho do projects.yaml (fonte da lista de projetos excluídos)
 _PROJECTS_YAML = os.path.join(
@@ -275,7 +280,7 @@ def get_epic_weekly_throughput(conn: sqlite3.Connection, epic_key: str, weeks: i
     cursor = conn.cursor()
     cursor.execute('''
         SELECT resolved_at FROM h_stories
-        WHERE parent_key = ? AND status IN ('Done', 'Canceled')
+        WHERE parent_key = ? AND status IN ('Done', 'Resolved', 'Canceled')
           AND resolved_at IS NOT NULL AND resolved_at != ''
     ''', (epic_key,))
 
@@ -311,7 +316,7 @@ def get_epic_monthly_throughput(conn: sqlite3.Connection, epic_key: str, months:
     cursor = conn.cursor()
     cursor.execute('''
         SELECT status, resolved_at, updated_at FROM h_stories
-        WHERE parent_key = ? AND status IN ('Done', 'Canceled')
+        WHERE parent_key = ? AND status IN ('Done', 'Resolved', 'Canceled')
     ''', (epic_key,))
 
     done_by_month: dict[str, int] = defaultdict(int)
@@ -325,7 +330,7 @@ def get_epic_monthly_throughput(conn: sqlite3.Connection, epic_key: str, months:
         try:
             dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
             key = f"{dt.year}-{dt.month:02d}"
-            if status == "Done":
+            if status in DONE_EQUIVALENT:
                 done_by_month[key] += 1
             else:
                 canceled_by_month[key] += 1
@@ -449,7 +454,7 @@ def get_epic_pending_stories_by_duedate(conn: sqlite3.Connection, epic_key: str)
     cursor.execute('''
         SELECT due_date FROM h_stories
         WHERE parent_key = ?
-          AND status NOT IN ('Done', 'Canceled')
+          AND status NOT IN ('Done', 'Resolved', 'Canceled')
           AND due_date IS NOT NULL AND due_date != ''
     ''', (epic_key,))
 
@@ -541,7 +546,7 @@ def get_epic_health_data(conn: sqlite3.Connection, epic_key: str) -> dict:
     # Métricas de tempo (lead/cycle) das stories Done
     cursor.execute('''
         SELECT lead_time_ms, cycle_time_ms FROM h_metrics
-        WHERE parent_key = ? AND status IN ('Done', 'Canceled') AND lead_time_ms > 0
+        WHERE parent_key = ? AND status IN ('Done', 'Resolved', 'Canceled') AND lead_time_ms > 0
     ''', (epic_key,))
     done_metrics = cursor.fetchall()
 
@@ -700,7 +705,7 @@ def get_initiative_weekly_throughput(conn: sqlite3.Connection, initiative_key: s
     placeholders = ",".join(["?" for _ in children_keys])
     cursor.execute(f'''
         SELECT resolved_at FROM h_stories
-        WHERE parent_key IN ({placeholders}) AND status IN ('Done', 'Canceled')
+        WHERE parent_key IN ({placeholders}) AND status IN ('Done', 'Resolved', 'Canceled')
           AND resolved_at IS NOT NULL AND resolved_at != ''
     ''', children_keys)
 
@@ -754,7 +759,7 @@ def get_initiative_monthly_throughput(conn: sqlite3.Connection, initiative_key: 
     placeholders = ",".join(["?" for _ in children_keys])
     cursor.execute(f'''
         SELECT status, resolved_at, updated_at FROM h_stories
-        WHERE parent_key IN ({placeholders}) AND status IN ('Done', 'Canceled')
+        WHERE parent_key IN ({placeholders}) AND status IN ('Done', 'Resolved', 'Canceled')
     ''', children_keys)
 
     done_by_month: dict[str, int] = defaultdict(int)
@@ -768,7 +773,7 @@ def get_initiative_monthly_throughput(conn: sqlite3.Connection, initiative_key: 
         try:
             dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
             key = f"{dt.year}-{dt.month:02d}"
-            if status == "Done":
+            if status in DONE_EQUIVALENT:
                 done_by_month[key] += 1
             else:
                 canceled_by_month[key] += 1
@@ -814,7 +819,7 @@ def get_initiative_pending_stories_by_duedate(conn: sqlite3.Connection, initiati
     cursor.execute(f'''
         SELECT due_date FROM h_stories
         WHERE parent_key IN ({placeholders})
-          AND status NOT IN ('Done', 'Canceled')
+          AND status NOT IN ('Done', 'Resolved', 'Canceled')
           AND due_date IS NOT NULL AND due_date != ''
     ''', children_keys)
 
@@ -918,13 +923,13 @@ def get_initiative_health_data(conn: sqlite3.Connection, initiative_key: str) ->
     placeholders = ",".join(["?" for _ in children_keys])
     cursor.execute(f'''
         SELECT COUNT(*) as cnt FROM h_stories
-        WHERE parent_key IN ({placeholders}) AND status NOT IN ('Done', 'Canceled')
+        WHERE parent_key IN ({placeholders}) AND status NOT IN ('Done', 'Resolved', 'Canceled')
     ''', children_keys)
     pending_count = cursor.fetchone()["cnt"]
 
     cursor.execute(f'''
         SELECT COUNT(*) as cnt FROM h_stories
-        WHERE parent_key IN ({placeholders}) AND status NOT IN ('Done', 'Canceled')
+        WHERE parent_key IN ({placeholders}) AND status NOT IN ('Done', 'Resolved', 'Canceled')
           AND (due_date IS NULL OR due_date = '')
     ''', children_keys)
     no_duedate_count = cursor.fetchone()["cnt"]
@@ -938,7 +943,7 @@ def get_initiative_health_data(conn: sqlite3.Connection, initiative_key: str) ->
     five_weeks_str = five_weeks_later.strftime("%Y-%m-%d")
     cursor.execute(f'''
         SELECT COUNT(*) as cnt FROM h_stories
-        WHERE parent_key IN ({placeholders}) AND status NOT IN ('Done', 'Canceled')
+        WHERE parent_key IN ({placeholders}) AND status NOT IN ('Done', 'Resolved', 'Canceled')
           AND LOWER(TRIM(status)) NOT IN ('open', 'to do', 'refinamento', 'refinement')
           AND due_date IS NOT NULL AND due_date != ''
           AND due_date >= ? AND due_date <= ?

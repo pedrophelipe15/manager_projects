@@ -92,3 +92,15 @@ hierarchy:
 - key: PSADB-1431
   name: 2026 KR Classificação de dados
   type: epic
+- key: GPPGI-855
+  name: Rollout do Restore Point-in-Time
+  type: initiative
+- key: PSADB-1482
+  name: AUDITORIA - Unified Audit
+  type: epic
+- key: PSADB-1470
+  name: Gestão de Obsolescência
+  type: epic
+- key: PSADB-1450
+  name: Ciclo de Vida e Expurgo Scrooge (Balance)
+  type: epic

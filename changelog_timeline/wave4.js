@@ -221,7 +221,7 @@ function renderCrossChart(data) {
             },
             scales: {
                 x: { stacked: true, ticks: { color: CTUI.token('--text-2'), maxTicksLimit: 13, font: { size: 10 } }, grid: { display: false } },
-                y: { stacked: true, ticks: { color: CTUI.token('--text-2') }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+                y: { stacked: true, ticks: { color: CTUI.token('--text-2') }, grid: { color: CTUI.token('--chart-grid') }, beginAtZero: true }
             }
         },
         plugins: [ChartDataLabels],

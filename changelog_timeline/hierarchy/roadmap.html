@@ -41,11 +41,11 @@
         .dd-option:hover { background: rgba(255,255,255,0.05); }
         .dd-option input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
         .btn-clear-filters {
-            background: none; border: 1px solid rgba(255,255,255,0.1);
-            color: #94a3b8; padding: 0.4rem 0.7rem; border-radius: 6px;
+            background: var(--surface-1); border: 1px solid var(--border-strong);
+            color: var(--text-2); padding: 0.4rem 0.7rem; border-radius: 6px;
             font-size: 0.85rem; cursor: pointer; font-family: inherit; transition: all 0.2s;
         }
-        .btn-clear-filters:hover { color: #f8fafc; border-color: var(--accent); }
+        .btn-clear-filters:hover { color: var(--text-1); border-color: var(--action); }
 
         /* Section */
         .roadmap-section { margin-bottom: 2rem; }
@@ -56,8 +56,8 @@
         .roadmap-container { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; overflow: hidden; }
 
         /* Timeline Header */
-        .timeline-header { display: grid; grid-template-columns: var(--info-col-width) 1fr; border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 10; background: rgba(15, 23, 42, 0.95); }
-        .timeline-header-label { padding: 0.6rem 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-right: 1px solid var(--glass-border); }
+        .timeline-header { display: grid; grid-template-columns: var(--info-col-width) 1fr; border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 10; background: var(--surface-2); }
+        .timeline-header-label { padding: 0.6rem 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; border-right: 1px solid var(--border-subtle); }
         .timeline-months { display: grid; grid-template-columns: repeat(var(--month-count), 1fr); }
         .timeline-month { padding: 0.6rem 0.3rem; text-align: center; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; border-right: 1px solid rgba(255,255,255,0.03); }
         .timeline-month.current { color: var(--accent); background: rgba(59,130,246,0.05); }
@@ -76,8 +76,8 @@
         .epic-count-hint { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; }
 
         /* Toolbar do roadmap (dica + expandir/colapsar) */
-        .roadmap-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.75rem; background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
-        .roadmap-hint { font-size: 0.8rem; color: var(--text-muted); }
+        .roadmap-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; padding: 0.6rem 0.75rem; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 8px; }
+        .roadmap-hint { font-size: 0.8rem; color: var(--text-2); }
         .roadmap-toolbar-actions { display: flex; gap: 0.5rem; }
 
         /* Header stats */
@@ -108,11 +108,11 @@
         .gantt-bar.default { background: var(--color-default, #6c757d); }
 
         /* Tooltip */
-        .tooltip { position: fixed; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.88rem; line-height: 1.5; z-index: 1000; pointer-events: none; display: none; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .tooltip { position: fixed; background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.88rem; line-height: 1.5; z-index: 1000; pointer-events: none; display: none; max-width: 350px; box-shadow: var(--shadow-md); }
         .tooltip.visible { display: block; }
-        .tooltip-title { font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem; }
-        .tooltip-row { color: var(--text-muted); }
-        .tooltip-row span { color: var(--text-primary); }
+        .tooltip-title { font-weight: 600; color: var(--text-1); margin-bottom: 0.3rem; }
+        .tooltip-row { color: var(--text-2); }
+        .tooltip-row span { color: var(--text-1); }
 
         /* Legend */
         .legend { display: flex; gap: 1.5rem; margin-top: 0.75rem; padding: 0.6rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); }
@@ -142,7 +142,7 @@
 
     <div id="tooltip" class="tooltip"></div>
 
-    <script src="nav.js?v=3"></script>
+    <script src="nav.js?v=4"></script>
     <script src="roadmap.js?v=3"></script>
 </body>
 </html>

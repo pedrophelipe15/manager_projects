@@ -1,6 +1,76 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.3.1 · **Status:** produtivo · **Atualizado:** 2026-09-30
+> **Versao:** v2.4.1 · **Status:** produtivo · **Atualizado:** 2026-10-06
+>
+> A **v2.4.x (tema + UX)** tambem consolidou, nesta leva:
+> - **Novo tema visual (claro, identidade PagBank)**: o design system (`tokens.css`) migrou
+>   de superficies escuras para um **tema claro** — fundo `#f4f6f8`, cards brancos com
+>   **sombra** (`--shadow-sm/md`) para elevacao, texto escuro `#10203a`, **acao/sucesso em
+>   verde PagBank** `#0f9d58`, `warn` `#f5a623`, `risk` `#e23b3b`, e novos tokens de marca
+>   `--brand-blue`/`--brand-yellow` e `--chart-grid`. Regra de cor: **clicaveis dentro de
+>   dados usam azul** (`--brand-blue`), reservando o verde para CTA e sucesso (ex.: `.jira-link`).
+>   Foram ajustados os `rgba(255,255,255,*)` e `rgba(15,23,42,*)` herdados do tema escuro em
+>   filtros, inputs, dropdowns, barras, hovers, nav do modulo hierarquia, tooltip do roadmap,
+>   bloco de Flow Efficiency (wave1) e grids de graficos (wave1-4, epic/initiative health).
+> - **Minha Visao**: coluna **Detalhe** removida do painel de detalhamento; novo indicador
+>   **"Vencidas > 7 dias"** (issues ativas com due date vencido ha mais de 7 dias — status
+>   In Progress/Blocked/Test/Waiting for Delivery) no overview e no detalhamento.
+> - **Hierarquia / navegacao**: nas telas de detalhe de **epico** e **iniciativa**, o botao
+>   **"← VOLTAR"** passou a voltar para a lista (dashboard-v2), substituindo os links textuais
+>   "Voltar para todos os epicos / todas as iniciativas" (removidos). Em **Initiative Health**:
+>   removido o big number **Risco Corporativo**; **Atividades Pendentes** virou clicavel com o
+>   mesmo painel de detalhe do Epic Health (filtros Projeto/Assignee/Status, mesmas colunas),
+>   posicionado abaixo da tabela de Epicos; coluna **Epic** da tabela de epicos passou a ocupar
+>   a sobra (texto completo) com as demais colunas no minimo.
+>
+> A **v2.4.1** corrigiu um bug na **sincronizacao hierarquica**: quando o vinculo
+> (parent/Epic Link) de uma story era **removido no Jira**, a story continuava
+> aparecendo sob o epico antigo mesmo apos re-sincronizar. Causa: a extracao usava
+> apenas `INSERT OR REPLACE` (upsert) e **nunca removia** registros que deixaram de ser
+> filhos — a story desvinculada sumia da JQL do epico, mas a linha antiga permanecia no
+> `hierarchy.db`. **Correcao** (`exporter_jira/export_hierarchy.py`): antes de inserir as
+> stories, o extrator agora **remove as orfas** — stories cujo `parent_key` e um dos
+> epicos sincronizados mas que nao vieram mais na extracao atual — junto com suas
+> subtasks, metrics, changelogs e issue links. Resolve casos como as NASH-6493/6496/6499/
+> 6502/6505 desvinculadas de **PSADB-1495**. (Exige re-sincronizar o epico afetado.)
+>
+> A **v2.4.0** adicionou a aba **Pendencias** ao modulo **Hierarquia**
+> (`hierarchy/pendencias.html`), uma tabela consolidada das **atividades pendentes**
+> de toda a hierarquia, no mesmo padrao de tabela/filtros do **Dashboard Gerencial**
+> (`dashboard.html`):
+> - **Novo endpoint** `GET /api/hierarchy/pending`: retorna as stories pendentes
+>   (status que NAO e concluido). "Resolved" e tratado como concluido (= Done) e
+>   **nao** aparece; Done/Canceled/Reject tambem ficam de fora. Projetos excluidos
+>   (`projects.yaml`) sao omitidos. (O endpoint ainda calcula `lead_time_ms`/`cycle_time_ms`
+>   no payload, mas a tabela nao os exibe — ver colunas abaixo.)
+> - **Filtros** (mesmo modelo do dashboard): multiselect dropdown-checkbox com tags para
+>   **Projeto**, **Status** e **Assignee**, busca por **chave**, filtro por **Epico (parent)**
+>   e botao **Limpar**. Tabela com **ordenacao por coluna** (headers clicaveis) e paginacao
+>   (15/pag).
+> - **Colunas**: Key, Epico, Assignee, Summary, Status, Created, Due Date, Updated.
+>   Nao ha coluna **Resolved** (pendentes nao tem data de resolucao) nem acao de Timeline;
+>   **Lead Time e Cycle Time foram removidos da tabela** (pouco informativos para pendentes —
+>   lead time nao existe sem resolucao). A aba foi incluida na nav do modulo (entre Dashboard
+>   e Roadmap).
+>
+> A **v2.3.2** trouxe duas correcoes na **hierarquia**:
+> - **Status "Resolved" tratado como "Done"** (agregacao interna de status equivalentes):
+>   nas telas **Epic Health** e **Initiative Health**, stories em `Resolved` passam a contar
+>   como concluidas, do mesmo modo que `Done` — refletindo em progresso, "Stories Done",
+>   "Atividades Pendentes", throughput, risco e na cor de linha do painel de detalhe. A regra
+>   e aplicada na **leitura** (`DONE_STATES`/`DONE_EQUIVALENT` em `metrics/hierarchy_metrics.py`,
+>   agregacao da arvore em `api.py` e `DONE_STATUS` nos JS); **nao exige re-sincronizacao** —
+>   vale imediatamente para os dados ja no `hierarchy.db`. `Canceled`/`Reject` seguem contando
+>   como encerradas sem entrega (fora do throughput de "Done").
+> - **Extracao hierarquica / tipo "Audit"**: a JQL que busca as stories filhas de um epico
+>   filtrava por uma whitelist de `issuetype` que **nao incluia o tipo "Audit"**. Com isso,
+>   epicos de auditoria (ex.: **PSADB-1482 — Unified Audit**) apareciam **sem filhos**, pois
+>   todos os cards vinculados eram do tipo **Audit** (ex.: SDACI-2050 e irmaos). O tipo **Audit**
+>   foi adicionado a whitelist em `exporter_jira/export_hierarchy.py` (entre aspas na JQL, por
+>   ser palavra reservada). **Importante:** essa correcao afeta apenas **extracoes futuras** —
+>   e necessario **re-sincronizar** o(s) epico(s) afetado(s) para repopular o `hierarchy.db`.
+>   O vinculo cross-project (story em SDACI sob epico em PSADB) ja funcionava via campo
+>   `parent`/Epic Link; a unica barreira era o filtro de tipo.
 >
 > A **v2.3.1** adicionou o filtro **Projeto** ao painel de detalhe dos big numbers do
 > **Epic Health**. O painel agora oferece tres dropdowns cascateantes — **Projeto**,

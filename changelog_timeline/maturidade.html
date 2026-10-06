@@ -11,15 +11,17 @@
     <link rel="stylesheet" href="ui.css?v=3">
     <style>
         :root {
-            --bg-primary: #0f172a;
-            --text-primary: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --glass-bg: rgba(30, 41, 59, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
+            /* Herdam do design system (tokens.css) — tema claro PagBank.
+               Mantidos como aliases para o CSS local desta pagina. */
+            --bg-primary: var(--surface-0);
+            --text-primary: var(--text-1);
+            --text-muted: var(--text-2);
+            --accent: var(--action);
+            --glass-bg: var(--surface-1);
+            --glass-border: var(--border-subtle);
+            --danger: var(--risk);
+            --warning: var(--warn);
+            --success: var(--ok);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,10 +48,10 @@
         /* Filtro */
         .filter-bar { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .filter-bar select {
-            background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1);
-            color: #f8fafc; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem; font-family: inherit;
+            background: var(--surface-1); border: 1px solid var(--border-strong);
+            color: var(--text-1); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem; font-family: inherit;
         }
-        .filter-bar select option { background: #1e293b; }
+        .filter-bar select option { background: var(--surface-1); }
         .btn-action {
             background: var(--accent); border: none; color: #fff; padding: 0.5rem 1.2rem;
             border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit;
@@ -90,7 +92,7 @@
             table-layout: fixed;
         }
         .report-table th {
-            text-align: left; padding: 0.6rem 0.7rem; background: rgba(15,23,42,0.8);
+            text-align: left; padding: 0.6rem 0.7rem; background: var(--surface-2);
             color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
             border-bottom: 1px solid var(--glass-border);
         }
@@ -140,7 +142,7 @@
         }
         .modal-overlay.open { display: flex; }
         .modal-content {
-            background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: 12px;
             width: 100%; max-width: 900px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
@@ -152,7 +154,7 @@
         .modal-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
 
         .rule-card {
-            background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.06);
+            background: var(--surface-2); border: 1px solid rgba(255,255,255,0.06);
             border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem;
         }
         .rule-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
@@ -162,7 +164,7 @@
         .rule-field { display: flex; flex-direction: column; gap: 0.25rem; }
         .rule-field label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
         .rule-field input {
-            background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary);
+            background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text-primary);
             padding: 0.4rem 0.6rem; border-radius: 4px; font-size: 0.85rem; font-family: inherit; width: 80px;
         }
         .rule-field input:focus { outline: none; border-color: var(--accent); }

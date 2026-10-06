@@ -167,6 +167,7 @@ function renderProjectCard(p) {
             ${row('Sem responsavel', 'var(--action)', p.no_assignee, p.no_assignee > 0 ? 'bad' : 'ok', 'no_assignee')}
             ${row('Em andamento', 'var(--ok)', p.in_flight, 'ok', 'in_flight')}
             ${row('Paradas >14 dias', 'var(--text-3)', p.stale, p.stale > 0 ? 'warn' : 'ok', 'stale')}
+            ${row('Vencidas >7 dias', 'var(--risk)', p.overdue, p.overdue > 0 ? 'bad' : 'ok', 'overdue')}
         </div>
         <div class="pc-links">
             <a class="pc-link" href="/compromisso.html" onclick="goToProject('${p.project_key}')">Compromisso</a>
@@ -249,7 +250,6 @@ const DETAIL_COLS = [
     { key: 'assignee', label: 'Responsavel', filterable: true,  type: 'text' },
     { key: 'status',   label: 'Status',      filterable: true,  type: 'text' },
     { key: 'due_date', label: 'Due Date',    filterable: false, type: 'date' },
-    { key: 'detail',   label: 'Detalhe',     filterable: false, type: 'text' },
 ];
 
 // Formata 'YYYY-MM-DD' (ou ISO) para 'DD/MM/YYYY'; vazio vira '--'.
@@ -348,9 +348,8 @@ function renderDetailPanel() {
             <td>${escapeHtml(i.assignee)}</td>
             <td>${escapeHtml(i.status)}</td>
             <td class="mm-date">${fmtDate(i.due_date)}</td>
-            <td class="mm-detail">${escapeHtml(i.detail || '')}</td>
         </tr>`).join('')
-        : `<tr><td colspan="6" class="empty-state">Nenhuma issue no filtro atual.</td></tr>`;
+        : `<tr><td colspan="5" class="empty-state">Nenhuma issue no filtro atual.</td></tr>`;
 
     panel.innerHTML = head + filtersBar + `<div class="detail-table-wrap"><table class="data-table">
         <thead><tr>${ths}</tr></thead>

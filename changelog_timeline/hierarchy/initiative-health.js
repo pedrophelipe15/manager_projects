@@ -5,6 +5,17 @@
  */
 
 const MS_TO_DAYS = 1 / 86400000;
+
+// Le um token de cor do design system (tokens.css) com fallback.
+function CT(name, fallback) {
+    try {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
 let throughputChart = null;
 let allStories = []; // stories agregadas de todos os epicos da iniciativa (fonte do painel de detalhe)
 
@@ -28,7 +39,7 @@ function formatTimestampBR(iso) {
 
 function statusRowClass(status) {
     switch (status) {
-        case "Done": return "row-done";
+        case "Done": case "Resolved": return "row-done";
         case "In Progress": return "row-in-progress";
         case "Blocked": return "row-blocked";
         case "Test": return "row-test";
@@ -189,17 +200,13 @@ async function loadInitiativeDetail(key) {
                 <div class="kpi-value">${pr.done_stories}/${pr.total_stories}</div>
                 <div class="kpi-label">Stories Done</div>
             </div>
-            <div class="kpi-card">
+            <div class="kpi-card kpi-clickable" data-metric="pending" onclick="showKpiDetail('pending')" title="Ver atividades pendentes">
                 <div class="kpi-value warning">${pr.pending_count}</div>
                 <div class="kpi-label">Atividades Pendentes</div>
             </div>
             <div class="kpi-card kpi-clickable" data-metric="no_duedate" onclick="showKpiDetail('no_duedate')" title="Ver pendentes sem due date">
                 <div class="kpi-value ${(pr.no_duedate_count ?? 0) > 0 ? 'danger' : ''}">${pr.no_duedate_count ?? 0}</div>
                 <div class="kpi-label">Pendentes sem Due Date</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-value">${riskBadge(data.risk)}</div>
-                <div class="kpi-label">Risco Corporativo</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${data.teams.length}</div>
@@ -215,14 +222,14 @@ async function loadInitiativeDetail(key) {
             const efc = e.forecast;
             epicRows += `
                 <tr class="clickable" onclick="window.location.href='/hierarchy/epic-health.html?key=${ep.key}'">
-                    <td><strong>${jiraLink(ep.key)}</strong></td>
-                    <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ep.summary}</td>
-                    <td>${progressBar(epr.progress_pct, 80)}</td>
-                    <td style="text-align:center">${epr.done}/${epr.total}</td>
-                    <td style="text-align:center">${efc.p85 > 0 ? efc.p85 + "w" : "—"}</td>
-                    <td style="text-align:center">${formatDays(e.metrics.avg_cycle_time_ms)}</td>
-                    <td style="text-align:center">${formatDays(e.metrics.avg_lead_time_ms)}</td>
-                    <td>${riskBadge(e.risk)}</td>
+                    <td style="white-space:nowrap"><strong>${jiraLink(ep.key)}</strong></td>
+                    <td class="epic-summary-cell">${ep.summary}</td>
+                    <td style="white-space:nowrap">${progressBar(epr.progress_pct, 80)}</td>
+                    <td style="text-align:center;white-space:nowrap">${epr.done}/${epr.total}</td>
+                    <td style="text-align:center;white-space:nowrap">${efc.p85 > 0 ? efc.p85 + "w" : "—"}</td>
+                    <td style="text-align:center;white-space:nowrap">${formatDays(e.metrics.avg_cycle_time_ms)}</td>
+                    <td style="text-align:center;white-space:nowrap">${formatDays(e.metrics.avg_lead_time_ms)}</td>
+                    <td style="white-space:nowrap">${riskBadge(e.risk)}</td>
                 </tr>
             `;
         }
@@ -255,17 +262,18 @@ async function loadInitiativeDetail(key) {
                     <tbody>${epicRows}</tbody>
                 </table>
             </div>
-
-            <div style="text-align:center; margin-top:1rem;">
-                <a href="/hierarchy/dashboard-v2.html" class="nav-link" style="color:var(--accent)">&larr; Voltar para todas as iniciativas</a>
-            </div>
         `;
 
-        // Move o painel de detalhe para logo abaixo do grafico (primeira metric-section).
+        // "← VOLTAR" (nav do modulo) assume a funcao de voltar para a lista de
+        // iniciativas quando estamos no detalhe de uma iniciativa (?key=...).
+        retargetNavBackToInitiatives();
+
+        // Move o painel de detalhe para abaixo da tabela de Epicos (ultima metric-section).
         const kpiPanel = document.getElementById("kpi-detail-panel");
         if (kpiPanel) {
-            const chartSection = container.querySelector(".metric-section");
-            if (chartSection) chartSection.insertAdjacentElement("afterend", kpiPanel);
+            const sections = container.querySelectorAll(".metric-section");
+            const lastSection = sections[sections.length - 1];
+            if (lastSection) lastSection.insertAdjacentElement("afterend", kpiPanel);
         }
 
         // Render throughput chart (mensal) com pending stories por due_date
@@ -275,6 +283,25 @@ async function loadInitiativeDetail(key) {
         container.innerHTML = `<p class="empty-state">Erro ao carregar detalhes: ${err.message}</p>`;
         console.error(err);
     }
+}
+
+// No detalhe de uma iniciativa, o botao "← VOLTAR" da nav do modulo passa a
+// voltar para a LISTA de iniciativas (dashboard-v2) em vez do projeto principal.
+// Substitui o antigo link textual "Voltar para todas as iniciativas".
+function retargetNavBackToInitiatives() {
+    const apply = () => {
+        const back = document.querySelector("#hierarchy-nav .nav-back");
+        if (!back) return false;
+        back.setAttribute("href", "/hierarchy/dashboard-v2.html");
+        back.setAttribute("title", "Voltar para todas as iniciativas");
+        return true;
+    };
+    if (apply()) return;
+    // A nav e injetada por nav.js; se ainda nao estiver pronta, tenta de novo.
+    let tries = 0;
+    const t = setInterval(() => {
+        if (apply() || ++tries > 20) clearInterval(t);
+    }, 50);
 }
 
 function renderThroughputChart(data, pendingData) {
@@ -352,9 +379,9 @@ function renderThroughputChart(data, pendingData) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: hasCanceled || hasPending, position: "bottom", labels: { color: "#f8fafc", font: { size: 11 } } },
+                legend: { display: hasCanceled || hasPending, position: "bottom", labels: { color: CT("--text-1", "#10203a"), font: { size: 11 } } },
                 datalabels: {
-                    color: "#f8fafc",
+                    color: "#ffffff",
                     font: { size: 16, weight: "bold" },
                     anchor: "center",
                     align: "center",
@@ -364,15 +391,15 @@ function renderThroughputChart(data, pendingData) {
             scales: {
                 x: {
                     stacked: true,
-                    grid: { color: "rgba(255,255,255,0.05)" },
-                    ticks: { color: "#94a3b8", font: { size: 12 } },
+                    grid: { color: CT("--chart-grid", "rgba(16,32,58,0.08)") },
+                    ticks: { color: CT("--text-2", "#4a5a70"), font: { size: 12 } },
                 },
                 y: {
                     stacked: true,
                     beginAtZero: true,
-                    grid: { color: "rgba(255,255,255,0.05)" },
+                    grid: { color: CT("--chart-grid", "rgba(16,32,58,0.08)") },
                     ticks: {
-                        color: "#94a3b8",
+                        color: CT("--text-2", "#4a5a70"),
                         font: { size: 11 },
                         stepSize: 1,
                     },
@@ -392,10 +419,12 @@ let kpiDetailState = null;
 let plannedRange = null;
 
 const KPI_METRICS = {
+    pending:    { title: "Atividades Pendentes",    desc: "Stories que ainda nao foram concluidas nem canceladas." },
     no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — nao entram no calendario do grafico nem no Progresso Planejado." },
 };
 
-const DONE_STATUS = new Set(["Done"]);
+// "Resolved" é tratado como "Done" (status equivalentes).
+const DONE_STATUS = new Set(["Done", "Resolved"]);
 const CANCELED_STATUS = new Set(["Canceled", "Reject"]);
 function isDone(s) { return DONE_STATUS.has(s.status); }
 function isCanceled(s) { return CANCELED_STATUS.has(s.status); }
@@ -403,6 +432,7 @@ function isPending(s) { return !isDone(s) && !isCanceled(s); }
 
 function storiesForMetric(metric) {
     switch (metric) {
+        case "pending": return allStories.filter(isPending);
         case "no_duedate": return allStories.filter(s => isPending(s) && !s.due_date);
         default: return allStories.slice();
     }
@@ -436,7 +466,7 @@ function showKpiDetail(metric) {
         title: meta.title,
         description: meta.desc,
         all: storiesForMetric(metric),
-        filters: { assignee: [], status: [] },
+        filters: { project: [], assignee: [], status: [] },
         sort: { col: null, dir: "asc" },
         page: 1, pageSize: 15,
     };
@@ -457,6 +487,7 @@ const KPI_DETAIL_COLS = [
 
 function kpiCell(s, col) {
     switch (col) {
+        case "project": return s.project_key || "";
         case "assignee": return s.assignee_name || "";
         case "due_date": return s.due_date || "";
         case "created_at": return s.created_at || "";
@@ -467,7 +498,7 @@ function kpiCell(s, col) {
 
 function kpiFiltered(exceptCol) {
     let rows = kpiDetailState.all;
-    for (const col of ["assignee", "status"]) {
+    for (const col of ["project", "assignee", "status"]) {
         if (col === exceptCol) continue;
         const sel = kpiDetailState.filters[col];
         if (sel && sel.length) rows = rows.filter(r => sel.includes(kpiCell(r, col)));
@@ -522,7 +553,7 @@ function renderKpiDetail() {
     const shownFrom = total ? start + 1 : 0;
     const shownTo = Math.min(start + st.pageSize, total);
 
-    const anyFilter = st.filters.assignee.length || st.filters.status.length;
+    const anyFilter = st.filters.project.length || st.filters.assignee.length || st.filters.status.length;
     const pager = `<div class="detail-pager">
         <span class="detail-pager-info">${shownFrom}–${shownTo} de ${total}</span>
         <button class="detail-pager-btn" onclick="kpiDetailPage(-1)"${st.page <= 1 ? " disabled" : ""} title="Anterior">&#8249;</button>
@@ -530,6 +561,7 @@ function renderKpiDetail() {
         <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Proxima">&#8250;</button>
     </div>`;
     const filtersBar = `<div class="filters-row">
+        ${kpiDropdown("project", "Projeto")}
         ${kpiDropdown("assignee", "Assignee")}
         ${kpiDropdown("status", "Status")}
         <button class="btn-clear-filters" onclick="clearKpiFilters()"${anyFilter ? "" : " disabled"}>Limpar filtros</button>
@@ -593,7 +625,7 @@ function onKpiFilterChange(col, input) {
     const sel = kpiDetailState.filters[col];
     if (input.checked) { if (!sel.includes(v)) sel.push(v); }
     else { kpiDetailState.filters[col] = sel.filter(x => x !== v); }
-    for (const other of ["assignee", "status"]) {
+    for (const other of ["project", "assignee", "status"]) {
         if (other === col) continue;
         const valid = kpiOptions(other);
         kpiDetailState.filters[other] = kpiDetailState.filters[other].filter(x => valid.includes(x));
@@ -603,7 +635,7 @@ function onKpiFilterChange(col, input) {
 }
 
 function clearKpiFilters() {
-    kpiDetailState.filters = { assignee: [], status: [] };
+    kpiDetailState.filters = { project: [], assignee: [], status: [] };
     kpiDetailState.page = 1;
     renderKpiDetail();
 }

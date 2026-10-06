@@ -48,7 +48,7 @@ body {
 .filter-section select {
     padding: 0.5rem 0.8rem;
     border-radius: 6px;
-    background: rgba(15, 23, 42, 0.8);
+    background: var(--surface-2);
     color: var(--text-main);
     border: 1px solid rgba(255, 255, 255, 0.1);
     font-family: inherit;
@@ -113,7 +113,7 @@ body {
 
 .kpi-box {
     padding: 1rem;
-    background: rgba(15, 23, 42, 0.4);
+    background: var(--surface-2);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     text-align: center;
@@ -271,7 +271,7 @@ body {
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
 .sync-log {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--surface-2);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     padding: 1rem;
@@ -390,8 +390,8 @@ body {
 /* Flow Efficiency row (inside percentiles section) */
 .flow-efficiency-row {
     padding: 1rem 1.2rem;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
     margin-bottom: 1.5rem;
 }

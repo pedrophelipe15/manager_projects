@@ -1,6 +1,111 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.4.1 · **Status:** produtivo · **Atualizado:** 2026-10-06
+> **Versao:** v2.6.2 · **Status:** produtivo · **Atualizado:** 2026-10-08
+>
+> A **v2.6.2** aplicou uma **revisao ortografica (pt-BR)** nos textos de interface de todo o
+> `changelog_timeline` — acentuacao/grafia em titulos, subtitulos, labels, placeholders,
+> cabecalhos de tabela, tooltips e mensagens (ex.: Visao→Visão, Configuracoes→Configurações,
+> Pendencias→Pendências, Epicos→Épicos, Portfolio→Portfólio, Inconsistencias→Inconsistências).
+> **Nao** foram alterados identificadores, rotas/href, chaves de dados, status do Jira nem
+> strings de comparacao em codigo. Tambem deu **destaque visual ao botao "Analisar melhoria
+> (marco)"** da wave2 (verde solido quando inativo; vermelho "Desativar" quando ativo).
+>
+> A **v2.6.1** (Fase 2 do marco) moveu o cálculo do impacto para o **backend** e
+> **persistiu o marco por projeto**:
+> - Novo endpoint `GET /api/metrics/wave2/throughput-impact?project_key&cutoff_week` —
+>   **fonte única** da regra: calcula media_antes/depois, ganho de ritmo (%), janela
+>   comparável (comp_antes/depois, nº de semanas) e fator, a partir do mesmo
+>   `get_throughput_weekly` (ultimas 26 semanas). O front (`wave2.js`) passou a consumir
+>   esse endpoint, com **fallback** ao cálculo local se ele falhar.
+> - **Persistência:** o marco escolhido é salvo em `localStorage` por projeto
+>   (`wave2.marker.<KEY>`) e restaurado ao reabrir o modo no mesmo projeto.
+>
+> A **v2.6.0** adicionou o modo **"Analisar melhoria (marco)"** ao gráfico **Throughput
+> Semanal** da **Previsibilidade (Wave 2)** — recurso **opcional** (botão), desligado por
+> padrão, sem alterar o comportamento normal do gráfico. Ao ativar (com um projeto
+> selecionado), o usuário **clica numa semana** para posicionar um **marco** que divide a
+> série em "antes" e "depois"; o painel entao mostra, recalculando ao mover o marco:
+> - **barras coloridas** por período (cinza antes, verde depois) e uma **linha vertical** no marco;
+> - **duas linhas de média** horizontais (antes/depois) via `chartjs-plugin-annotation`;
+> - **3 big numbers** de impacto: ganho de ritmo (%), **janela comparável** (mesmo nº de
+>   semanas antes/depois — número defensável) e entregas pós-marco.
+> O eixo usa o **intervalo real de datas** de cada semana (`week_label` ja vinha do backend).
+> O cálculo e feito no front a partir do payload de `/api/metrics/wave2/throughput`
+> (Fase 1 do plano; mover o cálculo para endpoint dedicado fica para uma fase futura).
+> MVP de referência: `_bmad-output/ux-mvp-throughput-marco/`.
+>
+> A **v2.5.3** restringiu o seletor de projeto do **Dashboard Gerencial** (`dashboard.html`)
+> aos **projetos cadastrados** em Configuracoes. Antes o dropdown era montado com os
+> `project_key` distintos de `/api/issues` (incluia projetos antigos sem cadastro). Agora o
+> dashboard carrega tambem `/api/settings/projects` e popula o seletor apenas com os `key`
+> configurados (`projects.yaml`). Correcao de leitura no front; os dados em `/api/issues`
+> seguem intactos. Alinha o dashboard a mesma regra ja aplicada ao Portfolio (Wave 4) na v2.5.2.
+>
+> A **v2.5.2** restringiu a tela **Portfólio (Wave 4)** aos **projetos cadastrados** em
+> `projects.yaml`. Antes, `benchmarking` e `cross-project-throughput` liam todos os
+> `project_key` distintos da tabela `issues` — incluindo dados antigos de projetos ja
+> removidos do cadastro (7 projetos "fantasma" apareciam alem dos 4 configurados). Agora os
+> endpoints `/api/metrics/wave4/benchmarking` e `/cross-project-throughput` recebem
+> `allowed_keys` (helper `_configured_project_keys()` lê os `key` habilitados do yaml) e
+> filtram por eles. O epic-health da pagina ja fica restrito por consequencia (o front itera
+> apenas sobre os projetos do benchmarking). Correcao de leitura — nao altera dados.
+>
+> A **v2.5.1** adicionou, **somente** no detalhamento do indicador **"Prazo empurrado 3x+"**
+> da home **Minha Visão** (`/api/home/detail?metric=pushing`), uma coluna **"Prazos
+> anteriores"** com o **array completo de todos os due dates** que a issue teve — do prazo
+> original ao atual, em ordem cronologica. O historico e reconstruido dos changelogs do campo
+> `duedate` (`parsed_changelogs`). Na tabela, cada prazo vira um chip (datas BR) ligado por
+> seta; o ultimo (prazo atual) e destacado em vermelho. A coluna aparece apenas para a metrica
+> `pushing` — as demais metricas do painel seguem inalteradas.
+>
+> A **v2.5.0** trata o caso de **subtask ativa sob story parada** (trabalho em andamento
+> que a ingestao nao capturava porque filtrava pelo status da story):
+> - **Ingestao ampliada**: a JQL do pipeline `active` passou a incluir tambem subtasks em
+>   status ativo (`issuetype in subTaskIssueTypes() AND status in (ativos)`), alem do filtro
+>   por status da propria issue. Aplicado aos projetos atuais (`projects.yaml`) e ao template
+>   de novos projetos (`_build_pipelines` + preview na tela de Configuracoes). Mudanca
+>   **aditiva** (OR) — nao remove o que ja vinha.
+> - **Inclusao de pais (parent inclusion)** no extrator (`export_jira.py`): apos buscar as
+>   issues, os `parent` referenciados que nao vieram na busca sao buscados explicitamente e
+>   anexados. Evita subtask orfa (filho sem pai no banco) e completa a hierarquia. (Necessario
+>   porque o Jira nao expoe JQL nativa de "pais de" e nao ha ScriptRunner/issueFunction.)
+> - **Nova regra de inconsistencia** "Story parada com subtask ativa": detecta stories em
+>   status nao-ativo (Open/To do/Backlog/Refinement) com ao menos uma subtask ativa, na tela
+>   de **Inconsistencias** (tabela: Story, Status Story, Subtask, Status Subtask, Assignee,
+>   Summary, Updated). Expoe o erro de processo no Jira para correcao na origem.
+> - **Dependencia:** a ingestao ampliada e a parent inclusion so valem para **sincronizacoes
+>   futuras**; a regra de inconsistencia so lista casos depois de re-sincronizar o projeto.
+>
+> A **v2.4.2** adicionou um **preview das issues a expurgar** na **Manutencao do Banco**
+> (`settings.html`). Novo endpoint `GET /api/settings/purge/preview` lista as issues que
+> seriam removidas pelo expurgo (mesmo criterio do expurgo: `status = 'Done'` e
+> `resolved_at` ha mais de 26 semanas), apenas leitura. Na tela, o botao **"Ver issues que
+> serao removidas"** abre um painel de **detalhamento** no padrao do Dashboard: tabela com
+> colunas Key, Parent, Assignee, Summary, Status, Created, Due Date, Updated, Resolved,
+> filtros multiselect (**Projeto**, **Assignee**) + busca por chave + **Limpar**, ordenacao
+> por coluna e paginacao (15/pag). O painel e fechado/limpo automaticamente apos um expurgo
+> bem-sucedido (dados ficam obsoletos). Tambem corrige a ausencia de visibilidade do que
+> seria apagado antes da acao irreversivel. Foi adicionado tambem um bloco explicativo
+> **"Como o expurgo funciona?"** no card: detalha o criterio e esclarece que os dados sao
+> **apagados fisicamente** (`DELETE` em issues, changelogs e metricas), nao marcados/
+> arquivados — acao irreversivel, so recuperavel re-sincronizando do Jira.
+> **Criterio de parentesco (anti-orfao):** o expurgo agora so remove uma issue elegivel
+> (`status = 'Done'` + `resolved_at` ha mais de 26 semanas) se ela **nao tiver parent OU se o
+> parent tambem for elegivel**. Isso evita apagar uma subtask enquanto a historia-pai
+> permanece no banco, preservando a arvore e as metricas. O mesmo criterio e usado em todos
+> os pontos.
+> **Expurgo por filtro (selecao):** alem do botao **"Expurgar tudo (elegivel)"**, o painel de
+> detalhamento tem o botao **"Expurgar filtradas (N)"**, que remove apenas as issues
+> atualmente visiveis no filtro (Projeto/Assignee/busca). Novo endpoint
+> `POST /api/settings/purge/selected` recebe as keys e, por seguranca, **so apaga as que sao
+> realmente elegiveis** pelo criterio acima — keys inelegiveis (ex.: filho de pai vivo) sao
+> ignoradas e reportadas em `skipped`.
+> **Changelog do expurgo (historico):** nova secao **"Historico de Expurgos"** no card de
+> Manutencao, no mesmo espirito do "Historico de Sincronizacoes". Novo endpoint
+> `GET /api/settings/purge/history` (ultimas 20 execucoes). A tabela `purge_history` ganhou
+> as colunas `scope` (`all` = "Expurgar tudo" / `filtered` = "Expurgar filtradas") e
+> `sample_keys` (amostra das issues removidas). A tabela exibe data/hora, escopo, issues e
+> changelogs removidos, data de corte e amostra de keys; atualiza apos cada expurgo.
 >
 > A **v2.4.x (tema + UX)** tambem consolidou, nesta leva:
 > - **Novo tema visual (claro, identidade PagBank)**: o design system (`tokens.css`) migrou

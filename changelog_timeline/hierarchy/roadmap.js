@@ -127,7 +127,7 @@ function buildInitiativeFilters() {
 
     return `<div class="filters-row">
         ${buildDropdown("ini-initiative", "Iniciativa", allInitiatives, filtersIni.initiative)}
-        ${buildDropdown("ini-epic", "Epico", epicOptions, filtersIni.epic)}
+        ${buildDropdown("ini-epic", "Épico", epicOptions, filtersIni.epic)}
         ${buildDropdown("ini-project", "Projeto", projectOptions, filtersIni.project)}
         ${buildDropdown("ini-status", "Status", statusOptions, filtersIni.status)}
         ${buildDropdown("ini-assignee", "Assignee", assigneeOptions, filtersIni.assignee)}
@@ -155,7 +155,7 @@ function buildOrphanFilters() {
     filtersOrphan.assignee = filtersOrphan.assignee.filter(a => assigneeOptions.includes(a));
 
     return `<div class="filters-row">
-        ${buildDropdown("orp-epic", "Epico", epicOptions, filtersOrphan.epic)}
+        ${buildDropdown("orp-epic", "Épico", epicOptions, filtersOrphan.epic)}
         ${buildDropdown("orp-project", "Projeto", projectOptions, filtersOrphan.project)}
         ${buildDropdown("orp-status", "Status", statusOptions, filtersOrphan.status)}
         ${buildDropdown("orp-assignee", "Assignee", assigneeOptions, filtersOrphan.assignee)}
@@ -287,7 +287,7 @@ function renderAll() {
 
     if (dataInitiatives.length > 0 || dataOrphans.length > 0) {
         html += `<div class="roadmap-toolbar">
-            <span class="roadmap-hint">Epicos iniciam recolhidos para carregar rapido. Clique em um epico para expandir, ou use os botoes / filtros.</span>
+            <span class="roadmap-hint">Épicos iniciam recolhidos para carregar rápido. Clique em um épico para expandir, ou use os botões / filtros.</span>
             <span class="roadmap-toolbar-actions">
                 <button class="btn-clear-filters" onclick="expandAll()">Expandir tudo</button>
                 <button class="btn-clear-filters" onclick="collapseAll()">Colapsar tudo</button>
@@ -297,7 +297,7 @@ function renderAll() {
 
     if (dataInitiatives.length > 0) {
         html += `<div class="roadmap-section" id="section-initiatives">`;
-        html += `<div class="section-title">Iniciativas e Epicos <span class="section-badge">${dataInitiatives.length} iniciativa(s)</span></div>`;
+        html += `<div class="section-title">Iniciativas e Épicos <span class="section-badge">${dataInitiatives.length} iniciativa(s)</span></div>`;
         html += buildInitiativeFilters();
         html += `<div id="ini-roadmap"></div>`;
         html += `</div>`;
@@ -305,14 +305,14 @@ function renderAll() {
 
     if (dataOrphans.length > 0) {
         html += `<div class="roadmap-section orphan-separator" id="section-orphans">`;
-        html += `<div class="section-title">Epicos Orfaos <span class="section-badge">${dataOrphans.length} epico(s) sem iniciativa</span></div>`;
+        html += `<div class="section-title">Épicos Órfãos <span class="section-badge">${dataOrphans.length} épico(s) sem iniciativa</span></div>`;
         html += buildOrphanFilters();
         html += `<div id="orp-roadmap"></div>`;
         html += `</div>`;
     }
 
     if (!dataInitiatives.length && !dataOrphans.length) {
-        html = `<p class="empty-state">Nenhum dado encontrado. Execute uma sincronizacao primeiro.</p>`;
+        html = `<p class="empty-state">Nenhum dado encontrado. Execute uma sincronização primeiro.</p>`;
     }
 
     document.getElementById("roadmap-content").innerHTML = html;

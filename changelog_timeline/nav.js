@@ -20,9 +20,9 @@
     // Grupos e suas abas, na ordem de leitura do gestor.
     var GROUPS = [
         {
-            label: "Minha Visao",
+            label: "Minha Visão",
             links: [
-                { href: "/minha-visao.html", label: "Minha Visao" },
+                { href: "/minha-visao.html", label: "Minha Visão" },
             ],
         },
         {
@@ -43,7 +43,7 @@
             label: "Fluxo",
             links: [
                 { href: "/wave1.html", label: "Gargalo e Fluxo" },
-                { href: "/wave4.html", label: "Portfolio" },
+                { href: "/wave4.html", label: "Portfólio" },
                 { href: "/dashboard.html", label: "Dashboard" },
             ],
         },
@@ -56,8 +56,8 @@
         {
             label: "Dados",
             links: [
-                { href: "/inconsistencies.html", label: "Inconsistencias" },
-                { href: "/settings.html", label: "Configuracoes" },
+                { href: "/inconsistencies.html", label: "Inconsistências" },
+                { href: "/settings.html", label: "Configurações" },
             ],
         },
     ];

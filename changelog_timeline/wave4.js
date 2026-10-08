@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadAll() {
     const container = document.getElementById('content-container');
-    container.innerHTML = '<p class="empty-state">Carregando dados de portfolio...</p>';
+    container.innerHTML = '<p class="empty-state">Carregando dados de portfólio...</p>';
 
     try {
         const [benchmarking, crossThroughput] = await Promise.all([
@@ -38,7 +38,7 @@ async function loadAll() {
 
         renderAll(benchmarking, crossThroughput, epicHealthResults);
     } catch (e) {
-        container.innerHTML = '<p class="empty-state">Erro ao carregar dados de portfolio.</p>';
+        container.innerHTML = '<p class="empty-state">Erro ao carregar dados de portfólio.</p>';
         console.error(e);
     }
 }
@@ -94,14 +94,14 @@ function renderBenchmarking(data) {
     return `
         <section class="metric-section glass">
             <h2>Benchmarking entre Projetos</h2>
-            <p class="metric-desc">Comparacao de metricas entre projetos. Nao e ranking — e para identificar praticas melhores e replicar.</p>
+            <p class="metric-desc">Comparação de métricas entre projetos. Não é ranking — é para identificar práticas melhores e replicar.</p>
             <details class="formula-details">
-                <summary>Como e calculado?</summary>
+                <summary>Como é calculado?</summary>
                 <div class="formula-content">
-                    <p>Cada coluna usa os mesmos calculos das waves individuais, agregados por projeto.</p>
-                    <p><strong>Throughput</strong> = media de issues Done/semana nas ultimas 12 semanas.</p>
-                    <p><strong>Flow Eff.</strong> = media de (tempo em In Progress / lead time) das issues Done.</p>
-                    <p><strong>Rework</strong> = % de issues com transicoes para tras no fluxo.</p>
+                    <p>Cada coluna usa os mesmos cálculos das waves individuais, agregados por projeto.</p>
+                    <p><strong>Throughput</strong> = média de issues Done/semana nas últimas 12 semanas.</p>
+                    <p><strong>Flow Eff.</strong> = média de (tempo em In Progress / lead time) das issues Done.</p>
+                    <p><strong>Rework</strong> = % de issues com transições para trás no fluxo.</p>
                 </div>
             </details>
             <table class="metric-table">
@@ -138,10 +138,10 @@ function renderCrossThroughput(data) {
             <h2>Throughput Consolidado (todos os projetos)</h2>
             <p class="metric-desc">Issues Done por semana de todos os projetos. Permite comparar ritmo entre times ao longo do tempo.</p>
             <details class="formula-details">
-                <summary>Como e calculado?</summary>
+                <summary>Como é calculado?</summary>
                 <div class="formula-content">
                     <p>Cada barra representa o total de issues resolvidas naquela semana, separado por projeto (cores).</p>
-                    <p>Permite identificar semanas com picos (releases) e quedas (ferias, bloqueios).</p>
+                    <p>Permite identificar semanas com picos (releases) e quedas (férias, bloqueios).</p>
                 </div>
             </details>
             <div class="chart-container">
@@ -266,22 +266,22 @@ function renderEpicHealth(epicHealthResults) {
 
     if (allEpics.length === 0) {
         return `<section class="metric-section glass">
-            <h2>Saude das Issues-Pai</h2>
+            <h2>Saúde das Issues-Pai</h2>
             <p class="metric-desc">Nenhuma issue-pai aberta encontrada.</p>
         </section>`;
     }
 
     return `
         <section class="metric-section glass">
-            <h2>Saude das Issues-Pai</h2>
+            <h2>Saúde das Issues-Pai</h2>
             <p class="metric-desc" id="epic-summary"></p>
             <details class="formula-details">
-                <summary>Como e calculado?</summary>
+                <summary>Como é calculado?</summary>
                 <div class="formula-content">
                     <p><strong>Progresso</strong> = subtasks Done / total subtasks.</p>
-                    <p><strong>Forecast P85</strong> = Monte Carlo com throughput do projeto (1000 simulacoes).</p>
-                    <p><strong>Risco</strong> = composicao de: due date vs forecast, progresso baixo com muitos itens restantes, e forecast longo (&gt;8 semanas).</p>
-                    <p>Niveis: <span class="risk-badge risk-low">low</span> <span class="risk-badge risk-medium">medium</span> <span class="risk-badge risk-high">high</span> <span class="risk-badge risk-critical">critical</span></p>
+                    <p><strong>Forecast P85</strong> = Monte Carlo com throughput do projeto (1000 simulações).</p>
+                    <p><strong>Risco</strong> = composição de: due date vs forecast, progresso baixo com muitos itens restantes, e forecast longo (&gt;8 semanas).</p>
+                    <p>Níveis: <span class="risk-badge risk-low">low</span> <span class="risk-badge risk-medium">medium</span> <span class="risk-badge risk-high">high</span> <span class="risk-badge risk-critical">critical</span></p>
                 </div>
             </details>
             <div class="epic-filters">
@@ -294,7 +294,7 @@ function renderEpicHealth(epicHealthResults) {
                     <select id="epicFilterAssignee" class="epic-select"></select>
                 </label>
                 <label class="epic-filter">
-                    <span>Por pagina</span>
+                    <span>Por página</span>
                     <select id="epicPageSize" class="epic-select">
                         <option value="10">10</option>
                         <option value="25" selected>25</option>
@@ -424,7 +424,7 @@ function renderEpicTable() {
     const atRisk = filtered.filter(e => e.risk === 'critical' || e.risk === 'high').length;
     const summary = document.getElementById('epic-summary');
     if (summary) {
-        summary.innerHTML = `${total} issue(s)-pai (após filtros). ${atRisk > 0 ? `<strong>${atRisk} em risco.</strong>` : 'Nenhuma em risco critico/alto.'}`;
+        summary.innerHTML = `${total} issue(s)-pai (após filtros). ${atRisk > 0 ? `<strong>${atRisk} em risco.</strong>` : 'Nenhuma em risco crítico/alto.'}`;
     }
 
     // Paginação
@@ -433,8 +433,8 @@ function renderEpicTable() {
     const to = Math.min(start + pageSize, total);
     pag.innerHTML = `
         <button class="epic-page-btn" id="epicPrev" ${epicState.page <= 1 ? 'disabled' : ''}>&larr; Anterior</button>
-        <span class="epic-page-info">${from}–${to} de ${total} · pagina ${epicState.page}/${totalPages}</span>
-        <button class="epic-page-btn" id="epicNext" ${epicState.page >= totalPages ? 'disabled' : ''}>Proxima &rarr;</button>
+        <span class="epic-page-info">${from}–${to} de ${total} · página ${epicState.page}/${totalPages}</span>
+        <button class="epic-page-btn" id="epicNext" ${epicState.page >= totalPages ? 'disabled' : ''}>Próxima &rarr;</button>
     `;
     const prev = document.getElementById('epicPrev');
     const next = document.getElementById('epicNext');

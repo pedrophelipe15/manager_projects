@@ -85,7 +85,7 @@ async function loadAllInitiatives() {
         const data = await res.json();
 
         if (!data.initiatives || data.initiatives.length === 0) {
-            container.innerHTML = `<p class="empty-state">Nenhuma iniciativa encontrada no hierarchy.db. Execute uma sincronizacao primeiro.</p>`;
+            container.innerHTML = `<p class="empty-state">Nenhuma iniciativa encontrada no hierarchy.db. Execute uma sincronização primeiro.</p>`;
             return;
         }
 
@@ -111,7 +111,7 @@ async function loadAllInitiatives() {
         container.innerHTML = `
             <div class="metric-section glass">
                 <h2>Iniciativas</h2>
-                <p class="metric-desc">Visao corporativa. Clique em uma iniciativa para ver os epicos filhos com detalhes.</p>
+                <p class="metric-desc">Visão corporativa. Clique em uma iniciativa para ver os épicos filhos com detalhes.</p>
                 <table class="metric-table">
                     <thead>
                         <tr>
@@ -119,7 +119,7 @@ async function loadAllInitiatives() {
                             <th>Iniciativa</th>
                             <th>Progresso</th>
                             <th>Stories Done/Total</th>
-                            <th>Epicos</th>
+                            <th>Épicos</th>
                             <th>Times</th>
                             <th>Forecast P85</th>
                             <th>Risco</th>
@@ -128,12 +128,12 @@ async function loadAllInitiatives() {
                     <tbody>${rows}</tbody>
                 </table>
                 <details class="formula-details">
-                    <summary>Como e calculado?</summary>
+                    <summary>Como é calculado?</summary>
                     <div class="formula-content">
-                        <p><strong>Progresso:</strong> Stories Done de todos os epicos / Total de stories (ponderado)</p>
-                        <p><strong>Risco corporativo:</strong> Composicao dos riscos individuais dos epicos filhos</p>
+                        <p><strong>Progresso:</strong> Stories Done de todos os épicos / Total de stories (ponderado)</p>
+                        <p><strong>Risco corporativo:</strong> Composição dos riscos individuais dos épicos filhos</p>
                         <p><strong>Forecast P85:</strong> Monte Carlo com throughput agregado de toda a iniciativa</p>
-                        <p><strong>Times:</strong> Projetos distintos que possuem stories filhas nos epicos</p>
+                        <p><strong>Times:</strong> Projetos distintos que possuem stories filhas nos épicos</p>
                     </div>
                 </details>
             </div>
@@ -155,7 +155,7 @@ async function loadInitiativeDetail(key) {
             fetch(`/api/hierarchy/tree?key=${key}`),
         ]);
         if (!res.ok) {
-            container.innerHTML = `<p class="empty-state">Iniciativa "${key}" nao encontrada.</p>`;
+            container.innerHTML = `<p class="empty-state">Iniciativa "${key}" não encontrada.</p>`;
             return;
         }
 
@@ -193,7 +193,7 @@ async function loadInitiativeDetail(key) {
             </div>
             <div class="kpi-card">
                 <div class="kpi-value accent">${pr.planned_progress_pct}%</div>
-                <div class="kpi-label">Progresso Planejado Proximas 5 Semanas</div>
+                <div class="kpi-label">Progresso Planejado Próximas 5 Semanas</div>
                 <div class="kpi-sublabel">${formatDateBR(pr.planned_range.start)} a ${formatDateBR(pr.planned_range.end)}</div>
             </div>
             <div class="kpi-card">
@@ -237,15 +237,15 @@ async function loadInitiativeDetail(key) {
         container.innerHTML = `
             <div class="metric-section glass">
                 <h2>Throughput Agregado</h2>
-                <p class="metric-desc">Stories concluidas por mes (todos os epicos da iniciativa). Media: ${tp.avg_per_month || 0}/mes</p>
+                <p class="metric-desc">Stories concluídas por mês (todos os épicos da iniciativa). Média: ${tp.avg_per_month || 0}/mês</p>
                 <div class="chart-container">
                     <canvas id="throughput-chart"></canvas>
                 </div>
             </div>
 
             <div class="metric-section glass">
-                <h2>Epicos (${data.epics.length})</h2>
-                <p class="metric-desc">Epicos filhos com metricas individuais. Clique para ver detalhes do epico.</p>
+                <h2>Épicos (${data.epics.length})</h2>
+                <p class="metric-desc">Épicos filhos com métricas individuais. Clique para ver detalhes do épico.</p>
                 <table class="metric-table">
                     <thead>
                         <tr>
@@ -419,8 +419,8 @@ let kpiDetailState = null;
 let plannedRange = null;
 
 const KPI_METRICS = {
-    pending:    { title: "Atividades Pendentes",    desc: "Stories que ainda nao foram concluidas nem canceladas." },
-    no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — nao entram no calendario do grafico nem no Progresso Planejado." },
+    pending:    { title: "Atividades Pendentes",    desc: "Stories que ainda não foram concluídas nem canceladas." },
+    no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — não entram no calendário do gráfico nem no Progresso Planejado." },
 };
 
 // "Resolved" é tratado como "Done" (status equivalentes).
@@ -557,8 +557,8 @@ function renderKpiDetail() {
     const pager = `<div class="detail-pager">
         <span class="detail-pager-info">${shownFrom}–${shownTo} de ${total}</span>
         <button class="detail-pager-btn" onclick="kpiDetailPage(-1)"${st.page <= 1 ? " disabled" : ""} title="Anterior">&#8249;</button>
-        <span class="detail-pager-page">Pag. ${st.page}/${totalPages}</span>
-        <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Proxima">&#8250;</button>
+        <span class="detail-pager-page">Pág. ${st.page}/${totalPages}</span>
+        <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Próxima">&#8250;</button>
     </div>`;
     const filtersBar = `<div class="filters-row">
         ${kpiDropdown("project", "Projeto")}
@@ -603,7 +603,7 @@ function kpiDropdown(col, label) {
                 <span>${o}</span>
             </label>`;
         }).join("")
-        : `<div class="dd-option" style="opacity:.6">Sem opcoes</div>`;
+        : `<div class="dd-option" style="opacity:.6">Sem opções</div>`;
     return `<div class="dd-wrapper" id="kpi-dd-${col}">
         <button class="dd-toggle" onclick="toggleKpiDropdown('kpi-dd-${col}')">
             <span class="dd-label">${label}</span> ${count}

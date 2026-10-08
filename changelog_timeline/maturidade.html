@@ -182,7 +182,7 @@
 
         <header class="page-header">
             <h1>&#x1F331; Maturidade</h1>
-            <p class="subtitle">Report por assignee — acoes pendentes consolidadas. Copie e envie para cada responsavel.</p>
+            <p class="subtitle">Report por assignee — ações pendentes consolidadas. Copie e envie para cada responsável.</p>
         </header>
 
         <div class="filter-bar">
@@ -207,7 +207,7 @@
     <div id="config-modal" class="modal-overlay"></div>
 
     <script src="context.js?v=1"></script>
-    <script src="nav.js?v=1"></script>
+    <script src="nav.js?v=2"></script>
     <script src="ui.js?v=3"></script>
     <script>
         // Estado: acoes carregadas do projeto atual (para filtrar sem recarregar)
@@ -315,11 +315,11 @@
                     const d = issue.days_postponed;
                     let problem;
                     if (d === null || d === undefined) {
-                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, indicando baixa previsibilidade e necessidade de validacao do gestor`;
+                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, indicando baixa previsibilidade e necessidade de validação do gestor`;
                     } else if (d >= 0) {
-                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, empurrando a entrega em <strong style="color:var(--danger)">${d} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validacao do gestor`;
+                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, empurrando a entrega em <strong style="color:var(--danger)">${d} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validação do gestor`;
                     } else {
-                        problem = `O prazo (due date) desta atividade foi alterado ${vezes}, antecipando a entrega em <strong style="color:var(--success)">${Math.abs(d)} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validacao do gestor`;
+                        problem = `O prazo (due date) desta atividade foi alterado ${vezes}, antecipando a entrega em <strong style="color:var(--success)">${Math.abs(d)} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validação do gestor`;
                     }
                     actions.push({
                         assignee: issue.assignee || "Sem assignee",
@@ -329,7 +329,7 @@
                         due_date: issue.last_due_date || issue.due_date || null,
                         type: "POSTERGACAO",
                         problem: problem,
-                        action: "Valide com o gestor o motivo das repactuacoes de prazo. Reavalie escopo/dependencias e defina uma data realista e comprometida.",
+                        action: "Valide com o gestor o motivo das repactuações de prazo. Reavalie escopo/dependências e defina uma data realista e comprometida.",
                         severity: issue.changes >= RULES.due_date_changes_critico ? "critico" : "atencao",
                     });
                 }
@@ -347,8 +347,8 @@
                                 status: issue.status,
                                 due_date: issue.due_date || null,
                                 type: "WIP",
-                                problem: `Voce esta com <strong style="color:var(--danger)">${person.wip_count} atividades</strong> simultaneas em andamento (recomendado: maximo <strong style="color:var(--warning)">${RULES.wip_recomendado}</strong>), o que indica <strong style="color:var(--accent)">multitasking</strong> excessivo e pode estar gerando atrasos`,
-                                action: "Foque em concluir as atividades ja iniciadas antes de pegar novas. Converse com seu lider se precisar repriorizar.",
+                                problem: `Você está com <strong style="color:var(--danger)">${person.wip_count} atividades</strong> simultâneas em andamento (recomendado: máximo <strong style="color:var(--warning)">${RULES.wip_recomendado}</strong>), o que indica <strong style="color:var(--accent)">multitasking</strong> excessivo e pode estar gerando atrasos`,
+                                action: "Foque em concluir as atividades já iniciadas antes de pegar novas. Converse com seu líder se precisar repriorizar.",
                                 severity: person.wip_count >= RULES.wip_critico ? "critico" : "atencao",
                             });
                         }
@@ -364,8 +364,8 @@
                                 status: issue.status,
                                 due_date: issue.due_date || null,
                                 type: "BLOCKED",
-                                problem: `Voce esta com <strong style="color:var(--danger)">${blockedCount} atividade(s) bloqueada(s)</strong> (recomendado: maximo <strong style="color:var(--warning)">${RULES.blocked_recomendado}</strong>), o que impacta o fluxo e gera <strong style="color:var(--accent)">gargalo</strong> no time`,
-                                action: "Identifique o impedimento, registre no Jira e escale para quem pode resolver. Nao deixe parada sem visibilidade.",
+                                problem: `Você está com <strong style="color:var(--danger)">${blockedCount} atividade(s) bloqueada(s)</strong> (recomendado: máximo <strong style="color:var(--warning)">${RULES.blocked_recomendado}</strong>), o que impacta o fluxo e gera <strong style="color:var(--accent)">gargalo</strong> no time`,
+                                action: "Identifique o impedimento, registre no Jira e escale para quem pode resolver. Não deixe parada sem visibilidade.",
                                 severity: blockedCount >= RULES.blocked_critico ? "critico" : "atencao",
                             });
                         }
@@ -383,8 +383,8 @@
                         status: issue.status,
                         due_date: issue.due_date || null,
                         type: "DUE DATE",
-                        problem: "Esta atividade esta ativa mas nao possui data de entrega (due date) definida, impossibilitando o acompanhamento de prazos",
-                        action: "Acesse o Jira e preencha o campo Due Date com a data prevista de conclusao.",
+                        problem: "Esta atividade está ativa mas não possui data de entrega (due date) definida, impossibilitando o acompanhamento de prazos",
+                        action: "Acesse o Jira e preencha o campo Due Date com a data prevista de conclusão.",
                         severity: "atencao",
                     });
                 }
@@ -400,8 +400,8 @@
                         status: issue.status,
                         due_date: issue.due_date || null,
                         type: "ASSIGNEE",
-                        problem: "Esta atividade esta em andamento mas nao tem nenhum responsavel atribuido — ninguem esta cuidando dela",
-                        action: "Atribua um responsavel imediatamente no Jira. Atividades sem dono tendem a ficar paradas.",
+                        problem: "Esta atividade está em andamento mas não tem nenhum responsável atribuído — ninguém está cuidando dela",
+                        action: "Atribua um responsável imediatamente no Jira. Atividades sem dono tendem a ficar paradas.",
                         severity: "critico",
                     });
                 }
@@ -429,10 +429,10 @@
                         status: issue.status,
                         due_date: issue.due_date || null,
                         type: "AGING",
-                        problem: `Esta atividade esta sem atualizacao ha <strong style="color:var(--danger)">${days} dias</strong>, o que compromete o <strong style="color:var(--accent)">cycle time</strong> do time que atualmente esta em <strong style="color:var(--warning)">${p85Days} dias</strong> (P85). Enquanto permanecer parada, essa metrica continuara sendo impactada negativamente.`,
+                        problem: `Esta atividade está sem atualização há <strong style="color:var(--danger)">${days} dias</strong>, o que compromete o <strong style="color:var(--accent)">cycle time</strong> do time que atualmente está em <strong style="color:var(--warning)">${p85Days} dias</strong> (P85). Enquanto permanecer parada, essa métrica continuará sendo impactada negativamente.`,
                         action: days > RULES.aging_critico_dias
-                            ? "Atividade parada ha mais de 1 mes. Avalie se ainda faz sentido ou se deve ser cancelada. Se for continuar, desbloqueie e escale."
-                            : "Atualize o status desta atividade no Jira. Se estiver bloqueada, registre o impedimento. Se nao fizer mais sentido, mova para Canceled. O time precisa de visibilidade.",
+                            ? "Atividade parada há mais de 1 mês. Avalie se ainda faz sentido ou se deve ser cancelada. Se for continuar, desbloqueie e escale."
+                            : "Atualize o status desta atividade no Jira. Se estiver bloqueada, registre o impedimento. Se não fizer mais sentido, mova para Canceled. O time precisa de visibilidade.",
                         severity: days > RULES.aging_critico_dias ? "critico" : "atencao",
                     });
                 }
@@ -448,8 +448,8 @@
                         status: issue.child_status,
                         due_date: issue.child_due_date || null,
                         type: "PRAZO",
-                        problem: `A data de entrega desta atividade e posterior a data da story pai (${issue.parent_key}: ${issue.parent_due_date}), o que gera inconsistencia no planejamento`,
-                        action: "Ajuste a due date para ser igual ou anterior a data da story pai, ou renegocie o prazo da story.",
+                        problem: `A data de entrega desta atividade é posterior à data da story pai (${issue.parent_key}: ${issue.parent_due_date}), o que gera inconsistência no planejamento`,
+                        action: "Ajuste a due date para ser igual ou anterior à data da story pai, ou renegocie o prazo da story.",
                         severity: "atencao",
                     });
                 }
@@ -465,8 +465,8 @@
                         status: issue.status,
                         due_date: issue.due_date || null,
                         type: "METRICAS",
-                        problem: "Esta atividade foi concluida (Done) mas nao possui Lead Time nem Cycle Time calculados — provavelmente foi movida direto para Done sem passar pelo fluxo",
-                        action: "Verifique se o fluxo no Jira foi seguido corretamente. Para proximas atividades, mova pelo board normalmente (Open → In Progress → Done).",
+                        problem: "Esta atividade foi concluída (Done) mas não possui Lead Time nem Cycle Time calculados — provavelmente foi movida direto para Done sem passar pelo fluxo",
+                        action: "Verifique se o fluxo no Jira foi seguido corretamente. Para próximas atividades, mova pelo board normalmente (Open → In Progress → Done).",
                         severity: "informativo",
                     });
                 }
@@ -482,7 +482,7 @@
                         status: issue.status,
                         due_date: issue.due_date || null,
                         type: "FLUXO",
-                        problem: "Esta atividade esta em andamento mas nao tem Cycle Time computado — provavelmente foi movida para o status atual sem passar por In Progress",
+                        problem: "Esta atividade está em andamento mas não tem Cycle Time computado — provavelmente foi movida para o status atual sem passar por In Progress",
                         action: "Mova a atividade para In Progress primeiro e depois para o status desejado, para que o tempo seja contabilizado corretamente.",
                         severity: "informativo",
                     });
@@ -508,9 +508,9 @@
 
             container.innerHTML = `
                 <div class="summary-bar">
-                    <span><strong>${projectKey}</strong> — ${actions.length} acoes pendentes</span>
-                    <span class="summary-item"><span class="summary-dot" style="background:var(--danger)"></span> ${critical} criticos</span>
-                    <span class="summary-item"><span class="summary-dot" style="background:var(--warning)"></span> ${warning} atencao</span>
+                    <span><strong>${projectKey}</strong> — ${actions.length} ações pendentes</span>
+                    <span class="summary-item"><span class="summary-dot" style="background:var(--danger)"></span> ${critical} críticos</span>
+                    <span class="summary-item"><span class="summary-dot" style="background:var(--warning)"></span> ${warning} atenção</span>
                     <span class="summary-item"><span class="summary-dot" style="background:var(--accent)"></span> ${info} informativos</span>
                     <span style="color:var(--text-muted)">|</span>
                     <span>${Object.keys(grouped).length} pessoas</span>
@@ -525,7 +525,7 @@
             const container = document.getElementById("report-content");
 
             if (actions.length === 0) {
-                container.innerHTML = `<p class="empty-state">Nenhuma acao pendente encontrada para ${projectKey}. Parabens!</p>`;
+                container.innerHTML = `<p class="empty-state">Nenhuma ação pendente encontrada para ${projectKey}. Parabéns!</p>`;
                 return;
             }
 
@@ -549,9 +549,9 @@
                 html += `
                     <div class="assignee-group">
                         <div class="assignee-header">
-                            <span>${assignee} ${critCount > 0 ? `<span class="severity-critico">(${critCount} criticos)</span>` : ""}</span>
+                            <span>${assignee} ${critCount > 0 ? `<span class="severity-critico">(${critCount} críticos)</span>` : ""}</span>
                             <div class="assignee-actions">
-                                <span class="assignee-count">${items.length} acao(es)</span>
+                                <span class="assignee-count">${items.length} ação(es)</span>
                                 <button class="btn-copy-sm" onclick="copyAssigneeTable('${safeAssignee}')">Copiar</button>
                             </div>
                         </div>
@@ -564,7 +564,7 @@
                                     <th>Tipo</th>
                                     <th>Due Date</th>
                                     <th>Problema</th>
-                                    <th>Acao Necessaria</th>
+                                    <th>Ação Necessária</th>
                                     <th>Severidade</th>
                                 </tr>
                             </thead>
@@ -595,7 +595,7 @@
             const table = document.querySelector(`.report-table[data-assignee="${assignee}"]`);
             if (!table) return;
 
-            let text = "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAcao Necessaria\tSeveridade\n";
+            let text = "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAção Necessária\tSeveridade\n";
             const rows = table.querySelectorAll("tbody tr");
             for (const row of rows) {
                 const cells = [...row.querySelectorAll("td")].map(c => c.textContent.trim());
@@ -616,7 +616,7 @@
             for (const group of groups) {
                 const assignee = group.querySelector(".assignee-header span:first-child").textContent.trim();
                 text += `=== ${assignee} ===\n`;
-                text += "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAcao Necessaria\tSeveridade\n";
+                text += "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAção Necessária\tSeveridade\n";
                 const rows = group.querySelectorAll("tbody tr");
                 for (const row of rows) {
                     const cells = [...row.querySelectorAll("td")].map(c => c.textContent.trim());
@@ -667,7 +667,7 @@
             document.getElementById("config-modal").innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>Configuracao de Regras</h2>
+                        <h2>Configuração de Regras</h2>
                         <button class="modal-close" onclick="closeConfigModal()">&times;</button>
                     </div>
 
@@ -678,8 +678,8 @@
                         </div>
                         <div class="rule-fields">
                             <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-wip-recomendado" value="${rules.wip_recomendado}"></div>
-                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-wip-atencao" value="${rules.wip_atencao}"></div>
-                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-wip-critico" value="${rules.wip_critico}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-wip-atencao" value="${rules.wip_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-wip-critico" value="${rules.wip_critico}"></div>
                             <button class="btn-save-rule" onclick="saveRuleGroup('wip')">Salvar</button>
                         </div>
                     </div>
@@ -691,8 +691,8 @@
                         </div>
                         <div class="rule-fields">
                             <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-blocked-recomendado" value="${rules.blocked_recomendado}"></div>
-                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-blocked-atencao" value="${rules.blocked_atencao}"></div>
-                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-blocked-critico" value="${rules.blocked_critico}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-blocked-atencao" value="${rules.blocked_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-blocked-critico" value="${rules.blocked_critico}"></div>
                             <button class="btn-save-rule" onclick="saveRuleGroup('blocked')">Salvar</button>
                         </div>
                     </div>
@@ -703,20 +703,20 @@
                             <span class="rule-card-type">AGING</span>
                         </div>
                         <div class="rule-fields">
-                            <div class="rule-field"><label>Min dias sem atualiz.</label><input type="number" id="cfg-aging-min" value="${rules.aging_min_dias}"></div>
-                            <div class="rule-field"><label>Critico (> dias)</label><input type="number" id="cfg-aging-critico" value="${rules.aging_critico_dias}"></div>
+                            <div class="rule-field"><label>Mín. dias sem atualiz.</label><input type="number" id="cfg-aging-min" value="${rules.aging_min_dias}"></div>
+                            <div class="rule-field"><label>Crítico (> dias)</label><input type="number" id="cfg-aging-critico" value="${rules.aging_critico_dias}"></div>
                             <button class="btn-save-rule" onclick="saveRuleGroup('aging')">Salvar</button>
                         </div>
                     </div>
 
                     <div class="rule-card">
                         <div class="rule-card-header">
-                            <span class="rule-card-title">Postergacao de Due Date (alteracoes de prazo)</span>
+                            <span class="rule-card-title">Postergação de Due Date (alterações de prazo)</span>
                             <span class="rule-card-type">POSTERGACAO</span>
                         </div>
                         <div class="rule-fields">
-                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-due-atencao" value="${rules.due_date_changes_atencao}"></div>
-                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-due-critico" value="${rules.due_date_changes_critico}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-due-atencao" value="${rules.due_date_changes_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-due-critico" value="${rules.due_date_changes_critico}"></div>
                             <button class="btn-save-rule" onclick="saveRuleGroup('due')">Salvar</button>
                         </div>
                     </div>
@@ -730,7 +730,7 @@
         }
 
         function saveRuleGroup(group) {
-            if (!confirm("Confirma a alteracao desta regra? A pagina sera recarregada.")) return;
+            if (!confirm("Confirma a alteração desta regra? A página será recarregada.")) return;
 
             if (group === "wip") {
                 saveRule("wip_recomendado", document.getElementById("cfg-wip-recomendado").value);

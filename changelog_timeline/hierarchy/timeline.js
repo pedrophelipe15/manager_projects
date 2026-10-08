@@ -19,7 +19,7 @@ async function init() {
         epicHealthData = await healthRes.json();
 
         if (!config || config.length === 0) {
-            container.innerHTML = `<p class="empty-state">Nenhuma hierarquia configurada. Acesse Configuracoes para adicionar.</p>`;
+            container.innerHTML = `<p class="empty-state">Nenhuma hierarquia configurada. Acesse Configurações para adicionar.</p>`;
             return;
         }
 
@@ -118,7 +118,7 @@ function renderInitiativeNode(tree, filterTeam, filterStatus, filterRisk) {
                 <span class="tree-key">${jiraLink(ini.key)}</span>
                 <span class="tree-summary">${escapeHTML(ini.summary)}</span>
                 <span class="tree-status">${ini.status}</span>
-                <span class="tree-count">${count} epicos</span>
+                <span class="tree-count">${count} épicos</span>
             </div>
             <ul class="tree-children open">${childrenHtml}</ul>
         </li>

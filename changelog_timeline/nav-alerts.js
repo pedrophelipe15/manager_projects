@@ -11,7 +11,7 @@
                     badge.className = 'nav-alert-badge' + (data.critical > 0 ? ' critical' : '');
                     badge.textContent = data.total;
                     badge.title = data.critical > 0 
-                        ? `${data.critical} alerta(s) critico(s)` 
+                        ? `${data.critical} alerta(s) crítico(s)` 
                         : `${data.total} alerta(s)`;
                     insightsLink.style.position = 'relative';
                     insightsLink.appendChild(badge);

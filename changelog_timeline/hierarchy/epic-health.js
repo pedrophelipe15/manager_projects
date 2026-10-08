@@ -109,8 +109,8 @@ async function loadAllEpics() {
 
         container.innerHTML = `
             <div class="metric-section glass">
-                <h2>Todos os Epicos</h2>
-                <p class="metric-desc">Clique em um epico para ver detalhes de throughput, forecast e stories.</p>
+                <h2>Todos os Épicos</h2>
+                <p class="metric-desc">Clique em um épico para ver detalhes de throughput, forecast e stories.</p>
                 <table class="metric-table">
                     <thead>
                         <tr>
@@ -145,7 +145,7 @@ async function loadEpicDetail(key) {
         ]);
 
         if (!healthRes.ok) {
-            container.innerHTML = `<p class="empty-state">Epico "${key}" nao encontrado.</p>`;
+            container.innerHTML = `<p class="empty-state">Épico "${key}" não encontrado.</p>`;
             return;
         }
 
@@ -169,12 +169,12 @@ async function loadEpicDetail(key) {
                 <div class="kpi-value accent">${pr.progress_pct}%</div>
                 <div class="kpi-label">Progresso Atual</div>
             </div>
-            <div class="kpi-card kpi-clickable" data-metric="planned" onclick="showKpiDetail('planned')" title="Ver stories pendentes com due date nas proximas 5 semanas">
+            <div class="kpi-card kpi-clickable" data-metric="planned" onclick="showKpiDetail('planned')" title="Ver stories pendentes com due date nas próximas 5 semanas">
                 <div class="kpi-value accent">${pr.planned_progress_pct ?? 0}%</div>
-                <div class="kpi-label">Progresso Planejado Proximas 5 Semanas</div>
+                <div class="kpi-label">Progresso Planejado Próximas 5 Semanas</div>
                 ${pr.planned_range ? `<div class="kpi-sublabel">${formatDateBR(pr.planned_range.start)} a ${formatDateBR(pr.planned_range.end)}</div>` : ""}
             </div>
-            <div class="kpi-card kpi-clickable" data-metric="done" onclick="showKpiDetail('done')" title="Ver stories concluidas">
+            <div class="kpi-card kpi-clickable" data-metric="done" onclick="showKpiDetail('done')" title="Ver stories concluídas">
                 <div class="kpi-value">${pr.done}/${pr.total}</div>
                 <div class="kpi-label">Stories Done</div>
             </div>
@@ -192,11 +192,11 @@ async function loadEpicDetail(key) {
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${formatDays(mt.avg_cycle_time_ms)}</div>
-                <div class="kpi-label">Cycle Time Medio</div>
+                <div class="kpi-label">Cycle Time Médio</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${formatDays(mt.avg_lead_time_ms)}</div>
-                <div class="kpi-label">Lead Time Medio</div>
+                <div class="kpi-label">Lead Time Médio</div>
             </div>
         `;
 
@@ -214,7 +214,7 @@ async function loadEpicDetail(key) {
         container.innerHTML = `
             <div class="metric-section glass">
                 <h2>Throughput Mensal</h2>
-                <p class="metric-desc">Stories concluidas por mes (especifico deste epico). Media: ${tp.avg_per_month || 0}/mes</p>
+                <p class="metric-desc">Stories concluídas por mês (específico deste épico). Média: ${tp.avg_per_month || 0}/mês</p>
                 <div class="chart-container">
                     <canvas id="throughput-chart"></canvas>
                 </div>
@@ -248,7 +248,7 @@ function retargetNavBackToEpics() {
         const back = document.querySelector("#hierarchy-nav .nav-back");
         if (!back) return false;
         back.setAttribute("href", "/hierarchy/dashboard-v2.html");
-        back.setAttribute("title", "Voltar para todos os epicos");
+        back.setAttribute("title", "Voltar para todos os épicos");
         return true;
     };
     if (apply()) return;
@@ -391,11 +391,11 @@ let kpiDetailState = null;    // { all, filters, sort, page, pageSize }
 let plannedRange = null;      // { start, end } — janela do "Progresso Planejado"
 
 const KPI_METRICS = {
-    all:     { title: "Todas as stories",        desc: "Todas as stories filhas deste epico." },
+    all:     { title: "Todas as stories",        desc: "Todas as stories filhas deste épico." },
     planned: { title: "Progresso Planejado (5 semanas)", desc: "Stories pendentes com due date dentro da janela planejada." },
-    done:    { title: "Stories Done",            desc: "Stories concluidas neste epico." },
-    pending: { title: "Atividades Pendentes",    desc: "Stories que ainda nao foram concluidas nem canceladas." },
-    no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — nao entram no calendario do grafico nem no Progresso Planejado." },
+    done:    { title: "Stories Done",            desc: "Stories concluídas neste épico." },
+    pending: { title: "Atividades Pendentes",    desc: "Stories que ainda não foram concluídas nem canceladas." },
+    no_duedate: { title: "Pendentes sem Due Date", desc: "Stories pendentes sem due date definido — não entram no calendário do gráfico nem no Progresso Planejado." },
 };
 
 // "Resolved" é tratado como "Done" (status equivalentes).
@@ -548,8 +548,8 @@ function renderKpiDetail() {
     const pager = `<div class="detail-pager">
         <span class="detail-pager-info">${shownFrom}–${shownTo} de ${total}</span>
         <button class="detail-pager-btn" onclick="kpiDetailPage(-1)"${st.page <= 1 ? " disabled" : ""} title="Anterior">&#8249;</button>
-        <span class="detail-pager-page">Pag. ${st.page}/${totalPages}</span>
-        <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Proxima">&#8250;</button>
+        <span class="detail-pager-page">Pág. ${st.page}/${totalPages}</span>
+        <button class="detail-pager-btn" onclick="kpiDetailPage(1)"${st.page >= totalPages ? " disabled" : ""} title="Próxima">&#8250;</button>
     </div>`;
     const filtersBar = `<div class="filters-row">
         ${kpiDropdown("project", "Projeto")}
@@ -594,7 +594,7 @@ function kpiDropdown(col, label) {
                 <span>${o}</span>
             </label>`;
         }).join("")
-        : `<div class="dd-option" style="opacity:.6">Sem opcoes</div>`;
+        : `<div class="dd-option" style="opacity:.6">Sem opções</div>`;
     return `<div class="dd-wrapper" id="kpi-dd-${col}">
         <button class="dd-toggle" onclick="toggleKpiDropdown('kpi-dd-${col}')">
             <span class="dd-label">${label}</span> ${count}

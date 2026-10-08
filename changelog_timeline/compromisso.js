@@ -7,7 +7,7 @@ const JIRA_BASE_URL = 'https://jiraps.atlassian.net/browse/';
 const CLASS_LABEL = {
     kept: 'Compromisso mantido',
     replanned: 'Replanejamento normal',
-    attention: 'Atencao',
+    attention: 'Atenção',
     pushing: 'Prazo sendo empurrado',
 };
 const CLASS_ORDER = { pushing: 0, attention: 1, replanned: 2, kept: 3 };
@@ -40,7 +40,7 @@ async function loadProjects() {
         CTContext.bindProjectSelect(select, onProjectChange);
     } catch (e) {
         console.error('Erro ao carregar projetos:', e);
-        renderError('Nao foi possivel carregar a lista de projetos.', loadProjects);
+        renderError('Não foi possível carregar a lista de projetos.', loadProjects);
     }
 }
 
@@ -102,8 +102,8 @@ function render() {
     if (!d || !d.summary || d.summary.total_issues === 0) {
         document.getElementById('content-container').innerHTML =
             `<div class="section glass state-box">
-                <div class="state-title">Sem historico de prazo</div>
-                <div>Este projeto ainda nao tem reprogramacoes de due date registradas.</div>
+                <div class="state-title">Sem histórico de prazo</div>
+                <div>Este projeto ainda não tem reprogramações de due date registradas.</div>
             </div>`;
         return;
     }
@@ -121,17 +121,17 @@ function render() {
     const scoreTip = (s.total_issues === 0) ? CTUI.infoTooltip({
         title: 'Commitment Score', empty: 'Sem issues com prazo registrado neste projeto.',
     }) : CTUI.infoTooltip({
-        title: 'Como o score e calculado',
+        title: 'Como o score é calculado',
         formula: 'Score = mantidas &divide; total &times; 100',
         calc: `${kept} &divide; ${s.total_issues} &times; 100 = <strong>${score}%</strong>`,
         rows: [
-            { label: 'Mantidas (1a data)', value: kept, tone: 'good' },
+            { label: 'Mantidas (1ª data)', value: kept, tone: 'good' },
             { label: 'Replanejadas (1x)', value: cc.replanned || 0, tone: 'info' },
-            { label: 'Atencao (2x)', value: cc.attention || 0, tone: 'warn' },
+            { label: 'Atenção (2x)', value: cc.attention || 0, tone: 'warn' },
             { label: 'Prazo empurrado (3x+)', value: cc.pushing || 0, tone: 'bad' },
             { label: 'Total com prazo', value: s.total_issues, total: true },
         ],
-        note: '"Mantidas" = entregues na 1a data prometida, sem reprogramar o due date.',
+        note: '"Mantidas" = entregues na 1ª data prometida, sem reprogramar o due date.',
         position: 'left',
     });
 
@@ -144,11 +144,11 @@ function render() {
                     ${scoreTip}
                 </div>
                 <div class="score-bar"><div class="score-fill" style="width:${score}%;background:${scoreColor}"></div></div>
-                <p class="kpi-sub">${s.counts.kept} de ${s.total_issues} issues entregues na 1a data</p>
+                <p class="kpi-sub">${s.counts.kept} de ${s.total_issues} issues entregues na 1ª data</p>
                 <div class="score-legend">
-                    <span class="score-legend-item"><span class="slg-dot good"></span>&ge; 70% Aceitavel</span>
-                    <span class="score-legend-item"><span class="slg-dot warn"></span>50&ndash;69% Atencao</span>
-                    <span class="score-legend-item"><span class="slg-dot bad"></span>&lt; 50% Critico</span>
+                    <span class="score-legend-item"><span class="slg-dot good"></span>&ge; 70% Aceitável</span>
+                    <span class="score-legend-item"><span class="slg-dot warn"></span>50&ndash;69% Atenção</span>
+                    <span class="score-legend-item"><span class="slg-dot bad"></span>&lt; 50% Crítico</span>
                 </div>
             </div>
             <div class="kpi-card glass kpi-clickable" id="kpi-pushing" onclick="filterByClass('pushing')" tabindex="0" role="button" title="Ver issues com prazo empurrado">
@@ -156,8 +156,8 @@ function render() {
                 <p class="kpi-value ${pushing > 0 ? 'bad' : 'good'}">${pushing}<span class="kpi-chevron">&#8250;</span></p>
                 <p class="kpi-sub">issues remarcadas 3 ou mais vezes</p>
             </div>
-            <div class="kpi-card glass kpi-clickable" id="kpi-attention" onclick="filterByClass('attention')" tabindex="0" role="button" title="Ver issues em atencao">
-                <h3>Em Atencao (2x)</h3>
+            <div class="kpi-card glass kpi-clickable" id="kpi-attention" onclick="filterByClass('attention')" tabindex="0" role="button" title="Ver issues em atenção">
+                <h3>Em Atenção (2x)</h3>
                 <p class="kpi-value ${attention > 0 ? 'warn' : 'good'}">${attention}<span class="kpi-chevron">&#8250;</span></p>
                 <p class="kpi-sub">issues remarcadas 2 vezes</p>
             </div>
@@ -171,8 +171,8 @@ function render() {
         <section class="section glass" id="people-section">
             <div class="table-actions">
                 <div>
-                    <h2>Por Responsavel</h2>
-                    <p class="section-desc" style="margin:0">Commitment score por pessoa. Menor score no topo. Nao e ranking de performance — e mapa de risco de previsibilidade.</p>
+                    <h2>Por Responsável</h2>
+                    <p class="section-desc" style="margin:0">Commitment score por pessoa. Menor score no topo. Não é ranking de performance — é mapa de risco de previsibilidade.</p>
                 </div>
                 <button class="btn btn--secondary btn--sm btn-copy-table" id="btn-copy-people">Copiar tabela</button>
             </div>
@@ -183,7 +183,7 @@ function render() {
             <div class="table-actions">
                 <div>
                     <h2 id="worst-title">Issues com Prazo Reprogramado</h2>
-                    <p class="section-desc" style="margin:0">Ordene clicando nos cabecalhos. Use os filtros ou clique novamente no indicador para fechar.</p>
+                    <p class="section-desc" style="margin:0">Ordene clicando nos cabeçalhos. Use os filtros ou clique novamente no indicador para fechar.</p>
                 </div>
                 <button class="btn btn--secondary btn--sm btn-copy-table" id="btn-copy-worst">Copiar tabela</button>
             </div>
@@ -227,13 +227,13 @@ function renderPeopleTable(people) {
             formula: 'Score = mantidas &divide; total &times; 100',
             calc: `${kept} &divide; ${p.total_issues} &times; 100 = <strong>${sc}%</strong>`,
             rows: [
-                { label: 'Mantidas (1a data)', value: kept, tone: 'good' },
+                { label: 'Mantidas (1ª data)', value: kept, tone: 'good' },
                 { label: 'Replanejadas (1x)', value: cc.replanned || 0, tone: 'info' },
-                { label: 'Atencao (2x)', value: cc.attention || 0, tone: 'warn' },
+                { label: 'Atenção (2x)', value: cc.attention || 0, tone: 'warn' },
                 { label: 'Prazo empurrado (3x+)', value: cc.pushing || 0, tone: 'bad' },
                 { label: 'Total com prazo', value: p.total_issues, total: true },
             ],
-            note: '"Mantidas" = entregues na 1a data prometida, sem reprogramar o due date.',
+            note: '"Mantidas" = entregues na 1ª data prometida, sem reprogramar o due date.',
         });
         return `<tr>
             <td>${escapeHtml(p.assignee)}</td>
@@ -250,8 +250,8 @@ function renderPeopleTable(people) {
     }).join('');
     return `<table class="data-table people-table">
         <thead><tr>
-            <th>Responsavel</th><th class="num">Score</th><th class="num">Issues</th>
-            <th class="num">Empurrado 3x+</th><th class="num">Atencao 2x</th><th class="num">Dias adiados</th>
+            <th>Responsável</th><th class="num">Score</th><th class="num">Issues</th>
+            <th class="num">Empurrado 3x+</th><th class="num">Atenção 2x</th><th class="num">Dias adiados</th>
         </tr></thead>
         <tbody>${rows}</tbody></table>`;
 }
@@ -270,8 +270,8 @@ function renderWorstFilters() {
 
     const el = document.getElementById('worst-filters');
     el.innerHTML = `<div class="filters-row">
-        ${buildDropdown('f-class', 'Classificacao', classOptions, filters.classification, CLASS_LABEL)}
-        ${buildDropdown('f-assignee', 'Responsavel', assigneeOptions, filters.assignee)}
+        ${buildDropdown('f-class', 'Classificação', classOptions, filters.classification, CLASS_LABEL)}
+        ${buildDropdown('f-assignee', 'Responsável', assigneeOptions, filters.assignee)}
         ${buildDropdown('f-status', 'Status', statusOptions, filters.status)}
         <button class="btn-clear-filters" onclick="clearFilters()">Limpar</button>
         <div class="worst-pager" id="worst-pager"></div>
@@ -293,7 +293,7 @@ function buildDropdown(id, label, options, selected, labelMap) {
             <span class="dd-label">${label}</span> ${count}
             <span class="dd-arrow">&#9662;</span>
         </button>
-        <div class="dd-menu">${opts || '<div class="dd-option">Sem opcoes</div>'}</div>
+        <div class="dd-menu">${opts || '<div class="dd-option">Sem opções</div>'}</div>
     </div>`;
 }
 
@@ -381,7 +381,7 @@ function updateWorstTitle() {
     if (!el) return;
     const cls = filters.classification.length === 1 ? filters.classification[0] : null;
     if (cls === 'pushing') el.textContent = 'Issues com Prazo Empurrado (3x+)';
-    else if (cls === 'attention') el.textContent = 'Issues em Atencao (2x)';
+    else if (cls === 'attention') el.textContent = 'Issues em Atenção (2x)';
     else el.textContent = 'Issues com Prazo Reprogramado';
 }
 
@@ -436,13 +436,13 @@ function renderWorstTable() {
     document.getElementById('worst-table').innerHTML = `<table class="data-table worst-table">
         <thead><tr>
             <th class="sortable" onclick="setSort('issue_key')">Issue <span class="sort-ind">${ind('issue_key')}</span></th>
-            <th class="sortable" onclick="setSort('assignee')">Responsavel <span class="sort-ind">${ind('assignee')}</span></th>
+            <th class="sortable" onclick="setSort('assignee')">Responsável <span class="sort-ind">${ind('assignee')}</span></th>
             <th class="sortable" onclick="setSort('status')">Status <span class="sort-ind">${ind('status')}</span></th>
-            <th class="sortable num" onclick="setSort('reschedules')">Reprogramacoes <span class="sort-ind">${ind('reschedules')}</span></th>
+            <th class="sortable num" onclick="setSort('reschedules')">Reprogramações <span class="sort-ind">${ind('reschedules')}</span></th>
             <th class="sortable num" onclick="setSort('total_days_pushed')">Dias adiados <span class="sort-ind">${ind('total_days_pushed')}</span></th>
             <th class="sortable num" onclick="setSort('original_due')">Prazo original <span class="sort-ind">${ind('original_due')}</span></th>
             <th class="sortable num" onclick="setSort('current_due')">Prazo atual <span class="sort-ind">${ind('current_due')}</span></th>
-            <th class="sortable num" onclick="setSort('classification')">Classificacao <span class="sort-ind">${ind('classification')}</span></th>
+            <th class="sortable num" onclick="setSort('classification')">Classificação <span class="sort-ind">${ind('classification')}</span></th>
         </tr></thead>
         <tbody>${rows || '<tr><td colspan="8" class="empty-state">Nenhuma issue no filtro atual.</td></tr>'}</tbody></table>`;
 
@@ -454,8 +454,8 @@ function renderWorstTable() {
         pager.innerHTML = `
             <span class="worst-pager-info">${from}&ndash;${to} de ${total}</span>
             <button class="worst-pager-btn" onclick="worstGoPage(-1)"${worstPage <= 1 ? ' disabled' : ''} title="Anterior">&#8249;</button>
-            <span class="worst-pager-page">Pag. ${worstPage}/${totalPages}</span>
-            <button class="worst-pager-btn" onclick="worstGoPage(1)"${worstPage >= totalPages ? ' disabled' : ''} title="Proxima">&#8250;</button>`;
+            <span class="worst-pager-page">Pág. ${worstPage}/${totalPages}</span>
+            <button class="worst-pager-btn" onclick="worstGoPage(1)"${worstPage >= totalPages ? ' disabled' : ''} title="Próxima">&#8250;</button>`;
     }
 }
 

@@ -79,6 +79,7 @@ function renderResults(data, rules) {
         sec3: { items: inc.done_without_metrics, page: 1, filter: '', type: 'simple' },
         sec4: { items: inc.active_without_cycle, page: 1, filter: '', type: 'simple' },
         sec5: { items: inc.active_without_assignee, page: 1, filter: '', type: 'noassignee' },
+        sec6: { items: inc.story_stale_active_subtask, page: 1, filter: '', type: 'stale_story' },
     };
 
     const ruleFor = (id) => rulesMap[id] || { name: id, description: '' };
@@ -109,6 +110,11 @@ function renderResults(data, rules) {
         ruleFor('active_without_assignee').name,
         ruleFor('active_without_assignee').description,
         totals.active_without_assignee);
+
+    html += renderSection('sec6',
+        ruleFor('story_stale_active_subtask').name,
+        ruleFor('story_stale_active_subtask').description,
+        totals.story_stale_active_subtask);
 
     container.innerHTML = html;
 
@@ -164,9 +170,9 @@ function getFilteredItems(secId) {
     return sec.items.filter(item => {
         const key = (item.key || item.child_key || '').toLowerCase();
         const parentKey = (item.parent_key || '').toLowerCase();
-        const summary = (item.summary || item.child_summary || '').toLowerCase();
-        const assignee = (item.assignee || item.child_assignee || '').toLowerCase();
-        const status = (item.status || item.child_status || '').toLowerCase();
+        const summary = (item.summary || item.child_summary || item.parent_summary || '').toLowerCase();
+        const assignee = (item.assignee || item.child_assignee || item.parent_assignee || '').toLowerCase();
+        const status = (item.status || item.child_status || item.parent_status || '').toLowerCase();
         return key.includes(q) || parentKey.includes(q) || summary.includes(q) || assignee.includes(q) || status.includes(q);
     });
 }
@@ -190,6 +196,8 @@ function renderSectionTable(secId) {
         tableHtml = renderDueDateParentTable(pageItems);
     } else if (sec.type === 'noassignee') {
         tableHtml = renderNoAssigneeTable(pageItems);
+    } else if (sec.type === 'stale_story') {
+        tableHtml = renderStaleStoryTable(pageItems);
     } else {
         tableHtml = renderSimpleTable(pageItems);
     }
@@ -243,6 +251,47 @@ function renderDueDateParentTable(items) {
                 <td>${formatDate(item.child_created_at)}</td>
                 <td>${formatDate(item.child_updated_at)}</td>
                 <td>${formatDate(item.child_due_date)}</td>
+            </tr>
+        `;
+    });
+    html += '</tbody></table>';
+    return html;
+}
+
+function renderStaleStoryTable(items) {
+    if (items.length === 0) return '<p class="no-results">Nenhum resultado para o filtro.</p>';
+    const badge = (status) => {
+        let cls = 'open';
+        if (status === 'In Progress') cls = 'progress';
+        else if (status === 'Blocked') cls = 'blocked';
+        else if (status === 'Done' || status === 'Resolved') cls = 'done';
+        return `<span class="status-badge status-${cls}">${escapeHTML(status || '')}</span>`;
+    };
+    let html = `
+        <table class="inc-table">
+            <thead>
+                <tr>
+                    <th>Story (parent)</th>
+                    <th>Status Story</th>
+                    <th>Subtask</th>
+                    <th>Status Subtask</th>
+                    <th>Assignee Subtask</th>
+                    <th>Summary Subtask</th>
+                    <th>Updated Subtask</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    items.forEach(item => {
+        html += `
+            <tr>
+                <td><strong>${jiraKeyLink(item.parent_key)}</strong></td>
+                <td>${badge(item.parent_status)}</td>
+                <td>${jiraKeyLink(item.child_key)}</td>
+                <td>${badge(item.child_status)}</td>
+                <td>${item.child_assignee || '--'}</td>
+                <td><span class="cell-summary">${escapeHTML(item.child_summary || '')}</span></td>
+                <td>${formatDate(item.child_updated_at)}</td>
             </tr>
         `;
     });

@@ -64,7 +64,7 @@ function updateJqlPreview() {
     const base = jqlProject || 'project = ...';
     const statusList = activeStatuses.map(s => `"${s}"`).join(', ');
 
-    document.getElementById('preview-active').textContent = `${base} AND status in (${statusList})`;
+    document.getElementById('preview-active').textContent = `${base} AND (status in (${statusList}) OR (issuetype in subTaskIssueTypes() AND status in (${statusList})))`;
     document.getElementById('preview-done').textContent = `${base} AND status = Done AND resolved >= -26w`;
     document.getElementById('preview-delta').textContent = `${base} AND updated >= -10d`;
 }
@@ -539,6 +539,51 @@ async function loadPurgeStatus() {
     } catch (error) {
         console.error('Erro ao carregar status do expurgo:', error);
     }
+    loadPurgeHistory();
+}
+
+// Recarrega o historico e leva a atencao do usuario ate a tabela (apos um expurgo),
+// destacando a linha mais recente — e para onde vai o "changelog da execucao".
+async function focusPurgeHistory() {
+    await loadPurgeHistory();
+    const wrap = document.querySelector('.purge-history-wrap');
+    const firstRow = document.querySelector('#purge-history-body tr');
+    if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (firstRow) {
+        firstRow.classList.add('row-flash');
+        setTimeout(() => firstRow.classList.remove('row-flash'), 2200);
+    }
+}
+
+async function loadPurgeHistory() {
+    const tbody = document.getElementById('purge-history-body');
+    if (!tbody) return;
+    try {
+        const res = await fetch('/api/settings/purge/history');
+        const rows = await res.json();
+        if (!rows || rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Nenhum expurgo executado ainda.</td></tr>`;
+            return;
+        }
+        const fmtDT = (s) => { try { return new Date(s).toLocaleString('pt-BR'); } catch (e) { return s || '--'; } };
+        const fmtCut = (s) => s ? (String(s).split('T')[0].split('-').reverse().join('/')) : '--';
+        const scopeLabel = (sc) => sc === 'filtered'
+            ? '<span class="status-badge" style="background:var(--warn-bg);color:var(--warn)">Filtrado</span>'
+            : '<span class="status-badge" style="background:var(--action-quiet);color:var(--action)">Tudo</span>';
+        tbody.innerHTML = rows.map(r => {
+            const sample = r.sample_keys ? escapeHTML(r.sample_keys.split(',').slice(0, 5).join(', ')) + (r.sample_keys.split(',').length > 5 ? ' …' : '') : '--';
+            return `<tr>
+                <td>${fmtDT(r.executed_at)}</td>
+                <td>${scopeLabel(r.scope)}</td>
+                <td>${(r.issues_removed || 0).toLocaleString('pt-BR')}</td>
+                <td>${(r.changelogs_removed || 0).toLocaleString('pt-BR')}</td>
+                <td>${fmtCut(r.cutoff_date)}</td>
+                <td style="color:var(--text-2);font-size:0.78rem">${sample}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Erro ao carregar histórico</td></tr>`;
+    }
 }
 
 function renderPurgeCard(data) {
@@ -578,6 +623,297 @@ function renderPurgeCard(data) {
     info.innerHTML = html;
 }
 
+// ==================== PREVIEW DO EXPURGO (detalhamento) ====================
+// Lista as issues que serao removidas, com tabela + filtros no padrao do dashboard.
+
+const purgeState = {
+    all: [],
+    filtered: [],
+    page: 1,
+    pageSize: 15,
+    sort: { col: null, dir: 'asc' },
+    open: false,
+};
+const PURGE_JIRA = 'https://jiraps.atlassian.net/browse/';
+
+function purgeFmtDate(s) {
+    if (!s) return '--';
+    const p = String(s).split('T')[0].split('-');
+    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
+}
+
+// Classe de cor do badge de status (mesmo sistema da coluna Status).
+function purgeStatusClass(status) {
+    switch (status) {
+        case 'Done': case 'Resolved': return 'status-done';
+        case 'In Progress': return 'status-progress';
+        case 'Blocked': return 'status-blocked';
+        case 'Test': return 'status-test';
+        case 'Waiting for Delivery': return 'status-waiting';
+        default: return 'status-open';
+    }
+}
+
+// Renderiza o badge de status (ou '--' quando vazio).
+function purgeStatusBadge(status) {
+    if (!status) return '--';
+    return `<span class="status-badge ${purgeStatusClass(status)}">${escapeHTML(status)}</span>`;
+}
+
+window.togglePurgePreview = async function() {
+    const panel = document.getElementById('purge-detail');
+    const btn = document.getElementById('btnPurgePreview');
+    if (purgeState.open) {
+        purgeState.open = false;
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        btn.textContent = 'Ver issues que serão removidas';
+        return;
+    }
+    btn.disabled = true;
+    try {
+        const res = await fetch('/api/settings/purge/preview');
+        const data = await res.json();
+        purgeState.all = data.issues || [];
+    } catch (e) {
+        showToast('Erro ao carregar issues do expurgo', 'error');
+        btn.disabled = false;
+        return;
+    }
+    btn.disabled = false;
+    purgeState.open = true;
+    btn.textContent = 'Ocultar lista';
+    panel.style.display = 'block';
+    renderPurgeDetail();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+function purgeUniq(vals) { return [...new Set(vals.filter(v => v !== '' && v != null))].sort(); }
+
+function purgeSel(type) {
+    return Array.from(document.querySelectorAll(`#purge-detail .${type}-check:checked`)).map(cb => cb.value);
+}
+
+function purgeApplyFilters() {
+    const search = (document.getElementById('purgeSearch') || {}).value?.toLowerCase() || '';
+    const projects = purgeSel('pproject');
+    const assignees = purgeSel('passignee');
+    purgeState.filtered = purgeState.all.filter(i => {
+        if (search && !i.key.toLowerCase().includes(search)) return false;
+        if (projects.length && !projects.includes(i.project_key)) return false;
+        if (assignees.length && !assignees.includes(i.assignee)) return false;
+        return true;
+    });
+    purgeState.page = 1;
+    renderPurgeDetailBody();
+}
+window.purgeApplyFilters = purgeApplyFilters;
+
+window.purgeToggleDropdown = function(id) {
+    document.getElementById(id).classList.toggle('open');
+};
+
+window.purgeUpdateHeader = function(type) {
+    const checked = document.querySelectorAll(`#purge-detail .${type}-check:checked`);
+    const header = document.querySelector(`#purge-${type}-multiselect .multiselect-header`);
+    const labels = { pproject: 'Projeto', passignee: 'Assignee' };
+    header.innerHTML = '';
+    if (checked.length === 0) {
+        header.innerHTML = `<span class="placeholder-text">${labels[type]}: Todos</span>`;
+    } else {
+        checked.forEach(cb => {
+            const tag = document.createElement('span');
+            tag.className = 'multiselect-tag';
+            tag.innerHTML = `${escapeHTML(cb.value)} <span class="tag-remove" onclick="purgeRemoveTag(event,'${type}','${escapeHTML(cb.value)}')">×</span>`;
+            header.appendChild(tag);
+        });
+    }
+};
+
+window.purgeRemoveTag = function(event, type, value) {
+    event.stopPropagation();
+    const cb = document.querySelector(`#purge-detail .${type}-check[value="${value}"]`);
+    if (cb) { cb.checked = false; purgeUpdateHeader(type); purgeApplyFilters(); }
+};
+
+window.purgeClearFilters = function() {
+    const s = document.getElementById('purgeSearch'); if (s) s.value = '';
+    document.querySelectorAll('#purge-detail .pproject-check, #purge-detail .passignee-check').forEach(cb => cb.checked = false);
+    purgeUpdateHeader('pproject'); purgeUpdateHeader('passignee');
+    purgeApplyFilters();
+};
+
+window.purgeSort = function(col) {
+    const s = purgeState.sort;
+    if (s.col === col) s.dir = s.dir === 'asc' ? 'desc' : 'asc';
+    else { s.col = col; s.dir = 'asc'; }
+    renderPurgeDetailBody();
+};
+
+function purgeSortedRows() {
+    const { col, dir } = purgeState.sort;
+    if (!col) return purgeState.filtered;
+    return purgeState.filtered.slice().sort((a, b) => {
+        const c = String(a[col] == null ? '' : a[col]).localeCompare(String(b[col] == null ? '' : b[col]), 'pt-BR', { numeric: true });
+        return dir === 'asc' ? c : -c;
+    });
+}
+
+window.purgePage = function(delta) {
+    purgeState.page += delta;
+    renderPurgeDetailBody();
+};
+
+function purgeDropdown(type, label, options) {
+    const items = options.length
+        ? options.map(o => `<label><input type="checkbox" value="${escapeHTML(o)}" class="${type}-check" onchange="purgeUpdateHeader('${type}'); purgeApplyFilters();"> ${escapeHTML(o)}</label>`).join('')
+        : '<label class="empty-state" style="padding:.4rem .7rem">Sem opções</label>';
+    return `<div class="custom-multiselect" id="purge-${type}-multiselect">
+        <div class="multiselect-header" onclick="purgeToggleDropdown('purge-${type}-dropdown')"><span class="placeholder-text">${label}: Todos</span></div>
+        <div class="multiselect-options" id="purge-${type}-dropdown">${items}</div>
+    </div>`;
+}
+
+window.purgeFiltered = async function() {
+    const keys = purgeState.filtered.map(i => i.key);
+    if (!keys.length) { showToast('Nenhuma issue no filtro atual', 'error'); return; }
+
+    const msg = `Expurgar as ${keys.length.toLocaleString('pt-BR')} issue(s) atualmente filtradas?\n\n` +
+        `Serão apagadas PERMANENTEMENTE do banco (issues, changelogs e métricas). ` +
+        `Subtasks cujo pai permaneça no banco são ignoradas por segurança.\n\nConfirmar?`;
+    if (!confirm(msg)) return;
+
+    const btn = document.getElementById('btnPurgeFiltered');
+    btn.disabled = true; btn.textContent = 'Expurgando...';
+    try {
+        const res = await fetch('/api/settings/purge/selected', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keys }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.detail || 'Erro no expurgo', 'error'); return; }
+        let txt = `Expurgo concluído: ${data.issues_removed} issue(s) removida(s). Registrado no Histórico de Expurgos abaixo.`;
+        if (data.skipped && data.skipped.length) txt += ` · ${data.skipped.length} ignorada(s) (pai vivo)`;
+        showToast(txt, 'success');
+        // Fecha o painel e atualiza o status (dados obsoletos).
+        const panel = document.getElementById('purge-detail');
+        panel.style.display = 'none'; panel.innerHTML = '';
+        purgeState.open = false;
+        const pbtn = document.getElementById('btnPurgePreview');
+        if (pbtn) pbtn.textContent = 'Ver issues que serão removidas';
+        await loadPurgeStatus();
+        await focusPurgeHistory();
+    } catch (e) {
+        showToast('Erro de conexão', 'error');
+    } finally {
+        if (document.getElementById('btnPurgeFiltered')) { btn.disabled = false; btn.textContent = 'Expurgar filtradas'; }
+    }
+};
+
+function renderPurgeDetail() {
+    const panel = document.getElementById('purge-detail');
+    const total = purgeState.all.length;
+    if (!total) {
+        panel.innerHTML = `<div class="data-section glass"><p class="empty-state">Nenhuma issue sera removida com o criterio atual.</p></div>`;
+        return;
+    }
+    const projects = purgeUniq(purgeState.all.map(i => i.project_key));
+    const assignees = purgeUniq(purgeState.all.map(i => i.assignee));
+    panel.innerHTML = `
+        <div class="data-section glass">
+            <div class="table-header">
+                <h3>Issues que serão removidas (${total})</h3>
+                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+                    <input type="text" id="purgeSearch" placeholder="Pesquisar chave..." class="filter-input" style="width:220px" oninput="purgeApplyFilters()">
+                    <button class="btn btn-purge" id="btnPurgeFiltered" onclick="purgeFiltered()">Expurgar filtradas</button>
+                </div>
+            </div>
+            <div class="table-filters toolbar-glass">
+                <div class="toolbar-label">Filtros</div>
+                ${purgeDropdown('pproject', 'Projeto', projects)}
+                ${purgeDropdown('passignee', 'Assignee', assignees)}
+                <button class="btn-clear" onclick="purgeClearFilters()">Limpar</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table" id="purge-table">
+                    <thead><tr>
+                        <th class="sortable" onclick="purgeSort('key')">Key <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('parent_key')">Parent <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('parent_status')">Parent Status <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('assignee')">Assignee <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('summary')">Summary <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('status')">Status <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('created_at')">Created <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('due_date')">Due Date <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('updated_at')">Updated <span class="sort-ind">↕</span></th>
+                        <th class="sortable" onclick="purgeSort('resolved_at')">Resolved <span class="sort-ind">↕</span></th>
+                    </tr></thead>
+                    <tbody id="purge-tbody"></tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="purge-prev" onclick="purgePage(-1)" disabled>Anterior</button>
+                <span id="purge-pageinfo">Página 1 de X</span>
+                <button id="purge-next" onclick="purgePage(1)">Próxima</button>
+            </div>
+        </div>`;
+    purgeState.filtered = purgeState.all.slice();
+    renderPurgeDetailBody();
+    // Fecha dropdowns ao clicar fora
+    panel.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-multiselect')) {
+            panel.querySelectorAll('.multiselect-options').forEach(el => el.classList.remove('open'));
+        }
+    });
+}
+
+function renderPurgeDetailBody() {
+    const tbody = document.getElementById('purge-tbody');
+    if (!tbody) return;
+    const rows = purgeSortedRows();
+    const total = rows.length;
+    const maxP = Math.max(1, Math.ceil(total / purgeState.pageSize));
+    if (purgeState.page > maxP) purgeState.page = maxP;
+    const start = (purgeState.page - 1) * purgeState.pageSize;
+    const pageRows = rows.slice(start, start + purgeState.pageSize);
+
+    document.querySelectorAll('#purge-table th.sortable').forEach(th => {
+        const ind = th.querySelector('.sort-ind');
+        const onclick = th.getAttribute('onclick') || '';
+        const col = onclick.replace("purgeSort('", '').replace("')", '');
+        ind.textContent = col === purgeState.sort.col ? (purgeState.sort.dir === 'asc' ? '↑' : '↓') : '↕';
+    });
+
+    if (!pageRows.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:1.5rem">Nenhuma issue no filtro atual.</td></tr>`;
+    } else {
+        tbody.innerHTML = pageRows.map(i => `<tr>
+            <td><strong><a href="${PURGE_JIRA}${encodeURIComponent(i.key)}" target="_blank" rel="noopener" style="color:var(--brand-blue);text-decoration:none">${escapeHTML(i.key)}</a></strong></td>
+            <td>${i.parent_key ? `<a href="${PURGE_JIRA}${encodeURIComponent(i.parent_key)}" target="_blank" rel="noopener" style="color:var(--brand-blue);text-decoration:none">${escapeHTML(i.parent_key)}</a>` : '--'}</td>
+            <td>${purgeStatusBadge(i.parent_status)}</td>
+            <td>${escapeHTML(i.assignee || '--')}</td>
+            <td class="cell-summary" title="${escapeHTML(i.summary)}">${escapeHTML(i.summary)}</td>
+            <td>${purgeStatusBadge(i.status)}</td>
+            <td>${purgeFmtDate(i.created_at)}</td>
+            <td>${purgeFmtDate(i.due_date)}</td>
+            <td>${purgeFmtDate(i.updated_at)}</td>
+            <td>${purgeFmtDate(i.resolved_at)}</td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('purge-pageinfo').textContent = `Página ${purgeState.page} de ${maxP}`;
+    document.getElementById('purge-prev').disabled = purgeState.page <= 1;
+    document.getElementById('purge-next').disabled = purgeState.page >= maxP;
+
+    // Atualiza o label do botao com a contagem filtrada atual.
+    const fbtn = document.getElementById('btnPurgeFiltered');
+    if (fbtn) {
+        fbtn.textContent = `Expurgar filtradas (${total})`;
+        fbtn.disabled = total === 0;
+    }
+}
+
 window.executePurge = async function() {
     const btn = document.getElementById('btnPurge');
 
@@ -591,8 +927,15 @@ window.executePurge = async function() {
         const data = await response.json();
 
         if (response.ok) {
-            showToast(`Expurgo concluído: ${data.issues_removed} issues removidas`, 'success');
+            showToast(`Expurgo concluído: ${data.issues_removed} issues removidas. Registrado no Histórico de Expurgos abaixo.`, 'success');
+            // Fecha/limpa o painel de detalhamento (dados agora obsoletos).
+            const panel = document.getElementById('purge-detail');
+            if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+            purgeState.open = false;
+            const pbtn = document.getElementById('btnPurgePreview');
+            if (pbtn) pbtn.textContent = 'Ver issues que serão removidas';
             await loadPurgeStatus();
+            await focusPurgeHistory();
         } else {
             showToast(data.detail || 'Erro no expurgo', 'error');
         }
@@ -601,7 +944,7 @@ window.executePurge = async function() {
     }
 
     btn.disabled = false;
-    btn.textContent = 'Executar Expurgo';
+    btn.textContent = 'Expurgar tudo (elegível)';
 };
 
 // ==================== UTILS ====================

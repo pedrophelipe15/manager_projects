@@ -192,3 +192,22 @@ body {
 @media (max-width: 768px) {
     .page-container { padding: 1rem; }
 }
+
+/* Coluna "Prazos anteriores" (so no detalhe de "Prazo empurrado 3x+") */
+#detail-panel .mm-duehist { white-space: nowrap; }
+.due-hist { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
+.due-hist-chip {
+    display: inline-block; padding: 0.1rem 0.4rem; border-radius: 6px;
+    background: var(--surface-2); color: var(--text-2);
+    font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.due-hist-chip.due-hist-current { background: var(--risk-bg); color: var(--risk); font-weight: 600; }
+.due-hist-arrow { color: var(--text-3); font-size: 0.7rem; }
+
+/* Contador de alteracoes de prazo (coluna ao lado de "Prazos anteriores") */
+#detail-panel .mm-duecount { text-align: center; }
+.due-count-badge {
+    display: inline-block; min-width: 1.6rem; padding: 0.1rem 0.4rem;
+    border-radius: 999px; background: var(--risk-bg); color: var(--risk);
+    font-weight: 700; font-size: 0.78rem; font-variant-numeric: tabular-nums;
+}

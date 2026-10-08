@@ -11,9 +11,12 @@ from datetime import datetime, timedelta
 from ..constants import is_backward_transition
 
 
-def get_benchmarking(conn: sqlite3.Connection) -> dict:
-    """Retorna comparação de métricas entre todos os projetos.
-    
+def get_benchmarking(conn: sqlite3.Connection, allowed_keys: list[str] | None = None) -> dict:
+    """Retorna comparação de métricas entre projetos.
+
+    Se `allowed_keys` for informado, considera APENAS esses project_keys (projetos
+    cadastrados em projects.yaml), ignorando dados antigos de projetos removidos.
+
     Para cada projeto calcula:
     - Lead Time P50/P85
     - Cycle Time P50/P85
@@ -26,6 +29,11 @@ def get_benchmarking(conn: sqlite3.Connection) -> dict:
     # Busca todos os projetos com dados
     cursor.execute("SELECT DISTINCT project_key FROM issues WHERE project_key IS NOT NULL")
     projects = [row[0] for row in cursor.fetchall()]
+
+    # Restringe aos projetos cadastrados, se informado.
+    if allowed_keys is not None:
+        allowed = {str(k).strip().upper() for k in allowed_keys}
+        projects = [p for p in projects if str(p).strip().upper() in allowed]
 
     if not projects:
         return {"projects": [], "summary": {}}

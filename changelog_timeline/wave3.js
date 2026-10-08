@@ -27,7 +27,7 @@ async function onProjectChange() {
     const container = document.getElementById('content-container');
 
     if (!key) {
-        container.innerHTML = '<p class="empty-state">Selecione um projeto para visualizar as metricas de pessoas.</p>';
+        container.innerHTML = '<p class="empty-state">Selecione um projeto para visualizar as métricas de pessoas.</p>';
         return;
     }
 
@@ -42,7 +42,7 @@ async function onProjectChange() {
         ]);
         renderAll(wip, workload, handoff, rework);
     } catch (e) {
-        container.innerHTML = '<p class="empty-state">Erro ao carregar metricas.</p>';
+        container.innerHTML = '<p class="empty-state">Erro ao carregar métricas.</p>';
         console.error(e);
     }
 }
@@ -93,18 +93,18 @@ function renderWIP(data) {
     return `
         <section class="metric-section glass">
             <h2>WIP por Pessoa</h2>
-            <p class="metric-desc">Issues simultaneas em estados ativos por pessoa. Acima de 3 indica multitasking excessivo.</p>
+            <p class="metric-desc">Issues simultâneas em estados ativos por pessoa. Acima de 3 indica multitasking excessivo.</p>
             <details class="formula-details">
-                <summary>Como e calculado?</summary>
+                <summary>Como é calculado?</summary>
                 <div class="formula-content">
-                    <p><strong>WIP</strong> = quantidade de issues atribuidas a uma pessoa que estao em estados ativos (In Progress, Test) neste momento.</p>
-                    <p><strong>Risco</strong>: 1-3 = saudavel, 4-5 = atencao (multitasking), 6+ = critico (context-switching constante).</p>
-                    <p><strong>Referencia</strong>: limite ideal de WIP individual e 2-3 itens simultaneos.</p>
+                    <p><strong>WIP</strong> = quantidade de issues atribuídas a uma pessoa que estão em estados ativos (In Progress, Test) neste momento.</p>
+                    <p><strong>Risco</strong>: 1-3 = saudável, 4-5 = atenção (multitasking), 6+ = crítico (context-switching constante).</p>
+                    <p><strong>Referência</strong>: limite ideal de WIP individual é 2-3 itens simultâneos.</p>
                 </div>
             </details>
             <div class="kpis-row">
                 <div class="kpi-box"><div class="kpi-label">Pessoas ativas</div><div class="kpi-value">${s.total_people}</div></div>
-                <div class="kpi-box"><div class="kpi-label">WIP medio</div><div class="kpi-value">${s.avg_wip}</div></div>
+                <div class="kpi-box"><div class="kpi-label">WIP médio</div><div class="kpi-value">${s.avg_wip}</div></div>
                 <div class="kpi-box"><div class="kpi-label">Sobrecarregados (4+)</div><div class="kpi-value ${s.overloaded > 0 ? 'warning' : ''}">${s.overloaded}</div></div>
                 <div class="kpi-box"><div class="kpi-label">Max WIP</div><div class="kpi-value ${s.max_wip >= 6 ? 'warning' : ''}">${s.max_wip}</div></div>
             </div>
@@ -120,7 +120,7 @@ function renderWIP(data) {
 function renderWorkload(data) {
     if (!data.people || data.people.length === 0) {
         return `<section class="metric-section glass">
-            <h2>Distribuicao de Carga</h2>
+            <h2>Distribuição de Carga</h2>
             <p class="metric-desc">Sem dados de entregas.</p>
         </section>`;
     }
@@ -144,14 +144,14 @@ function renderWorkload(data) {
 
     return `
         <section class="metric-section glass">
-            <h2>Distribuicao de Carga</h2>
-            <p class="metric-desc">${s.total_done} issues Done nas ultimas ${data.weeks} semanas por ${s.total_people} pessoas.</p>
+            <h2>Distribuição de Carga</h2>
+            <p class="metric-desc">${s.total_done} issues Done nas últimas ${data.weeks} semanas por ${s.total_people} pessoas.</p>
             <details class="formula-details">
-                <summary>Como e calculado?</summary>
+                <summary>Como é calculado?</summary>
                 <div class="formula-content">
-                    <p><strong>Distribuicao</strong> = issues resolvidas agrupadas por assignee nas ultimas ${data.weeks} semanas.</p>
-                    <p><strong>Gini</strong> = coeficiente de desigualdade (0 = carga igual, 1 = tudo em 1 pessoa). Acima de 0.5 = concentracao preocupante.</p>
-                    <p><strong>Bus Factor</strong> = minimo de pessoas que fazem 50%+ das entregas. Se = 1-2, risco alto de parar se alguem sair.</p>
+                    <p><strong>Distribuição</strong> = issues resolvidas agrupadas por assignee nas últimas ${data.weeks} semanas.</p>
+                    <p><strong>Gini</strong> = coeficiente de desigualdade (0 = carga igual, 1 = tudo em 1 pessoa). Acima de 0.5 = concentração preocupante.</p>
+                    <p><strong>Bus Factor</strong> = mínimo de pessoas que fazem 50%+ das entregas. Se = 1-2, risco alto de parar se alguém sair.</p>
                 </div>
             </details>
             <div class="kpis-row">
@@ -164,7 +164,7 @@ function renderWorkload(data) {
                 <canvas id="workloadCanvas"></canvas>
             </div>
             <table class="metric-table">
-                <thead><tr><th>Pessoa</th><th>Entregas</th><th>%</th><th>Acum.</th><th>Proporcao</th></tr></thead>
+                <thead><tr><th>Pessoa</th><th>Entregas</th><th>%</th><th>Acum.</th><th>Proporção</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </section>
@@ -210,7 +210,7 @@ function renderHandoff(data) {
     if (!s || s.total_handoffs === 0) {
         return `<section class="metric-section glass">
             <h2>Handoff Time</h2>
-            <p class="metric-desc">Nenhuma mudanca de assignee registrada.</p>
+            <p class="metric-desc">Nenhuma mudança de assignee registrada.</p>
         </section>`;
     }
 
@@ -230,20 +230,20 @@ function renderHandoff(data) {
     return `
         <section class="metric-section glass">
             <h2>Handoff Time</h2>
-            <p class="metric-desc">Transferencias de responsabilidade entre pessoas. Handoffs frequentes indicam gargalo de coordenacao.</p>
+            <p class="metric-desc">Transferências de responsabilidade entre pessoas. Handoffs frequentes indicam gargalo de coordenação.</p>
             <details class="formula-details">
-                <summary>Como e calculado?</summary>
+                <summary>Como é calculado?</summary>
                 <div class="formula-content">
-                    <p><strong>Handoff</strong> = mudanca no campo "assignee" do Jira (uma pessoa passa a issue para outra).</p>
-                    <p><strong>Tempo entre handoffs</strong> = intervalo medio entre transferencias consecutivas na mesma issue.</p>
-                    <p><strong>Risco</strong>: muitos handoffs por issue = coordenacao excessiva, cada transferencia adiciona espera.</p>
+                    <p><strong>Handoff</strong> = mudança no campo "assignee" do Jira (uma pessoa passa a issue para outra).</p>
+                    <p><strong>Tempo entre handoffs</strong> = intervalo médio entre transferências consecutivas na mesma issue.</p>
+                    <p><strong>Risco</strong>: muitos handoffs por issue = coordenação excessiva, cada transferência adiciona espera.</p>
                 </div>
             </details>
             <div class="kpis-row">
                 <div class="kpi-box"><div class="kpi-label">Total handoffs</div><div class="kpi-value">${s.total_handoffs}</div></div>
                 <div class="kpi-box"><div class="kpi-label">Issues afetadas</div><div class="kpi-value">${s.issues_with_handoffs}</div></div>
-                <div class="kpi-box"><div class="kpi-label">Media por issue</div><div class="kpi-value">${s.avg_handoffs_per_issue}</div></div>
-                <div class="kpi-box"><div class="kpi-label">Tempo medio entre</div><div class="kpi-value">${formatHours(s.avg_time_between_handoffs_hours)}</div></div>
+                <div class="kpi-box"><div class="kpi-label">Média por issue</div><div class="kpi-value">${s.avg_handoffs_per_issue}</div></div>
+                <div class="kpi-box"><div class="kpi-label">Tempo médio entre</div><div class="kpi-value">${formatHours(s.avg_time_between_handoffs_hours)}</div></div>
             </div>
             <div class="two-col">
                 <div>
@@ -271,7 +271,7 @@ function renderRework(data) {
     if (!s || s.total_issues === 0) {
         return `<section class="metric-section glass">
             <h2>Retrabalho</h2>
-            <p class="metric-desc">Sem dados de transicoes.</p>
+            <p class="metric-desc">Sem dados de transições.</p>
         </section>`;
     }
 
@@ -294,26 +294,26 @@ function renderRework(data) {
     return `
         <section class="metric-section glass">
             <h2>Retrabalho</h2>
-            <p class="metric-desc">Issues com transicoes "para tras" no fluxo (ex: Done→In Progress). Indica qualidade ou escopo mal definido.</p>
+            <p class="metric-desc">Issues com transições "para trás" no fluxo (ex: Done→In Progress). Indica qualidade ou escopo mal definido.</p>
             <details class="formula-details">
-                <summary>Como e calculado?</summary>
+                <summary>Como é calculado?</summary>
                 <div class="formula-content">
-                    <p><strong>Retrabalho</strong> = transicao de status para um estado anterior na ordem logica do fluxo (Open → To do → Refinement → In Progress → Test → Waiting for Delivery → Done).</p>
-                    <p><strong>Taxa</strong> = % de issues que tiveram pelo menos 1 transicao para tras.</p>
-                    <p><strong>Causa tipica</strong>: requisito incompleto, bug encontrado em QA, ou mudanca de escopo apos inicio do trabalho.</p>
+                    <p><strong>Retrabalho</strong> = transição de status para um estado anterior na ordem lógica do fluxo (Open → To do → Refinement → In Progress → Test → Waiting for Delivery → Done).</p>
+                    <p><strong>Taxa</strong> = % de issues que tiveram pelo menos 1 transição para trás.</p>
+                    <p><strong>Causa típica</strong>: requisito incompleto, bug encontrado em QA, ou mudança de escopo após início do trabalho.</p>
                 </div>
             </details>
             <div class="kpis-row">
                 <div class="kpi-box"><div class="kpi-label">Taxa de retrabalho</div><div class="kpi-value ${reworkClass}">${s.rework_rate_pct}%</div></div>
                 <div class="kpi-box"><div class="kpi-label">Issues com retrabalho</div><div class="kpi-value">${s.issues_with_rework}</div></div>
-                <div class="kpi-box"><div class="kpi-label">Transicoes para tras</div><div class="kpi-value">${s.total_rework_transitions}</div></div>
-                <div class="kpi-box"><div class="kpi-label">% das transicoes</div><div class="kpi-value">${s.rework_transition_pct}%</div></div>
+                <div class="kpi-box"><div class="kpi-label">Transições para trás</div><div class="kpi-value">${s.total_rework_transitions}</div></div>
+                <div class="kpi-box"><div class="kpi-label">% das transições</div><div class="kpi-value">${s.rework_transition_pct}%</div></div>
             </div>
             <div class="two-col">
                 <div>
                     <h3 class="sub-title">Tipos de retrabalho mais comuns</h3>
                     <table class="metric-table compact">
-                        <thead><tr><th>Transicao</th><th>Qtd</th></tr></thead>
+                        <thead><tr><th>Transição</th><th>Qtd</th></tr></thead>
                         <tbody>${typeRows}</tbody>
                     </table>
                 </div>

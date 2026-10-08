@@ -13,7 +13,45 @@
     <link rel="stylesheet" href="tokens.css?v=2">
     <link rel="stylesheet" href="ui.css?v=3">
     <link rel="stylesheet" href="nav.css?v=1">
-    <link rel="stylesheet" href="settings.css?v=13">
+    <link rel="stylesheet" href="dashboard.css?v=9">
+    <link rel="stylesheet" href="settings.css?v=14">
+    <style>
+        /* Painel de detalhamento das issues a expurgar (padrao dashboard) */
+        #purge-detail { margin-top: 1rem; }
+        #purge-detail .filter-input {
+            padding: 0.4rem 0.6rem; border-radius: 4px;
+            background: var(--surface-1); color: var(--text-1);
+            border: 1px solid var(--border-strong); font-size: 0.85rem;
+        }
+        #purge-detail .filter-input::placeholder { color: var(--text-3); }
+        #purge-detail .data-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        #purge-detail .sort-ind { color: var(--text-3); font-size: 0.7rem; margin-left: 0.15rem; }
+        #purge-detail .cell-summary { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #purge-detail .status-badge { font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+        #purge-detail .status-done { background: var(--ok-bg); color: var(--ok); }
+        #purge-detail .status-progress { background: rgba(10,102,194,0.12); color: var(--brand-blue); }
+        #purge-detail .status-blocked { background: var(--risk-bg); color: var(--risk); }
+        #purge-detail .status-test { background: var(--warn-bg); color: var(--warn); }
+        #purge-detail .status-waiting { background: var(--surface-2); color: var(--text-2); }
+        #purge-detail .status-open { background: var(--surface-2); color: var(--text-2); }
+
+        /* Destaque temporario na linha recem-adicionada ao Historico de Expurgos */
+        .purge-history-wrap { scroll-margin-top: 1rem; }
+        @keyframes rowFlash { 0% { background: var(--action-quiet); } 100% { background: transparent; } }
+        #purge-history-body tr.row-flash td { animation: rowFlash 2.2s ease-out; }
+
+        /* Bloco explicativo "Como o expurgo funciona?" */
+        .formula-details { margin: 0.5rem 0 1rem; border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden; }
+        .formula-details summary { padding: 0.5rem 1rem; font-size: 0.85rem; color: var(--text-2); cursor: pointer; transition: background 0.2s; }
+        .formula-details summary:hover { color: var(--text-1); }
+        .formula-details[open] summary { border-bottom: 1px solid var(--border-subtle); }
+        .formula-content { padding: 0.75rem 1rem; font-size: 0.85rem; line-height: 1.6; color: var(--text-2); }
+        .formula-content p { margin: 0 0 0.5rem; }
+        .formula-content ul { margin: 0.25rem 0 0.75rem; padding-left: 1.2rem; }
+        .formula-content li { margin: 0.2rem 0; }
+        .formula-content strong { color: var(--text-1); }
+        .formula-content code { background: var(--surface-2); padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.82em; }
+    </style>
 </head>
 <body>
     <div class="settings-container">
@@ -102,11 +140,52 @@
                 </div>
             </div>
 
+            <details class="formula-details">
+                <summary>Como o expurgo funciona?</summary>
+                <div class="formula-content">
+                    <p><strong>Critério (qual data é usada):</strong> uma issue é expurgada quando atende às três condições:</p>
+                    <ul>
+                        <li>está com status <strong>Done</strong> (apenas "Done" — <em>Resolved, Canceled e Reject não são expurgados</em>);</li>
+                        <li>possui <strong>data de resolução</strong> (<code>resolved_at</code>, vinda do <code>resolutiondate</code> do Jira) preenchida;</li>
+                        <li>essa <code>resolved_at</code> é anterior a <strong>26 semanas (~6 meses)</strong> atrás;</li>
+                        <li><strong>e não tem pai vivo</strong>: a issue só é expurgada se não tiver parent OU se o parent também for elegível (Done + 6 meses). Assim, uma subtask nunca é apagada enquanto a história-pai permanecer no banco — preserva a árvore e evita perder métricas.</li>
+                    </ul>
+                    <p>Somente o <code>resolved_at</code> entra no critério de data. <strong>Created, Updated e Due Date são ignorados</strong> — uma issue atualizada recentemente, mas resolvida (Done) há mais de 6 meses, é candidata.</p>
+                    <p><strong>Os dados são apagados ou só marcados?</strong> São <strong>apagados fisicamente</strong> da base (<code>DELETE</code>), não marcados nem arquivados. Para cada issue expurgada, são removidos: a própria issue, seus eventos de changelog e seus registros de métricas. <strong>A ação é irreversível</strong> — os dados só voltam recoletando do Jira via "Atualizar".</p>
+                    <p><strong>Dica:</strong> use "Ver issues que serão removidas" para inspecionar e filtrar a lista exata antes de confirmar. O preview usa exatamente o mesmo critério do expurgo.</p>
+                </div>
+            </details>
+
             <div class="purge-card" id="purge-card">
                 <div class="purge-info" id="purge-info">
                     <p class="empty-state">Carregando...</p>
                 </div>
-                <button id="btnPurge" class="btn btn-purge" onclick="executePurge()">Executar Expurgo</button>
+                <button id="btnPurgePreview" class="btn btn-secondary" onclick="togglePurgePreview()">Ver issues que serão removidas</button>
+                <button id="btnPurge" class="btn btn-purge" onclick="executePurge()">Expurgar tudo (elegível)</button>
+            </div>
+
+            <!-- Painel de detalhamento das issues a expurgar (tabela + filtros padrao) -->
+            <div id="purge-detail" style="display:none;"></div>
+
+            <!-- Changelog / Histórico de Expurgos -->
+            <div class="purge-history-wrap">
+                <h3 style="font-size:0.95rem;font-weight:600;margin:1.25rem 0 0.5rem">Histórico de Expurgos</h3>
+                <p class="section-desc" style="margin-bottom:0.5rem">Últimas 20 execuções (changelog do expurgo).</p>
+                <div class="table-wrapper">
+                    <table class="data-table" id="purge-history-table">
+                        <thead><tr>
+                            <th>Data/Hora</th>
+                            <th>Escopo</th>
+                            <th>Issues removidas</th>
+                            <th>Changelogs</th>
+                            <th>Corte (resolved &lt;)</th>
+                            <th>Amostra de keys</th>
+                        </tr></thead>
+                        <tbody id="purge-history-body">
+                            <tr><td colspan="6" class="empty-state">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -164,8 +243,8 @@
         </section>
     </div>
 
-    <script src="nav.js?v=1"></script>
+    <script src="nav.js?v=2"></script>
     <script src="ui.js?v=3"></script>
-    <script src="settings.js?v=14"></script>
+    <script src="settings.js?v=22"></script>
 </body>
 </html>

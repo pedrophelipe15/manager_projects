@@ -11,8 +11,9 @@ projects:
   pipelines:
     active:
       name: Trabalho ativo
-      jql: project = "PS - REYKJAVIK" AND status in ("In Progress", "Blocked", "Test",
-        "Waiting for Delivery")
+      jql: project = "PS - REYKJAVIK" AND (status in ("In Progress", "Blocked", "Test",
+        "Waiting for Delivery") OR (issuetype in subTaskIssueTypes() AND status in
+        ("In Progress", "Blocked", "Test", "Waiting for Delivery")))
     done:
       name: Done (6 meses)
       jql: project = "PS - REYKJAVIK" AND status = Done AND resolved >= -26w
@@ -32,8 +33,9 @@ projects:
   pipelines:
     active:
       name: Trabalho ativo
-      jql: project in (13146) AND status in ("In Progress", "Blocked", "Test", "Waiting
-        for Delivery")
+      jql: project in (13146) AND (status in ("In Progress", "Blocked", "Test", "Waiting
+        for Delivery") OR (issuetype in subTaskIssueTypes() AND status in ("In Progress",
+        "Blocked", "Test", "Waiting for Delivery")))
     done:
       name: Done (6 meses)
       jql: project in (13146) AND status = Done AND resolved >= -26w
@@ -52,8 +54,9 @@ projects:
   pipelines:
     active:
       name: Trabalho ativo
-      jql: project = "PS - Belize" AND status in ("In Progress", "Blocked", "Test",
-        "Waiting for Delivery")
+      jql: project = "PS - Belize" AND (status in ("In Progress", "Blocked", "Test",
+        "Waiting for Delivery") OR (issuetype in subTaskIssueTypes() AND status in
+        ("In Progress", "Blocked", "Test", "Waiting for Delivery")))
     done:
       name: Done (6 meses)
       jql: project = "PS - Belize" AND status = Done AND resolved >= -26w
@@ -72,8 +75,9 @@ projects:
   pipelines:
     active:
       name: Trabalho ativo
-      jql: project = "PS - San Ignacio" AND status in ("In Progress", "Blocked", "Test",
-        "Waiting for Delivery")
+      jql: project = "PS - San Ignacio" AND (status in ("In Progress", "Blocked", "Test",
+        "Waiting for Delivery") OR (issuetype in subTaskIssueTypes() AND status in
+        ("In Progress", "Blocked", "Test", "Waiting for Delivery")))
     done:
       name: Done (6 meses)
       jql: project = "PS - San Ignacio" AND status = Done AND resolved >= -26w

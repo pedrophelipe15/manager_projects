@@ -19,6 +19,7 @@ function formatDate(dateStr) {
 // Estado Global
 const state = {
     allData: [],
+    configuredKeys: [],
     filteredData: [],
     currentPage: 1,
     itemsPerPage: 15,
@@ -29,11 +30,18 @@ const state = {
 document.addEventListener('DOMContentLoaded', async () => {
     console.time("Buscando dados da API");
     try {
-        const response = await fetch('/api/issues');
-        state.allData = await response.json();
+        const [issuesResp, projectsResp] = await Promise.all([
+            fetch('/api/issues'),
+            fetch('/api/settings/projects'),
+        ]);
+        state.allData = await issuesResp.json();
+        // Projetos CADASTRADOS (projects.yaml) — o dashboard considera apenas estes.
+        const configured = await projectsResp.json();
+        state.configuredKeys = (configured || []).map(p => p.key);
     } catch (error) {
-        console.error("Erro ao buscar issues da API:", error);
+        console.error("Erro ao buscar dados da API:", error);
         state.allData = [];
+        state.configuredKeys = [];
     }
     console.timeEnd("Buscando dados da API");
 
@@ -55,12 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function populateProjectDropdown() {
     const select = document.getElementById('projectFilter');
+    // Considera APENAS os projetos cadastrados em Configurações (projects.yaml).
+    const configured = state.configuredKeys || [];
     const projects = new Map();
-    
-    state.allData.forEach(item => {
-        if (item.project_key && !projects.has(item.project_key)) {
-            projects.set(item.project_key, item.project_key);
-        }
+
+    configured.forEach(key => {
+        if (key && !projects.has(key)) projects.set(key, key);
     });
 
     projects.forEach((name, key) => {

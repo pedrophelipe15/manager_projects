@@ -38,7 +38,7 @@ async function init() {
         kpiContainer.innerHTML = `
             <div class="kpi-card">
                 <div class="kpi-value accent">${bn.total_epics}</div>
-                <div class="kpi-label">Epicos Total</div>
+                <div class="kpi-label">Épicos Total</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${bn.total_initiatives}</div>
@@ -46,11 +46,11 @@ async function init() {
             </div>
             <div class="kpi-card">
                 <div class="kpi-value success">${bn.initiatives_with_epics}</div>
-                <div class="kpi-label">Iniciativas c/ Epicos</div>
+                <div class="kpi-label">Iniciativas c/ Épicos</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value warning">${bn.orphan_epics}</div>
-                <div class="kpi-label">Epicos Orfaos</div>
+                <div class="kpi-label">Épicos Órfãos</div>
             </div>
         `;
 
@@ -70,7 +70,7 @@ async function init() {
         }
 
         if (!html) {
-            html = `<p class="empty-state">Nenhum dado encontrado. Execute uma sincronizacao primeiro.</p>`;
+            html = `<p class="empty-state">Nenhum dado encontrado. Execute uma sincronização primeiro.</p>`;
         }
 
         container.innerHTML = html;
@@ -107,7 +107,7 @@ function renderInitiativesSection(initiatives) {
     return `
         <div class="metric-section glass">
             <h2 class="section-title">Iniciativas</h2>
-            <p class="section-subtitle">Visao corporativa. Clique para detalhes dos epicos da iniciativa.</p>
+            <p class="section-subtitle">Visão corporativa. Clique para detalhes dos épicos da iniciativa.</p>
             <table class="metric-table">
                 <thead>
                     <tr>
@@ -115,7 +115,7 @@ function renderInitiativesSection(initiatives) {
                         <th>Iniciativa</th>
                         <th>Progresso</th>
                         <th>Stories</th>
-                        <th>Epicos</th>
+                        <th>Épicos</th>
                         <th>Times</th>
                         <th>Forecast P85</th>
                         <th>Risco</th>
@@ -153,8 +153,8 @@ function renderOrphanEpicsSection(orphanData) {
 
     return `
         <div class="metric-section glass">
-            <h2 class="section-title">Epicos Orfaos</h2>
-            <p class="section-subtitle">Epicos sem iniciativa vinculada. Clique para detalhes.</p>
+            <h2 class="section-title">Épicos Órfãos</h2>
+            <p class="section-subtitle">Épicos sem iniciativa vinculada. Clique para detalhes.</p>
             <table class="metric-table">
                 <thead>
                     <tr>

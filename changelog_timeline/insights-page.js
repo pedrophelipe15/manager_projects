@@ -50,14 +50,14 @@ function renderInsights(data) {
     // Badges de severidade
     const counts = data.severity_counts;
     let badgeHtml = '';
-    if (counts.critical > 0) badgeHtml += `<span class="badge badge-critical">${counts.critical} critico(s)</span>`;
-    if (counts.warning > 0) badgeHtml += `<span class="badge badge-warning">${counts.warning} atencao</span>`;
+    if (counts.critical > 0) badgeHtml += `<span class="badge badge-critical">${counts.critical} crítico(s)</span>`;
+    if (counts.warning > 0) badgeHtml += `<span class="badge badge-warning">${counts.warning} atenção</span>`;
     if (counts.info > 0) badgeHtml += `<span class="badge badge-info">${counts.info} info</span>`;
-    if (counts.healthy > 0) badgeHtml += `<span class="badge badge-healthy">${counts.healthy} saudavel</span>`;
+    if (counts.healthy > 0) badgeHtml += `<span class="badge badge-healthy">${counts.healthy} saudável</span>`;
     badges.innerHTML = badgeHtml;
 
     if (data.total === 0) {
-        container.innerHTML = '<p class="empty-state">Nenhum insight gerado. Execute uma sincronizacao para popular os dados.</p>';
+        container.innerHTML = '<p class="empty-state">Nenhum insight gerado. Execute uma sincronização para popular os dados.</p>';
         return;
     }
 
@@ -72,19 +72,19 @@ function renderInsights(data) {
     // Seção de avisos (critical/warning que NÃO são alertas proativos)
     const warnings = data.insights.filter(i => (i.severity === 'critical' || i.severity === 'warning') && i.category !== 'alert');
     if (warnings.length > 0) {
-        html += renderSection('Diagnostico — Atencao', 'alertas', warnings);
+        html += renderSection('Diagnóstico — Atenção', 'alertas', warnings);
     }
 
     // Seção de observações (info)
     const observations = data.insights.filter(i => i.severity === 'info');
     if (observations.length > 0) {
-        html += renderSection('Observacoes', 'observacoes', observations);
+        html += renderSection('Observações', 'observacoes', observations);
     }
 
     // Seção saudável
     const healthy = data.insights.filter(i => i.severity === 'healthy');
     if (healthy.length > 0) {
-        html += renderSection('Indicadores Saudaveis', 'saudavel', healthy);
+        html += renderSection('Indicadores Saudáveis', 'saudavel', healthy);
     }
 
     container.innerHTML = html;
@@ -109,8 +109,8 @@ function renderAlertBanner(alerts) {
     const bannerClass = criticals.length > 0 ? 'alert-banner-critical' : 'alert-banner-warning';
     const icon = criticals.length > 0 ? '🚨' : '⚠️';
     const countText = criticals.length > 0 
-        ? `${criticals.length} alerta(s) critico(s)${warnings.length > 0 ? ` + ${warnings.length} atencao` : ''}`
-        : `${warnings.length} alerta(s) de atencao`;
+        ? `${criticals.length} alerta(s) crítico(s)${warnings.length > 0 ? ` + ${warnings.length} atenção` : ''}`
+        : `${warnings.length} alerta(s) de atenção`;
 
     return `
         <section class="alert-banner ${bannerClass}">
@@ -119,7 +119,7 @@ function renderAlertBanner(alerts) {
                 <h2>Alertas Proativos</h2>
                 <span class="alert-banner-count">${countText}</span>
             </div>
-            <p class="alert-banner-desc">Situacoes que requerem acao — detectadas automaticamente.</p>
+            <p class="alert-banner-desc">Situações que requerem ação — detectadas automaticamente.</p>
             <div class="insights-grid">${cards}</div>
         </section>
     `;
@@ -149,7 +149,7 @@ function renderInsightCard(insight) {
     if (insight.recommendation) {
         recommendationHtml = `
             <div class="insight-recommendation">
-                <strong>Recomendacao:</strong> ${escapeHTML(insight.recommendation)}
+                <strong>Recomendação:</strong> ${escapeHTML(insight.recommendation)}
             </div>
         `;
     }

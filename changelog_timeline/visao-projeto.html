@@ -141,17 +141,17 @@
             <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
             <a href="/wave2.html" class="nav-link">Previsibilidade</a>
             <a href="/wave3.html" class="nav-link">Pessoas</a>
-            <a href="/wave4.html" class="nav-link">Portfolio</a>
-            <a href="/visao-projeto.html" class="nav-link active">&#x2705; Acoes</a>
+            <a href="/wave4.html" class="nav-link">Portfólio</a>
+            <a href="/visao-projeto.html" class="nav-link active">&#x2705; Ações</a>
             <a href="/insights.html" class="nav-link">Insights</a>
             <a href="/maturidade.html" class="nav-link">&#x1F331; Maturidade</a>
-            <a href="/inconsistencies.html" class="nav-link">Inconsistencias</a>
-            <a href="/settings.html" class="nav-link">Configuracoes</a>
+            <a href="/inconsistencies.html" class="nav-link">Inconsistências</a>
+            <a href="/settings.html" class="nav-link">Configurações</a>
         </nav>
 
         <header class="page-header">
-            <h1>Acoes do Projeto <span class="mvp-tag">MVP</span></h1>
-            <p class="subtitle">Um unico lugar com o que precisa ser feito. Saude do fluxo no topo, lista de acoes priorizada abaixo.</p>
+            <h1>Ações do Projeto <span class="mvp-tag">MVP</span></h1>
+            <p class="subtitle">Um único lugar com o que precisa ser feito. Saúde do fluxo no topo, lista de ações priorizada abaixo.</p>
         </header>
 
         <!-- Multi-seleção de projetos -->
@@ -169,7 +169,7 @@
 
         <!-- Resumo de saúde do fluxo -->
         <div id="health-section" style="display:none;">
-            <p class="section-label">Saude do fluxo (diagnostico do projeto)</p>
+            <p class="section-label">Saúde do fluxo (diagnóstico do projeto)</p>
             <div class="health-strip" id="health-strip"></div>
         </div>
 
@@ -180,14 +180,14 @@
             <select id="filter-type" onchange="renderActions()"><option value="">Todos os tipos</option></select>
             <select id="filter-sev" onchange="renderActions()">
                 <option value="">Todas as severidades</option>
-                <option value="critico">Critico</option>
-                <option value="atencao">Atencao</option>
+                <option value="critico">Crítico</option>
+                <option value="atencao">Atenção</option>
                 <option value="informativo">Informativo</option>
             </select>
-            <select id="filter-assignee" onchange="renderActions()"><option value="">Todos os responsaveis</option></select>
+            <select id="filter-assignee" onchange="renderActions()"><option value="">Todos os responsáveis</option></select>
         </div>
         <div id="action-results">
-            <p class="empty-state">Selecione um ou mais projetos para ver as acoes.</p>
+            <p class="empty-state">Selecione um ou mais projetos para ver as ações.</p>
         </div>
     </div>
 
@@ -274,7 +274,7 @@
             const summary = document.getElementById("action-summary");
 
             if (selected.size === 0) {
-                results.innerHTML = '<p class="empty-state">Selecione um ou mais projetos para ver as acoes.</p>';
+                results.innerHTML = '<p class="empty-state">Selecione um ou mais projetos para ver as ações.</p>';
                 healthSection.style.display = "none"; filters.style.display = "none"; summary.innerHTML = "";
                 return;
             }
@@ -363,7 +363,7 @@
                 if (person.wip_count >= rules.wip_atencao) for (const i of person.issues) {
                     push({ assignee: person.name, key: i.key, summary: i.summary, status: i.status,
                         type: "WIP", severity: person.wip_count >= rules.wip_critico ? "critico" : "atencao",
-                        action: `${person.wip_count} itens simultaneos — concluir antes de iniciar novos.` });
+                        action: `${person.wip_count} itens simultâneos — concluir antes de iniciar novos.` });
                 }
                 const blocked = person.blocked_issues || [];
                 if (blocked.length >= rules.blocked_atencao && rules.blocked_atencao > 0) for (const i of blocked) {
@@ -373,8 +373,8 @@
                 }
             }
             if (incons.due_date_empty) for (const i of incons.due_date_empty) push({ assignee: i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status, type: "DUE DATE", severity: "atencao", action: "Sem due date — preencher no Jira." });
-            if (incons.active_without_assignee) for (const i of incons.active_without_assignee) push({ assignee: "SEM ASSIGNEE", key: i.key, summary: i.summary, status: i.status, type: "ASSIGNEE", severity: "critico", action: "Sem responsavel — atribuir imediatamente." });
-            if (incons.due_date_parent_vs_subtask) for (const i of incons.due_date_parent_vs_subtask) push({ assignee: i.child_assignee || "Sem assignee", key: i.child_key, summary: i.child_summary, status: i.child_status, type: "PRAZO", severity: "atencao", action: `Due date posterior a pai ${i.parent_key} — ajustar.` });
+            if (incons.active_without_assignee) for (const i of incons.active_without_assignee) push({ assignee: "SEM ASSIGNEE", key: i.key, summary: i.summary, status: i.status, type: "ASSIGNEE", severity: "critico", action: "Sem responsável — atribuir imediatamente." });
+            if (incons.due_date_parent_vs_subtask) for (const i of incons.due_date_parent_vs_subtask) push({ assignee: i.child_assignee || "Sem assignee", key: i.child_key, summary: i.child_summary, status: i.child_status, type: "PRAZO", severity: "atencao", action: `Due date posterior ao pai ${i.parent_key} — ajustar.` });
             if (incons.done_without_metrics) for (const i of incons.done_without_metrics) push({ assignee: i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status, type: "METRICAS", severity: "informativo", action: "Done sem lead/cycle — verificar fluxo no board." });
             if (incons.active_without_cycle) for (const i of incons.active_without_cycle) push({ assignee: i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status, type: "FLUXO", severity: "informativo", action: "Ativa sem cycle time — mover por In Progress." });
             if (aging.issues) for (const i of aging.issues) {
@@ -383,7 +383,7 @@
                 if (days < rules.aging_min_dias) continue;
                 push({ assignee: i.assignee_name || i.assignee || "Sem assignee", key: i.key, summary: i.summary, status: i.status,
                     type: "AGING", severity: days > rules.aging_critico_dias ? "critico" : "atencao",
-                    action: `Parada ha ${days} dias — atualizar status ou cancelar.` });
+                    action: `Parada há ${days} dias — atualizar status ou cancelar.` });
             }
             return actions;
         }
@@ -395,7 +395,7 @@
             const assignees = [...new Set(allActions.map(a => a.assignee))].sort();
             const keepT = typeSel.value, keepA = assSel.value;
             typeSel.innerHTML = `<option value="">Todos os tipos</option>` + types.map(t => `<option value="${t}">${t}</option>`).join("");
-            assSel.innerHTML = `<option value="">Todos os responsaveis</option>` + assignees.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join("");
+            assSel.innerHTML = `<option value="">Todos os responsáveis</option>` + assignees.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join("");
             if (types.includes(keepT)) typeSel.value = keepT;
             if (assignees.includes(keepA)) assSel.value = keepA;
         }
@@ -424,13 +424,13 @@
             const info = list.filter(a => a.severity === "informativo").length;
             const people = new Set(list.map(a => a.assignee)).size;
             summary.innerHTML = `<div class="summary-bar">
-                <span><strong>${selected.size} projeto(s)</strong> — ${list.length} acoes</span>
-                <span class="summary-item"><span class="summary-dot" style="background:var(--danger)"></span> ${crit} criticos</span>
-                <span class="summary-item"><span class="summary-dot" style="background:var(--warning)"></span> ${warn} atencao</span>
+                <span><strong>${selected.size} projeto(s)</strong> — ${list.length} ações</span>
+                <span class="summary-item"><span class="summary-dot" style="background:var(--danger)"></span> ${crit} críticos</span>
+                <span class="summary-item"><span class="summary-dot" style="background:var(--warning)"></span> ${warn} atenção</span>
                 <span class="summary-item"><span class="summary-dot" style="background:var(--accent)"></span> ${info} info</span>
                 <span style="color:var(--text-muted)">|</span><span>${people} pessoas</span></div>`;
 
-            if (!list.length) { container.innerHTML = `<p class="empty-state">Nenhuma acao pendente. 🎉</p>`; return; }
+            if (!list.length) { container.innerHTML = `<p class="empty-state">Nenhuma ação pendente. 🎉</p>`; return; }
 
             // Ordenação
             list = [...list].sort((a, b) => {
@@ -450,7 +450,7 @@
                 <th onclick="sortBy('summary')">Resumo</th>
                 <th class="col-status" onclick="sortBy('status')">Status</th>
                 <th class="col-type" onclick="sortBy('type')">Tipo</th>
-                <th class="col-assignee" onclick="sortBy('assignee')">Responsavel</th>
+                <th class="col-assignee" onclick="sortBy('assignee')">Responsável</th>
                 <th>O que fazer</th>
             </tr></thead><tbody>
             ${list.map(a => `<tr>
@@ -472,7 +472,7 @@
         function openConfigModal() {
             // Projetos disponíveis para editar: os selecionados; se nenhum, todos
             const editable = selected.size ? [...selected] : projects.map(p => p.key);
-            if (!editable.length) { alert("Nenhum projeto disponivel."); return; }
+            if (!editable.length) { alert("Nenhum projeto disponível."); return; }
             modalProjectKey = editable.includes(modalProjectKey) ? modalProjectKey : editable[0];
             renderConfigModal(editable);
             document.getElementById("config-modal").classList.add("open");
@@ -485,7 +485,7 @@
             modal.innerHTML = `
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>Configuracao de Regras</h2>
+                        <h2>Configuração de Regras</h2>
                         <button class="modal-close" onclick="closeConfigModal()">&times;</button>
                     </div>
 
@@ -494,15 +494,15 @@
                         <select id="cfg-project" onchange="onModalProjectChange(this.value)">
                             ${editable.map(k => `<option value="${k}" ${k === modalProjectKey ? "selected" : ""}>${k}</option>`).join("")}
                         </select>
-                        <span class="modal-scope-hint">${custom ? "Este projeto usa regras personalizadas." : "Este projeto usa as regras padrao."}</span>
+                        <span class="modal-scope-hint">${custom ? "Este projeto usa regras personalizadas." : "Este projeto usa as regras padrão."}</span>
                     </div>
 
                     <div class="rule-card">
                         <div class="rule-card-header"><span class="rule-card-title">WIP (Work In Progress)</span><span class="rule-card-type">WIP</span></div>
                         <div class="rule-fields">
                             <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-wip-recomendado" value="${r.wip_recomendado}"></div>
-                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-wip-atencao" value="${r.wip_atencao}"></div>
-                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-wip-critico" value="${r.wip_critico}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-wip-atencao" value="${r.wip_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-wip-critico" value="${r.wip_critico}"></div>
                         </div>
                     </div>
 
@@ -510,29 +510,29 @@
                         <div class="rule-card-header"><span class="rule-card-title">Blocked (Atividades Bloqueadas)</span><span class="rule-card-type">BLOCKED</span></div>
                         <div class="rule-fields">
                             <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-blocked-recomendado" value="${r.blocked_recomendado}"></div>
-                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-blocked-atencao" value="${r.blocked_atencao}"></div>
-                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-blocked-critico" value="${r.blocked_critico}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-blocked-atencao" value="${r.blocked_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-blocked-critico" value="${r.blocked_critico}"></div>
                         </div>
                     </div>
 
                     <div class="rule-card">
                         <div class="rule-card-header"><span class="rule-card-title">Aging (Atividades Paradas)</span><span class="rule-card-type">AGING</span></div>
                         <div class="rule-fields">
-                            <div class="rule-field"><label>Min dias sem atualiz.</label><input type="number" id="cfg-aging-min" value="${r.aging_min_dias}"></div>
-                            <div class="rule-field"><label>Critico (> dias)</label><input type="number" id="cfg-aging-critico" value="${r.aging_critico_dias}"></div>
+                            <div class="rule-field"><label>Mín. dias sem atualiz.</label><input type="number" id="cfg-aging-min" value="${r.aging_min_dias}"></div>
+                            <div class="rule-field"><label>Crítico (> dias)</label><input type="number" id="cfg-aging-critico" value="${r.aging_critico_dias}"></div>
                         </div>
                     </div>
 
                     <div class="rule-card">
-                        <div class="rule-card-header"><span class="rule-card-title">Postergacao de Due Date</span><span class="rule-card-type">POSTERGACAO</span></div>
+                        <div class="rule-card-header"><span class="rule-card-title">Postergação de Due Date</span><span class="rule-card-type">POSTERGACAO</span></div>
                         <div class="rule-fields">
-                            <div class="rule-field"><label>Atencao (>=)</label><input type="number" id="cfg-due-atencao" value="${r.due_date_changes_atencao}"></div>
-                            <div class="rule-field"><label>Critico (>=)</label><input type="number" id="cfg-due-critico" value="${r.due_date_changes_critico}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-due-atencao" value="${r.due_date_changes_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-due-critico" value="${r.due_date_changes_critico}"></div>
                         </div>
                     </div>
 
                     <div class="modal-footer">
-                        <button class="btn-reset-rule" onclick="resetModalRules()">Restaurar padrao</button>
+                        <button class="btn-reset-rule" onclick="resetModalRules()">Restaurar padrão</button>
                         <button class="btn-save-rule" onclick="saveModalRules()">Salvar regras deste projeto</button>
                     </div>
                 </div>`;
@@ -569,7 +569,7 @@
         }
 
         function resetModalRules() {
-            if (!confirm(`Restaurar as regras padrao para ${modalProjectKey}?`)) return;
+            if (!confirm(`Restaurar as regras padrão para ${modalProjectKey}?`)) return;
             resetRulesForProject(modalProjectKey);
             const editable = selected.size ? [...selected] : projects.map(p => p.key);
             renderConfigModal(editable);

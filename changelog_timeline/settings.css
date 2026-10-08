@@ -80,13 +80,14 @@ body {
 .projects-list { display: flex; flex-direction: column; gap: 0.75rem; }
 
 .project-card {
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
     overflow: hidden;
-    transition: border-color 0.2s;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
-.project-card:hover { border-color: rgba(255, 255, 255, 0.15); }
+.project-card:hover { border-color: var(--action); box-shadow: var(--shadow-md); }
 .project-card.syncing { border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.05); }
 .project-card.done { border-color: rgba(16, 185, 129, 0.4); }
 
@@ -115,7 +116,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
 }
-.btn-sync:hover:not(:disabled) { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.btn-sync:hover:not(:disabled) { background: rgba(59, 130, 246, 0.2); color: var(--brand-blue); }
 .btn-sync:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Sync info */
@@ -126,7 +127,7 @@ body {
 
 /* Pipelines expandíveis */
 .pipelines-details {
-    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--border-subtle);
 }
 
 .pipelines-toggle {
@@ -202,7 +203,7 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
 
 .sync-log {
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     padding: 1rem;
     max-height: 350px;
@@ -225,17 +226,17 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
     align-items: center;
     margin-bottom: 2rem;
     padding: 1rem;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
 }
 
 .form-select, .form-input {
     padding: 0.6rem 0.8rem;
     border-radius: 6px;
-    background: rgba(15, 23, 42, 0.8);
+    background: var(--surface-1);
     color: var(--text-main);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-strong);
     font-family: inherit;
     font-size: 0.85rem;
     outline: none;
@@ -270,7 +271,7 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
 .rules-table td {
     padding: 0.7rem 0.8rem;
     font-size: 0.85rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-subtle);
 }
 .rules-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
 .rules-table .actions-cell { display: flex; gap: 0.5rem; }
@@ -327,9 +328,10 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
     align-items: center;
     justify-content: space-between;
     padding: 1.2rem;
-    background: rgba(15, 23, 42, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
     border-radius: 10px;
+    box-shadow: var(--shadow-sm);
 }
 
 .purge-card.warning {
@@ -430,7 +432,7 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
 .btn-remove-project:hover:not(:disabled) { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
 
 .add-project-form {
-    background: rgba(15, 23, 42, 0.45);
+    background: var(--surface-2);
     border: 1px solid rgba(59, 130, 246, 0.25);
     border-radius: 10px;
     padding: 1.2rem 1.4rem;
@@ -465,7 +467,7 @@ details[open] .pipelines-toggle::before { content: "▼ "; }
 
 .jql-preview {
     background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     padding: 0.8rem 1rem;
     display: flex;

@@ -191,7 +191,7 @@ function renderTable() {
     });
 
     if (!pageRows.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem">Nenhuma pendencia no filtro atual.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem">Nenhuma pendência no filtro atual.</td></tr>`;
     } else {
         tbody.innerHTML = pageRows.map(i => `<tr>
             <td><strong><a href="${JIRA}${encodeURIComponent(i.key)}" target="_blank" rel="noopener" class="jira-link">${escapeHtml(i.key)}</a></strong></td>
@@ -205,7 +205,7 @@ function renderTable() {
         </tr>`).join("");
     }
 
-    document.getElementById("page-info").textContent = `Pagina ${state.page} de ${maxP}`;
+    document.getElementById("page-info").textContent = `Página ${state.page} de ${maxP}`;
     document.getElementById("btn-prev").disabled = state.page <= 1;
     document.getElementById("btn-next").disabled = state.page >= maxP;
 }

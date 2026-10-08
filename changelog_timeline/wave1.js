@@ -237,19 +237,19 @@ function renderPercentiles(data, flowData, weeklyData) {
         if (eff >= 40) {
             colorClass = 'success';
             classification = 'excelente';
-            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>desempenho excelente</strong>. Isso indica que ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, com apenas ${waitPct}% em periodos de espera. O fluxo esta altamente otimizado com minimo desperdicio.`;
+            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>desempenho excelente</strong>. Isso indica que ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, com apenas ${waitPct}% em períodos de espera. O fluxo está altamente otimizado com mínimo desperdício.`;
         } else if (eff >= 25) {
             colorClass = 'good';
             classification = 'bom';
-            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>bom desempenho</strong> e proximo da faixa de excelencia. Isso indica que cerca de ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, enquanto aproximadamente ${waitPct}% correspondeu a periodos de espera, apontando oportunidades de otimizacao principalmente nas etapas de bloqueio, testes e disponibilizacao para entrega.`;
+            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>bom desempenho</strong> e próximo da faixa de excelência. Isso indica que cerca de ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, enquanto aproximadamente ${waitPct}% correspondeu a períodos de espera, apontando oportunidades de otimização principalmente nas etapas de bloqueio, testes e disponibilização para entrega.`;
         } else if (eff >= 15) {
             colorClass = 'moderate';
             classification = 'tipico';
-            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>desempenho tipico</strong> do mercado. Isso indica que apenas ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, enquanto ${waitPct}% correspondeu a espera em filas (bloqueio, testes, disponibilizacao). Ha espaco significativo para melhoria reduzindo handoffs e tempos de espera entre etapas.`;
+            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>desempenho típico</strong> do mercado. Isso indica que apenas ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, enquanto ${waitPct}% correspondeu a espera em filas (bloqueio, testes, disponibilização). Há espaço significativo para melhoria reduzindo handoffs e tempos de espera entre etapas.`;
         } else {
             colorClass = 'danger';
             classification = 'baixo';
-            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>desempenho baixo</strong>. Isso indica que apenas ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, enquanto ${waitPct}% foi espera. Issues passam a maior parte do tempo paradas em filas. Acoes urgentes: limitar WIP, reduzir handoffs e eliminar etapas desnecessarias de aprovacao.`;
+            analysis = `Das ${flowData.count} issues analisadas, o time apresentou ${eff}% de Flow Efficiency, classificado como <strong>desempenho baixo</strong>. Isso indica que apenas ${workPct}% do lead time foi dedicado ao desenvolvimento efetivo, enquanto ${waitPct}% foi espera. Issues passam a maior parte do tempo paradas em filas. Ações urgentes: limitar WIP, reduzir handoffs e eliminar etapas desnecessárias de aprovação.`;
         }
 
         flowHtml = `
@@ -262,7 +262,7 @@ function renderPercentiles(data, flowData, weeklyData) {
                 <p class="inline-formula flow-analysis">${analysis}</p>
                 <div class="flow-ref">
                     <span class="flow-scale scale-danger">● &lt;15% baixa</span>
-                    <span class="flow-scale scale-moderate">● 15-25% tipica</span>
+                    <span class="flow-scale scale-moderate">● 15-25% típica</span>
                     <span class="flow-scale scale-good">● 25-40% boa</span>
                     <span class="flow-scale scale-success">● &gt;40% excelente</span>
                 </div>
@@ -288,7 +288,7 @@ function renderPercentiles(data, flowData, weeklyData) {
     return `
         <section class="metric-section glass">
             <h2>Flow Efficiency</h2>
-            <p class="metric-desc">Qual a eficiencia do fluxo: proporcao do lead time gasta trabalhando vs. em espera.</p>
+            <p class="metric-desc">Qual a eficiência do fluxo: proporção do lead time gasta trabalhando vs. em espera.</p>
             ${flowHtml || '<p class="metric-desc">Sem dados de Flow Efficiency.</p>'}
             ${explicacao}
         </section>
@@ -305,7 +305,7 @@ function renderPercentilesKpis(data) {
         <div class="charts-row">
             <div>
                 <h3 style="font-size:0.9rem; color: var(--text-muted); margin-bottom:0.4rem;">Lead Time (${lead.count || 0} issues Done)</h3>
-                <p class="inline-formula">Tempo total desde a criacao da issue ate sua resolucao (resolved_at − created_at). Tempo calendario.</p>
+                <p class="inline-formula">Tempo total desde a criação da issue até sua resolução (resolved_at − created_at). Tempo calendário.</p>
                 <div class="kpis-row">
                     <div class="kpi-box"><div class="kpi-label">P50</div><div class="kpi-value">${fmtDays(lead.p50_ms)}</div></div>
                     <div class="kpi-box"><div class="kpi-label">P70</div><div class="kpi-value">${fmtDays(lead.p70_ms)}</div></div>
@@ -324,7 +324,7 @@ function renderPercentilesKpis(data) {
                 </div>
             </div>
         </div>
-        <p class="inline-formula" style="margin-top:0.5rem;"><strong>Percentis</strong>: P85 = "85% das issues terminam em ate X dias" (metodo nearest-rank). Usa apenas issues com valor &gt; 0.</p>
+        <p class="inline-formula" style="margin-top:0.5rem;"><strong>Percentis</strong>: P85 = "85% das issues terminam em até X dias" (método nearest-rank). Usa apenas issues com valor &gt; 0.</p>
     `;
 }
 

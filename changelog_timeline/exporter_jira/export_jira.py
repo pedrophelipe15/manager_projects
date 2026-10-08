@@ -121,12 +121,41 @@ def main() -> None:
     # Changelog será buscado apenas para cache-miss issues depois.
     # Sem cache, usamos expand=changelog para embutir na resposta (elimina N requests).
     use_expand = args.with_changelog and not args.db_cache
+    _ISSUE_FIELDS = "key,summary,status,project,assignee,reporter,issuetype,created,updated,resolutiondate,duedate,parent,labels"
     raw_issues = client.fetch_issues_raw(
         jql_query,
-        fields="key,summary,status,project,assignee,reporter,issuetype,created,updated,resolutiondate,duedate,parent,labels",
+        fields=_ISSUE_FIELDS,
         expand="changelog" if use_expand else None,
     )
     print(f"Issues retornadas: {len(raw_issues)}")
+
+    # --- Pais faltantes (parent inclusion) ---
+    # Quando a JQL traz uma subtask ativa cujo pai (story) esta em status nao-ativo,
+    # o pai NAO vem na busca. Buscamos esses pais explicitamente para que a hierarquia
+    # pai-filho fique completa no banco (evita filho orfao e permite deteccao de
+    # inconsistencia "story parada com subtask ativa"). Passo aditivo: so acrescenta.
+    present_keys = {ri.get("key") for ri in raw_issues}
+    missing_parents = set()
+    for ri in raw_issues:
+        pk = (ri.get("fields", {}).get("parent") or {}).get("key")
+        if pk and pk not in present_keys:
+            missing_parents.add(pk)
+    if missing_parents:
+        parent_list = sorted(missing_parents)
+        print(f"  Buscando {len(parent_list)} pai(s) faltante(s) (parent inclusion)...")
+        for i in range(0, len(parent_list), 100):
+            batch = parent_list[i:i+100]
+            jql_parents = "key in (%s)" % ",".join(batch)
+            try:
+                raw_parents = client.fetch_issues_raw(
+                    jql_parents,
+                    fields=_ISSUE_FIELDS,
+                    expand="changelog" if use_expand else None,
+                )
+                raw_issues.extend(raw_parents)
+            except Exception as e:
+                print(f"  WARN: falha ao buscar pais faltantes: {str(e)[:150]}")
+        print(f"  Total apos inclusao de pais: {len(raw_issues)}")
 
     step += 1
     print(f"[{step}/{total_steps}] Mapeando issues...")

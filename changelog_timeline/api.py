@@ -129,6 +129,15 @@ def init_purge_table():
             cutoff_date TEXT
         )
     ''')
+    # Migracao: colunas de escopo (tudo/filtrado) e amostra de keys removidas.
+    for col, ddl in (
+        ("scope", "ALTER TABLE purge_history ADD COLUMN scope TEXT NOT NULL DEFAULT 'all'"),
+        ("sample_keys", "ALTER TABLE purge_history ADD COLUMN sample_keys TEXT"),
+    ):
+        try:
+            cursor.execute(ddl)
+        except Exception:
+            pass  # coluna ja existe
     conn.commit()
     conn.close()
 
@@ -368,6 +377,15 @@ def _load_projects() -> list[dict]:
     projects = data.get("projects", [])
     # Suporta campo 'enabled' (default True)
     return [p for p in projects if p.get("enabled", True)]
+
+
+def _configured_project_keys() -> list[str]:
+    """Retorna os project_keys CADASTRADOS (habilitados) em projects.yaml.
+
+    Usado para restringir visoes cross-project (ex.: Portfolio/Wave 4) aos projetos
+    atualmente configurados, ignorando dados antigos de projetos ja removidos do cadastro.
+    """
+    return [str(p.get("key")).strip() for p in _load_projects() if p.get("key")]
 
 
 def _finish_sync_record(sync_id: int, start_time: float, inserted: int, updated: int, changelogs: int, status: str, error_msg):
@@ -687,7 +705,8 @@ def _build_pipelines(jql_project: str, active_statuses: list[str]) -> dict:
     return {
         "active": {
             "name": "Trabalho ativo",
-            "jql": f'{jql_project} AND status in ({status_list})',
+            # Inclui tambem subtasks ativas (pai nao-ativo). O extrator traz o pai (parent inclusion).
+            "jql": f'{jql_project} AND (status in ({status_list}) OR (issuetype in subTaskIssueTypes() AND status in ({status_list})))',
         },
         "done": {
             "name": "Done (6 meses)",
@@ -924,20 +943,26 @@ def get_purge_status():
         except (ValueError, TypeError):
             days_since = None
 
-    # Estimativa: quantas issues Done > 6 meses existem
+    # Estimativa: mesmo criterio do expurgo (Done + >6 meses E sem parent vivo).
     cutoff = (datetime.now() - timedelta(weeks=26)).isoformat()
-    cursor.execute("""
-        SELECT COUNT(*) FROM issues 
-        WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at < ?
-    """, (cutoff,))
+    _eligible_cte = """
+        WITH eligible AS (
+            SELECT key FROM issues
+            WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at < ?
+        ),
+        to_purge AS (
+            SELECT key FROM issues
+            WHERE key IN (SELECT key FROM eligible)
+              AND (parent_key IS NULL OR parent_key = '' OR parent_key IN (SELECT key FROM eligible))
+        )
+    """
+    cursor.execute(_eligible_cte + "SELECT COUNT(*) FROM to_purge", (cutoff,))
     estimated_issues = cursor.fetchone()[0]
 
-    cursor.execute("""
-        SELECT COUNT(*) FROM parsed_changelogs 
-        WHERE issue_key IN (
-            SELECT key FROM issues WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at < ?
-        )
-    """, (cutoff,))
+    cursor.execute(
+        _eligible_cte + "SELECT COUNT(*) FROM parsed_changelogs WHERE issue_key IN (SELECT key FROM to_purge)",
+        (cutoff,),
+    )
     estimated_changelogs = cursor.fetchone()[0]
 
     conn.close()
@@ -955,6 +980,150 @@ def get_purge_status():
     }
 
 
+@app.get("/api/settings/purge/history")
+def get_purge_history():
+    """Historico (changelog) dos expurgos executados — ultimas 20 execucoes."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, executed_at, issues_removed, changelogs_removed, cutoff_date, scope, sample_keys
+        FROM purge_history
+        ORDER BY id DESC LIMIT 20
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [{
+        "id": r["id"],
+        "executed_at": r["executed_at"],
+        "issues_removed": r["issues_removed"],
+        "changelogs_removed": r["changelogs_removed"],
+        "cutoff_date": r["cutoff_date"],
+        "scope": r["scope"] if "scope" in r.keys() else "all",
+        "sample_keys": (r["sample_keys"] if "sample_keys" in r.keys() else "") or "",
+    } for r in rows]
+
+
+@app.get("/api/settings/purge/preview")
+def get_purge_preview():
+    """Lista as issues que SERAO removidas pelo expurgo (Done resolvidas ha > 6 meses).
+
+    Mesmo criterio do execute_purge, mas apenas leitura — alimenta o painel de
+    detalhamento (tabela + filtros) antes de o usuario confirmar o expurgo.
+    """
+    from datetime import datetime, timedelta
+
+    cutoff = (datetime.now() - timedelta(weeks=26)).isoformat()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Elegivel = Done + resolvido ha >6 meses E (sem parent OU parent tambem elegivel).
+    # Evita expurgar um filho cujo pai permanece no banco (preserva a arvore e as metricas).
+    cursor.execute("""
+        WITH eligible AS (
+            SELECT key FROM issues
+            WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at < ?
+        )
+        SELECT i.key, i.parent_key, i.summary, i.status, i.assignee_name, i.project_key,
+               i.created_at, i.due_date, i.updated_at, i.resolved_at,
+               p.status AS parent_status
+        FROM issues i
+        LEFT JOIN issues p ON p.key = i.parent_key
+        WHERE i.key IN (SELECT key FROM eligible)
+          AND (
+                i.parent_key IS NULL OR i.parent_key = ''
+                OR i.parent_key IN (SELECT key FROM eligible)
+          )
+        ORDER BY i.resolved_at ASC
+    """, (cutoff,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    issues = [{
+        "key": r["key"],
+        "parent_key": r["parent_key"] or "",
+        "parent_status": r["parent_status"] or "",
+        "summary": r["summary"] or "",
+        "status": r["status"] or "",
+        "assignee": r["assignee_name"] or "",
+        "project_key": r["project_key"] or "",
+        "created_at": r["created_at"],
+        "due_date": r["due_date"],
+        "updated_at": r["updated_at"],
+        "resolved_at": r["resolved_at"],
+    } for r in rows]
+
+    return {"issues": issues, "count": len(issues), "cutoff_date": cutoff}
+
+
+class PurgeKeysPayload(BaseModel):
+    keys: list[str]
+
+
+@app.post("/api/settings/purge/selected")
+def execute_purge_selected(payload: PurgeKeysPayload):
+    """Expurga APENAS as issues informadas (ex.: resultado filtrado do preview).
+
+    Por seguranca, cada key so e removida se for realmente elegivel pelo mesmo
+    criterio do expurgo (Done + resolvido ha >6 meses E sem parent vivo). Keys
+    inelegiveis sao ignoradas (reportadas em 'skipped').
+    """
+    from datetime import datetime, timedelta
+
+    req_keys = [k.strip() for k in (payload.keys or []) if k and k.strip()]
+    if not req_keys:
+        raise HTTPException(status_code=400, detail="Nenhuma issue informada")
+
+    cutoff = (datetime.now() - timedelta(weeks=26)).isoformat()
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute("PRAGMA journal_mode=WAL")
+    cur = conn.cursor()
+
+    # Conjunto elegivel global (para validar parent vivo), mesmo criterio dos demais.
+    cur.execute("""
+        WITH eligible AS (
+            SELECT key FROM issues
+            WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at < ?
+        )
+        SELECT key FROM issues
+        WHERE key IN (SELECT key FROM eligible)
+          AND (parent_key IS NULL OR parent_key = '' OR parent_key IN (SELECT key FROM eligible))
+    """, (cutoff,))
+    purgeable = {r[0] for r in cur.fetchall()}
+
+    keys = [k for k in req_keys if k in purgeable]
+    skipped = [k for k in req_keys if k not in purgeable]
+
+    if not keys:
+        conn.close()
+        return {"message": "Nenhuma das issues informadas e elegivel", "issues_removed": 0, "changelogs_removed": 0, "skipped": skipped}
+
+    total_changelogs = 0
+    batch_size = 500
+    for i in range(0, len(keys), batch_size):
+        batch = keys[i:i+batch_size]
+        ph = ",".join(["?" for _ in batch])
+        cur.execute(f"SELECT COUNT(*) FROM parsed_changelogs WHERE issue_key IN ({ph})", batch)
+        total_changelogs += cur.fetchone()[0]
+        cur.execute(f"DELETE FROM parsed_changelogs WHERE issue_key IN ({ph})", batch)
+        cur.execute(f"DELETE FROM metrics WHERE issue_key IN ({ph})", batch)
+        cur.execute(f"DELETE FROM issues WHERE key IN ({ph})", batch)
+
+    sample = ",".join(keys[:20])
+    cur.execute("""
+        INSERT INTO purge_history (executed_at, issues_removed, changelogs_removed, cutoff_date, scope, sample_keys)
+        VALUES (?, ?, ?, ?, 'filtered', ?)
+    """, (datetime.now().isoformat(), len(keys), total_changelogs, cutoff, sample))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "message": "Expurgo (selecao) concluido",
+        "issues_removed": len(keys),
+        "changelogs_removed": total_changelogs,
+        "skipped": skipped,
+    }
+
+
 @app.post("/api/settings/purge")
 def execute_purge():
     """Executa expurgo de issues Done com resolved_at > 6 meses."""
@@ -966,10 +1135,19 @@ def execute_purge():
     conn.execute("PRAGMA journal_mode=WAL")
     cur = conn.cursor()
 
-    # Identifica issues a remover
+    # Identifica issues a remover. Mesmo criterio do preview: Done + resolvido ha >6 meses
+    # E (sem parent OU parent tambem elegivel) — nunca apaga um filho cujo pai permanece.
     cur.execute("""
-        SELECT key FROM issues 
-        WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at < ?
+        WITH eligible AS (
+            SELECT key FROM issues
+            WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at < ?
+        )
+        SELECT key FROM issues
+        WHERE key IN (SELECT key FROM eligible)
+          AND (
+                parent_key IS NULL OR parent_key = ''
+                OR parent_key IN (SELECT key FROM eligible)
+          )
     """, (cutoff,))
     keys = [r[0] for r in cur.fetchall()]
 
@@ -989,11 +1167,12 @@ def execute_purge():
         cur.execute(f"DELETE FROM metrics WHERE issue_key IN ({placeholders})", batch)
         cur.execute(f"DELETE FROM issues WHERE key IN ({placeholders})", batch)
 
-    # Registra no histórico
+    # Registra no histórico (scope 'all' = expurgou tudo que era elegivel).
+    sample = ",".join(keys[:20])
     cur.execute("""
-        INSERT INTO purge_history (executed_at, issues_removed, changelogs_removed, cutoff_date)
-        VALUES (?, ?, ?, ?)
-    """, (datetime.now().isoformat(), len(keys), total_changelogs, cutoff))
+        INSERT INTO purge_history (executed_at, issues_removed, changelogs_removed, cutoff_date, scope, sample_keys)
+        VALUES (?, ?, ?, ?, 'all', ?)
+    """, (datetime.now().isoformat(), len(keys), total_changelogs, cutoff, sample))
 
     conn.commit()
     conn.close()
@@ -1041,10 +1220,23 @@ def init_validation_rules_table():
             ("active_without_assignee", "In Progress/Blocked: Sem Assignee",
              "Issues ativas sem responsável atribuído.",
              "In Progress,Blocked", "active_no_assignee"),
+            ("story_stale_active_subtask", "Story parada com subtask ativa",
+             "Stories em status não-ativo (Open, To do, Backlog, Refinement) que possuem ao menos uma subtask em andamento. Indica que a story deveria ter sido iniciada no Jira.",
+             "In Progress,Blocked,Test,Waiting for Delivery", "story_stale_active_subtask"),
         ]
         cursor.executemany(
             "INSERT INTO validation_rules (id, name, description, statuses, query_type) VALUES (?, ?, ?, ?, ?)",
             defaults
+        )
+
+    # Migracao: garante a regra 'story_stale_active_subtask' mesmo em bancos ja populados.
+    cursor.execute("SELECT COUNT(*) FROM validation_rules WHERE id = 'story_stale_active_subtask'")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute(
+            "INSERT INTO validation_rules (id, name, description, statuses, query_type) VALUES (?, ?, ?, ?, ?)",
+            ("story_stale_active_subtask", "Story parada com subtask ativa",
+             "Stories em status não-ativo (Open, To do, Backlog, Refinement) que possuem ao menos uma subtask em andamento. Indica que a story deveria ter sido iniciada no Jira.",
+             "In Progress,Blocked,Test,Waiting for Delivery", "story_stale_active_subtask"),
         )
     conn.commit()
     conn.close()
@@ -1232,6 +1424,7 @@ def get_inconsistencies(project_key: str | None = None):
         "done_without_metrics": [],
         "active_without_cycle": [],
         "active_without_assignee": [],
+        "story_stale_active_subtask": [],
     }
 
     project_filter = ""
@@ -1336,6 +1529,40 @@ def get_inconsistencies(project_key: str | None = None):
         for row in cursor.fetchall():
             results["active_without_assignee"].append(dict(row))
 
+    # 6. Story parada (status nao-ativo) com subtask ativa.
+    #    O 'statuses' da regra define o que conta como "ativo" para a subtask.
+    #    Status nao-ativos da story: tudo que NAO e ativo e NAO e concluido.
+    if rules.get("story_stale_active_subtask", {}).get("enabled"):
+        active_statuses = [s.strip() for s in rules["story_stale_active_subtask"]["statuses"]]
+        active_ph = ",".join([f"'{s}'" for s in active_statuses])
+        # Story (parent) nao pode estar ativa nem concluida/cancelada.
+        done_like = ["Done", "Resolved", "Canceled", "Reject", "Removed"]
+        parent_exclude = active_statuses + done_like
+        parent_excl_ph = ",".join([f"'{s}'" for s in parent_exclude])
+        q = f"""
+            SELECT
+                parent.key AS parent_key,
+                parent.summary AS parent_summary,
+                parent.status AS parent_status,
+                parent.assignee_name AS parent_assignee,
+                parent.due_date AS parent_due_date,
+                parent.project_key AS project_key,
+                child.key AS child_key,
+                child.summary AS child_summary,
+                child.status AS child_status,
+                child.assignee_name AS child_assignee,
+                child.updated_at AS child_updated_at
+            FROM issues child
+            INNER JOIN issues parent ON child.parent_key = parent.key
+            WHERE child.status IN ({active_ph})
+              AND parent.status NOT IN ({parent_excl_ph})
+              {'AND parent.project_key = ?' if project_key else ''}
+            ORDER BY parent.key, child.key
+        """
+        cursor.execute(q, params)
+        for row in cursor.fetchall():
+            results["story_stale_active_subtask"].append(dict(row))
+
     conn.close()
 
     return {
@@ -1347,6 +1574,7 @@ def get_inconsistencies(project_key: str | None = None):
             "done_without_metrics": len(results["done_without_metrics"]),
             "active_without_cycle": len(results["active_without_cycle"]),
             "active_without_assignee": len(results["active_without_assignee"]),
+            "story_stale_active_subtask": len(results["story_stale_active_subtask"]),
             "total": sum(len(v) for v in results.values()),
         }
     }
@@ -1695,6 +1923,60 @@ def api_throughput(project_key: str, weeks: int = 26):
     return result
 
 
+@app.get("/api/metrics/wave2/throughput-impact")
+def api_throughput_impact(project_key: str, cutoff_week: str, weeks: int = 26):
+    """Calcula o impacto antes/depois de um MARCO no throughput semanal.
+
+    Fonte unica da regra do modo "Analisar melhoria": dado o marco (cutoff_week,
+    ex. '2026-W33' = 1a semana do periodo 'depois'), retorna medias por semana,
+    ganho de ritmo e a JANELA COMPARAVEL (mesmo nº de semanas dos dois lados).
+    """
+    conn = get_db_connection()
+    tp = get_throughput_weekly(conn, project_key, weeks)
+    conn.close()
+
+    weekly = tp.get("weekly", [])
+    if not weekly:
+        return {"error": "sem dados de throughput", "weekly": 0}
+
+    week_keys = [w["week"] for w in weekly]
+    totals = [w["total"] for w in weekly]
+
+    # Indice de corte = posicao de cutoff_week (1a semana "depois"). Se nao achar,
+    # usa o meio da serie como fallback seguro.
+    try:
+        cut = week_keys.index(cutoff_week)
+    except ValueError:
+        cut = max(1, round(len(weekly) / 2))
+    cut = max(1, min(len(weekly) - 1, cut))
+
+    antes = totals[:cut]
+    depois = totals[cut:]
+    media_antes = round(sum(antes) / len(antes), 2) if antes else 0
+    media_depois = round(sum(depois) / len(depois), 2) if depois else 0
+    n = min(len(antes), len(depois))
+    comp_antes = sum(antes[len(antes) - n:]) if n else 0
+    comp_depois = sum(depois[:n]) if n else 0
+    ganho_pct = round((media_depois / media_antes - 1) * 100, 1) if media_antes > 0 else None
+    fator = round(comp_depois / comp_antes, 2) if comp_antes > 0 else None
+
+    return {
+        "project_key": project_key,
+        "cutoff_week": week_keys[cut],
+        "cutoff_label": weekly[cut].get("week_label"),
+        "cut_index": cut,
+        "media_antes": media_antes,
+        "media_depois": media_depois,
+        "total_antes": sum(antes),
+        "total_depois": sum(depois),
+        "janela_semanas": n,
+        "comp_antes": comp_antes,
+        "comp_depois": comp_depois,
+        "ganho_pct": ganho_pct,
+        "fator": fator,
+    }
+
+
 @app.get("/api/metrics/wave2/forecast")
 def api_forecast(project_key: str, remaining_items: int, simulations: int = 10000, history_weeks: int = 12):
     """Monte Carlo Forecast: estima semanas para concluir N itens restantes."""
@@ -1946,6 +2228,44 @@ def api_home_detail(project_key: str, metric: str):
                 "original_due": r["original_due"],
                 "current_due": r["current_due"],
             })
+
+        # Somente para "pushing": reconstroi o historico de due dates (array de todos
+        # os prazos que a issue teve) a partir dos changelogs do campo 'duedate'.
+        if metric == "pushing" and issues:
+            def _due_only(v):
+                if not v:
+                    return ""
+                return str(v).replace("T", " ").split(" ")[0].strip()
+
+            keys = [it["key"] for it in issues]
+            kph = ",".join(["?"] * len(keys))
+            cursor.execute(
+                f"""
+                SELECT issue_key, from_value, to_value, event_date
+                FROM parsed_changelogs
+                WHERE field = 'duedate' AND issue_key IN ({kph})
+                ORDER BY issue_key, event_date ASC
+                """,
+                keys,
+            )
+            hist = {}
+            for c in cursor.fetchall():
+                seq = hist.setdefault(c["issue_key"], [])
+                frm = _due_only(c["from_value"])
+                to = _due_only(c["to_value"])
+                # Primeiro evento: inclui o valor de origem (prazo original).
+                if not seq and frm:
+                    seq.append(frm)
+                if to:
+                    seq.append(to)
+            for it in issues:
+                seq = hist.get(it["key"], [])
+                # Garante que o original_due apareca primeiro, se o changelog nao capturou.
+                if it.get("original_due") and (not seq or seq[0] != _due_only(it["original_due"])):
+                    od = _due_only(it["original_due"])
+                    if od and od not in seq:
+                        seq = [od] + seq
+                it["due_history"] = seq
     else:
         active_states = ("In Progress", "Blocked", "Test", "Waiting for Delivery")
         active_ph = ",".join(["?"] * len(active_states))
@@ -2076,18 +2396,18 @@ def api_epic_health(project_key: str):
 
 @app.get("/api/metrics/wave4/benchmarking")
 def api_benchmarking():
-    """Retorna comparação de métricas entre todos os projetos."""
+    """Retorna comparação de métricas entre os projetos CADASTRADOS (projects.yaml)."""
     conn = get_db_connection()
-    result = get_benchmarking(conn)
+    result = get_benchmarking(conn, allowed_keys=_configured_project_keys())
     conn.close()
     return result
 
 
 @app.get("/api/metrics/wave4/cross-project-throughput")
 def api_cross_project_throughput(weeks: int = 26):
-    """Retorna throughput semanal consolidado de todos os projetos."""
+    """Retorna throughput semanal consolidado dos projetos CADASTRADOS (projects.yaml)."""
     conn = get_db_connection()
-    result = get_cross_project_throughput(conn, weeks)
+    result = get_cross_project_throughput(conn, weeks, allowed_keys=_configured_project_keys())
     conn.close()
     return result
 

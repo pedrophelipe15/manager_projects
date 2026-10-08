@@ -23,7 +23,7 @@ async function loadExcluded() {
 function renderExcluded(keys) {
     const tbody = document.getElementById("excluded-body");
     if (!keys || keys.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Nenhum projeto excluido.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Nenhum projeto excluído.</td></tr>`;
         return;
     }
 
@@ -48,7 +48,7 @@ async function addExcluded() {
         });
 
         if (res.status === 409) {
-            alert("Esse projeto ja esta excluido.");
+            alert("Esse projeto já está excluído.");
             return;
         }
         if (!res.ok) {
@@ -65,7 +65,7 @@ async function addExcluded() {
 }
 
 async function deleteExcluded(key) {
-    if (!confirm(`Reativar o projeto "${key}"? Ele voltara a ser consolidado e exibido.`)) return;
+    if (!confirm(`Reativar o projeto "${key}"? Ele voltará a ser consolidado e exibido.`)) return;
 
     try {
         const res = await fetch(`/api/settings/excluded-projects/${encodeURIComponent(key)}`, { method: "DELETE" });
@@ -103,10 +103,10 @@ function renderConfig(entries) {
         <tr>
             <td><strong>${escapeHTML(e.key)}</strong></td>
             <td>${escapeHTML(e.name)}</td>
-            <td>${e.type === "initiative" ? "Iniciativa" : "Epico"}</td>
+            <td>${e.type === "initiative" ? "Iniciativa" : "Épico"}</td>
             <td>
                 <button class="btn-purge" onclick="purgeHierarchyData('${escapeHTML(e.key)}')" title="Apagar os dados desta hierarquia no hierarchy.db">Limpar dados</button>
-                <button class="btn-delete" onclick="deleteEntry('${escapeHTML(e.key)}')" title="Remover apenas da configuracao">Remover</button>
+                <button class="btn-delete" onclick="deleteEntry('${escapeHTML(e.key)}')" title="Remover apenas da configuração">Remover</button>
             </td>
         </tr>
     `).join("");
@@ -128,7 +128,7 @@ async function addEntry() {
         });
 
         if (res.status === 409) {
-            alert("Essa key ja esta configurada.");
+            alert("Essa key já está configurada.");
             return;
         }
         if (!res.ok) {
@@ -146,7 +146,7 @@ async function addEntry() {
 }
 
 async function deleteEntry(key) {
-    if (!confirm(`Remover "${key}" da configuracao?\n\nIsso NAO apaga os dados ja coletados no hierarchy.db.`)) return;
+    if (!confirm(`Remover "${key}" da configuração?\n\nIsso NÃO apaga os dados já coletados no hierarchy.db.`)) return;
 
     try {
         const res = await fetch(`/api/hierarchy/config/${key}`, { method: "DELETE" });
@@ -175,13 +175,13 @@ async function purgeHierarchyData(key) {
     // 2. Confirmacao forte com contagens
     const msg =
         `APAGAR os dados da hierarquia "${key}" do hierarchy.db?\n\n` +
-        `Serao removidos:\n` +
+        `Serão removidos:\n` +
         `  - ${s.initiatives} iniciativa(s)\n` +
-        `  - ${s.epics} epico(s)\n` +
+        `  - ${s.epics} épico(s)\n` +
         `  - ${s.stories} story(ies)\n` +
         `  - ${s.subtasks} sub-task(s)\n` +
-        `  - ${s.changelogs} changelog(s) e ${s.metrics} metrica(s)\n\n` +
-        `Acao IRREVERSIVEL. A configuracao NAO e alterada (voce pode recoletar via sync).\n\nConfirmar?`;
+        `  - ${s.changelogs} changelog(s) e ${s.metrics} métrica(s)\n\n` +
+        `Ação IRREVERSÍVEL. A configuração NÃO é alterada (você pode recoletar via sync).\n\nConfirmar?`;
     if (!confirm(msg)) return;
 
     // 3. Executa
@@ -189,7 +189,7 @@ async function purgeHierarchyData(key) {
         const res = await fetch(`/api/hierarchy/config/${encodeURIComponent(key)}/data`, { method: "DELETE" });
         const data = await res.json();
         if (!res.ok) { alert(data.detail || "Erro ao apagar dados."); return; }
-        alert(`Dados removidos: ${data.epics_removed} epicos, ${data.stories_removed} stories, ${data.subtasks_removed} subtasks.`);
+        alert(`Dados removidos: ${data.epics_removed} épicos, ${data.stories_removed} stories, ${data.subtasks_removed} subtasks.`);
         await loadConfig();
     } catch (err) { alert("Erro: " + err.message); }
 }
@@ -253,7 +253,7 @@ async function pollSyncStatus() {
             stopPolling();
             document.getElementById("btn-sync").disabled = false;
             document.getElementById("btn-sync").textContent = "Sincronizar Hierarquia";
-            document.getElementById("sync-status-text").textContent = "Concluido!";
+            document.getElementById("sync-status-text").textContent = "Concluído!";
             await loadHistory();
         }
     } catch (err) {
@@ -294,7 +294,7 @@ async function loadHistory() {
 function renderHistory(rows) {
     const tbody = document.getElementById("history-body");
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhuma sincronizacao realizada.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhuma sincronização realizada.</td></tr>`;
         return;
     }
 

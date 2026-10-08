@@ -11,9 +11,11 @@ from datetime import datetime
 from ..timeutils import week_to_date_range
 
 
-def get_cross_project_throughput(conn: sqlite3.Connection, weeks: int = 26) -> dict:
-    """Retorna throughput semanal de todos os projetos consolidados.
-    
+def get_cross_project_throughput(conn: sqlite3.Connection, weeks: int = 26, allowed_keys: list[str] | None = None) -> dict:
+    """Retorna throughput semanal de projetos consolidados.
+
+    Se `allowed_keys` for informado, considera APENAS esses project_keys (projetos
+    cadastrados em projects.yaml), ignorando dados antigos de projetos removidos.
     Permite comparar ritmo de entrega entre projetos ao longo do tempo.
     """
     cursor = conn.cursor()
@@ -24,6 +26,10 @@ def get_cross_project_throughput(conn: sqlite3.Connection, weeks: int = 26) -> d
         WHERE status = 'Done' AND resolved_at IS NOT NULL AND resolved_at != ''
     ''')
     rows = cursor.fetchall()
+
+    allowed = {str(k).strip().upper() for k in allowed_keys} if allowed_keys is not None else None
+    if allowed is not None:
+        rows = [r for r in rows if str(r[0]).strip().upper() in allowed]
 
     if not rows:
         return {"weekly": [], "projects": []}

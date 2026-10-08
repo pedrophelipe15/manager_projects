@@ -102,3 +102,29 @@ body {
     .page-container { padding: 1rem; }
     .kpis-row { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* --- Modo "Analisar melhoria (marco)" no Throughput Semanal --- */
+.tp-marker-bar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0; }
+.tp-marker-hint { font-size: 0.8rem; color: var(--brand-blue, #0a66c2); background: rgba(10,102,194,0.08); padding: 0.4rem 0.7rem; border-radius: 6px; }
+
+/* Botao de destaque do modo marco */
+.tp-marker-btn {
+    background: var(--action); color: #fff; border: 1px solid var(--action);
+    font-weight: 600; box-shadow: 0 2px 6px rgba(15,157,88,0.3);
+}
+.tp-marker-btn:hover:not(:disabled) { background: var(--action-hover); border-color: var(--action-hover); }
+.tp-marker-btn--on {
+    background: var(--risk); border-color: var(--risk);
+    box-shadow: 0 2px 6px rgba(226,59,59,0.3);
+}
+.tp-marker-btn--on:hover:not(:disabled) { background: var(--risk); filter: brightness(0.95); }
+
+.tp-impact { margin-bottom: 1rem; }
+.tp-impact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+@media (max-width: 768px) { .tp-impact-grid { grid-template-columns: 1fr; } }
+.tp-cal { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 0.9rem 1rem; box-shadow: var(--shadow-sm); }
+.tp-cal-v { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text-1); }
+.tp-cal-v.good { color: var(--ok); }
+.tp-cal-l { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-top: 0.1rem; }
+.tp-cal-s { font-size: 0.8rem; color: var(--text-2); margin-top: 0.3rem; }
+.tp-impact-note { font-size: 0.78rem; color: var(--text-2); background: var(--warn-bg); border-left: 3px solid var(--warn); padding: 0.5rem 0.75rem; border-radius: 6px; margin-top: 0.75rem; }

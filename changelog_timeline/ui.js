@@ -26,7 +26,7 @@
     }
     function updateToggleLabel(btn, v) {
         var compact = v === "compact";
-        btn.textContent = compact ? "Densidade: compacta" : "Densidade: confortavel";
+        btn.textContent = compact ? "Densidade: compacta" : "Densidade: confortável";
         btn.setAttribute("aria-pressed", compact ? "true" : "false");
     }
 

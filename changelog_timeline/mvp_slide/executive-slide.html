@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>Slide Executivo | Iniciativa</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="executive-theme.css" />
+</head>
+<body>
+  <div class="slide-wrap">
+    <!-- Header -->
+    <header class="exec-header">
+      <div>
+        <div class="title-bar" id="title-bar">Slide Executivo</div>
+        <div class="exec-context" id="exec-context"></div>
+        <div class="exec-subtitle" id="exec-subtitle"></div>
+      </div>
+      <div class="brand"><span class="brand-mark">&#9679;</span> PagBank</div>
+    </header>
+
+    <!-- KPIs -->
+    <section class="kpi-row" id="kpi-row" aria-label="Indicadores principais"></section>
+
+    <!-- Blocos narrativos (opcional) -->
+    <section class="narrative" id="narrative" aria-label="Objetivo e impactos" hidden></section>
+
+    <!-- Cronograma -->
+    <section class="section-card" id="schedule-card" aria-label="Cronograma por due date">
+      <h2>Cronograma de entrega por due date</h2>
+      <div id="schedule-body">
+        <p class="state-msg">Carregando...</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="exec-footer">
+      <div class="legend">
+        <span class="chip"><i class="dot high"></i>Alta concentracao</span>
+        <span class="chip"><i class="dot mid"></i>Media concentracao</span>
+        <span class="chip"><i class="dot low"></i>Baixa concentracao</span>
+      </div>
+      <div id="footer-updated"></div>
+    </footer>
+  </div>
+
+  <script src="executive-slide.js"></script>
+</body>
+</html>

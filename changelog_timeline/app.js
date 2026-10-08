@@ -3,157 +3,128 @@ document.addEventListener('DOMContentLoaded', () => {
     const descEl = document.getElementById('issue-description');
     const timelineContainer = document.getElementById('timeline-container');
 
-    // Fetch the changelog JSON
-    fetch('../example_largest_changelog.json')
+    // Pega a issue key da URL (?issue=REYK-123)
+    const urlParams = new URLSearchParams(window.location.search);
+    const issueKey = urlParams.get('issue');
+
+    if (!issueKey) {
+        titleEl.textContent = 'Nenhuma issue selecionada';
+        descEl.textContent = 'Use ?issue=CHAVE na URL ou acesse o dashboard para selecionar uma issue.';
+        timelineContainer.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">Acesse <a href="/dashboard.html">o dashboard</a> para ver a lista de issues.</p>';
+        return;
+    }
+
+    titleEl.textContent = `${issueKey} - Carregando...`;
+    descEl.textContent = 'Buscando timeline...';
+
+    // Busca timeline da API
+    fetch(`/api/issues/${issueKey}/timeline`)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`HTTP ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            renderHeader(data);
-            renderTimeline(data);
+            const events = data.events;
+            const metrics = data.metrics;
+            renderHeader(issueKey, events);
+            renderTimeline(issueKey, events, metrics);
         })
         .catch(error => {
-            console.error('Error loading changelog:', error);
+            console.error('Error loading timeline:', error);
             titleEl.textContent = 'Erro ao carregar os dados';
-            descEl.textContent = 'Verifique se o arquivo JSON está acessível.';
+            descEl.textContent = `Não foi possível carregar a timeline de ${issueKey}. Verifique se a issue existe no banco.`;
         });
 
-    function renderHeader(data) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const issueKey = urlParams.get('issue');
-        
-        if (issueKey) {
-            titleEl.textContent = issueKey + ' (Timeline Mockada)';
-            descEl.textContent = 'Nota: Exibindo eventos estáticos de exemplo. Quando integrarmos o Python, os eventos reais desta chave serão carregados do banco de dados.';
-        } else if (data.meta) {
-            titleEl.textContent = data.meta.key || 'Changelog';
-            descEl.textContent = data.meta.description || 'Histórico de alterações';
-        }
+    function renderHeader(key, events) {
+        titleEl.textContent = `${key} - Timeline`;
+        descEl.textContent = `${events.length} eventos registrados`;
     }
 
-    function renderTimeline(data) {
-        if (!data.issues || data.issues.length === 0 || !data.issues[0].changelog) {
-            timelineContainer.innerHTML = '<p>Nenhum histórico encontrado.</p>';
+    function renderTimeline(key, events, metrics) {
+        if (!events || events.length === 0) {
+            timelineContainer.innerHTML = '<p>Nenhum histórico encontrado para esta issue.</p>';
             return;
         }
 
-        let histories = data.issues[0].changelog.histories;
-        
-        // Blacklist de autores para ignorar eventos gerados por plugins ou bots específicos
-        const BLACKLISTED_AUTHORS = [
-            'Checklists for Jira (Pro) by HeroCoders'
-        ];
+        // Blacklist já é aplicada server-side, mas filtramos localmente como fallback
+        let filteredEvents = events;
 
-        // Blacklist de campos para ignorar alterações irrelevantes
-        const BLACKLISTED_FIELDS = [
-            'Attachment',
-            'labels',
-            'IssueParentAssociation'
-        ];
+        // Detecta intervalos e transições problemáticas para exibição visual
+        detectIntervalsAndWarnings(key, filteredEvents, metrics);
 
-        // Filtra o histórico removendo autores da blacklist e campos ignorados
-        histories = histories.filter(history => {
-            const authorName = history.author ? history.author.displayName : '';
-            if (BLACKLISTED_AUTHORS.includes(authorName)) {
-                return false;
-            }
+        // Ordena por data (mais recente primeiro)
+        filteredEvents.sort((a, b) => new Date(b.event_date) - new Date(a.event_date));
 
-            if (history.items) {
-                history.items = history.items.filter(item => !BLACKLISTED_FIELDS.includes(item.field));
-                // Se após remover os campos ignorados não sobrar nada, descarta o evento inteiro
-                if (history.items.length === 0) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-
-        // Sort histories by date (newest first)
-        histories.sort((a, b) => new Date(b.created) - new Date(a.created));
-
-        if (histories.length === 0) {
+        if (filteredEvents.length === 0) {
             timelineContainer.innerHTML = '<p>Nenhum histórico encontrado após aplicar o filtro.</p>';
             return;
         }
 
-        // Calcula métricas antes de ordenar para exibição da timeline
-        calculateMetrics(data, histories);
-
-        // Sort histories by date (newest first)
-        histories.sort((a, b) => new Date(b.created) - new Date(a.created));
-
-        histories.forEach((history, index) => {
-            const item = createTimelineItem(history, index);
+        filteredEvents.forEach((event, index) => {
+            const item = createTimelineItem(event, index);
             timelineContainer.appendChild(item);
         });
     }
 
-    function calculateMetrics(data, validHistories) {
-        const fields = data.issues[0].fields;
-        const issueCreatedDate = fields && fields.created ? new Date(fields.created) : null;
-        
-        // Clone and sort oldest first for state machine
-        const chronological = [...validHistories].sort((a, b) => new Date(a.created) - new Date(b.created));
+    function detectIntervalsAndWarnings(key, events, metrics) {
+        // Filtra apenas transições de status, ordena cronologicamente
+        const statusChanges = events
+            .filter(e => e.field === 'status')
+            .sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
 
-        let cycleTimeTotalMs = 0;
-        let inProgressStart = null;
         let intervals = [];
-        let doneDate = null;
+        let inProgressStart = null;
+        let hasBeenInProgress = false;
+        let skippedTransitions = [];
 
-        chronological.forEach(history => {
-            if (!history.items) return;
-            const statusChange = history.items.find(item => item.field === 'status');
-            
-            if (statusChange) {
-                const date = new Date(history.created);
-                const toStatus = statusChange.toString;
+        statusChanges.forEach(event => {
+            const date = new Date(event.event_date);
+            const toStatus = event.to_value;
+            const fromStatus = event.from_value;
 
-                // Rule 1 & 3: transition to In Progress
-                if (toStatus === 'In Progress') {
-                    inProgressStart = date;
-                }
-                
-                // Rule 2 & 4: transition from In Progress to Blocked or Done
-                if ((toStatus === 'Blocked' || toStatus === 'Done') && inProgressStart) {
-                    const durationMs = date - inProgressStart;
-                    cycleTimeTotalMs += durationMs;
-                    intervals.push({
-                        phase: `Intervalo ${intervals.length + 1}`,
-                        transition: `In Progress ➔ ${toStatus}`,
-                        start: inProgressStart,
-                        end: date,
-                        durationMs: durationMs
-                    });
-                    inProgressStart = null; // stop the clock
-                }
+            if (toStatus === 'In Progress') {
+                inProgressStart = date;
+                hasBeenInProgress = true;
+            }
 
-                if (toStatus === 'Done') {
-                    doneDate = date;
-                }
+            if (fromStatus === 'In Progress' && inProgressStart) {
+                const durationMs = date - inProgressStart;
+                intervals.push({
+                    phase: `Intervalo ${intervals.length + 1}`,
+                    transition: `In Progress \u27F6 ${toStatus}`,
+                    start: inProgressStart,
+                    end: date,
+                    durationMs: durationMs
+                });
+                inProgressStart = null;
+            }
+
+            // Detecta transições para Blocked/Done sem ter passado por In Progress
+            if ((toStatus === 'Blocked' || toStatus === 'Done') && !hasBeenInProgress) {
+                skippedTransitions.push({ from: fromStatus, to: toStatus, date: date });
             }
         });
 
-        // Caso a issue ainda esteja "In Progress" no momento da extração
-        if (inProgressStart && !doneDate) {
-            // Assume the timestamp of the last history event as 'now' for the export, or just don't calculate.
-            // Para maior precisão em arquivos exportados, usaremos a data atual se não estiver fechada.
+        // Se ainda está In Progress (intervalo aberto)
+        if (inProgressStart) {
             const now = new Date();
             const durationMs = now - inProgressStart;
-            cycleTimeTotalMs += durationMs;
             intervals.push({
                 phase: `Intervalo ${intervals.length + 1}`,
-                transition: `In Progress ➔ (Atual)`,
+                transition: `In Progress \u27F6 (Atual)`,
                 start: inProgressStart,
                 end: now,
                 durationMs: durationMs
             });
         }
 
-        renderMetricsTable(intervals, cycleTimeTotalMs, issueCreatedDate, doneDate);
+        // Usa métricas do banco (fonte única de verdade)
+        const cycleTimeMs = metrics.cycle_time_ms || 0;
+        const leadTimeMs = metrics.lead_time_ms || 0;
+
+        renderMetricsTable(intervals, cycleTimeMs, leadTimeMs, skippedTransitions);
     }
 
     function formatDuration(ms) {
@@ -162,23 +133,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const days = Math.floor(totalMin / (24 * 60));
         const hours = Math.floor((totalMin % (24 * 60)) / 60);
         const mins = totalMin % 60;
-        
+
         let parts = [];
         if (days > 0) parts.push(`${days}d`);
         if (hours > 0) parts.push(`${hours}h`);
         if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
-        
+
         return parts.join(' ');
     }
 
-    function renderMetricsTable(intervals, cycleTimeTotalMs, createdDate, doneDate) {
+    function renderMetricsTable(intervals, cycleTimeMs, leadTimeMs, skippedTransitions) {
         const container = document.getElementById('metrics-container');
         const tbody = document.getElementById('metrics-tbody');
         const ctVal = document.getElementById('cycle-time-val');
         const ltVal = document.getElementById('lead-time-val');
 
-        if (intervals.length === 0 && !doneDate) {
-            return; // Nada para mostrar
+        if (intervals.length === 0 && cycleTimeMs === 0 && leadTimeMs === 0 && (!skippedTransitions || skippedTransitions.length === 0)) {
+            return;
         }
 
         container.style.display = 'block';
@@ -186,10 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         intervals.forEach(inv => {
             const tr = document.createElement('tr');
-            
+
             const startStr = inv.start.toLocaleDateString('pt-BR') + ' ' + inv.start.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
             const endStr = inv.end.toLocaleDateString('pt-BR') + ' ' + inv.end.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-            
+
             tr.innerHTML = `
                 <td>${inv.phase}</td>
                 <td>${inv.transition}</td>
@@ -206,50 +177,78 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.appendChild(tr);
         }
 
-        ctVal.textContent = formatDuration(cycleTimeTotalMs);
+        ctVal.textContent = cycleTimeMs > 0 ? formatDuration(cycleTimeMs) : '--';
+        ltVal.textContent = leadTimeMs > 0 ? formatDuration(leadTimeMs) : 'N\u00E3o conclu\u00EDda';
 
-        if (createdDate && doneDate) {
-            const leadTimeMs = doneDate - createdDate;
-            ltVal.textContent = formatDuration(leadTimeMs);
+        // Exibe nota de transição não recomendada
+        if (skippedTransitions && skippedTransitions.length > 0) {
+            let warningEl = document.getElementById('skipped-transition-warning');
+            if (!warningEl) {
+                warningEl = document.createElement('div');
+                warningEl.id = 'skipped-transition-warning';
+                container.appendChild(warningEl);
+            }
+            const transitions = skippedTransitions.map(t => `${t.from} \u2192 ${t.to}`).join(', ');
+            warningEl.style.cssText = 'background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-left: 3px solid #f59e0b; border-radius: 6px; padding: 0.8rem 1rem; margin-top: 1rem;';
+            warningEl.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+                    <span style="font-size: 1rem;">\u26A0\uFE0F</span>
+                    <strong style="color: #fbbf24; font-size: 0.85rem;">Transi\u00E7\u00E3o de status n\u00E3o recomendada</strong>
+                </div>
+                <p style="color: #fde68a; font-size: 0.8rem; margin: 0;">
+                    Esta issue foi movida para <strong>${transitions}</strong> sem passar por "In Progress". 
+                    Por esse motivo, o Cycle Time n\u00E3o foi computado nos c\u00E1lculos. 
+                    O fluxo recomendado \u00E9: abrir a issue \u2192 mover para In Progress \u2192 ent\u00E3o Blocked ou Done.
+                </p>
+            `;
         } else {
-            ltVal.textContent = 'Não concluída';
+            const warningEl = document.getElementById('skipped-transition-warning');
+            if (warningEl) warningEl.remove();
         }
     }
 
-    function createTimelineItem(history, index) {
+    function createTimelineItem(event, index) {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'timeline-item';
-        // Add staggered animation delay
-        itemDiv.style.animationDelay = `${index * 0.1}s`;
+        itemDiv.style.animationDelay = `${index * 0.05}s`;
 
-        const author = history.author;
-        const authorName = author ? author.displayName : 'Usuário Desconhecido';
-        const avatarUrl = author && author.avatarUrls ? author.avatarUrls['48x48'] : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authorName) + '&background=random';
-        
-        const dateObj = new Date(history.created);
-        const dateStr = dateObj.toLocaleDateString('pt-BR', { 
+        const authorName = event.author_name || 'Usu\u00E1rio Desconhecido';
+        const avatarUrl = event.author_avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=random`;
+
+        const dateObj = new Date(event.event_date);
+        const dateStr = dateObj.toLocaleDateString('pt-BR', {
             day: '2-digit', month: 'short', year: 'numeric',
             hour: '2-digit', minute: '2-digit'
         });
 
-        let changesHTML = '';
-        if (history.items && history.items.length > 0) {
-            changesHTML = `<div class="changes-list">
-                ${history.items.map(change => createChangeHTML(change)).join('')}
-            </div>`;
-        }
+        const field = event.field || 'Desconhecido';
+        const fromVal = event.from_value ? escapeHTML(event.from_value) : '<span class="value-box empty">Vazio</span>';
+        const toVal = event.to_value ? escapeHTML(event.to_value) : '<span class="value-box empty">Vazio</span>';
+
+        const changeHTML = `
+            <div class="change-item">
+                <span class="change-field">${escapeHTML(field)}</span>
+                <div class="change-values">
+                    ${event.from_value ? `<span class="value-box">${fromVal}</span>` : fromVal}
+                    <span class="arrow">\u27F6</span>
+                    ${event.to_value ? `<span class="value-box">${toVal}</span>` : toVal}
+                </div>
+            </div>
+        `;
 
         itemDiv.innerHTML = `
             <div class="timeline-card">
                 <div class="card-header">
-                    <img src="${avatarUrl}" alt="${authorName}" class="author-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}'">
+                    <img src="${avatarUrl}" alt="${escapeHTML(authorName)}" class="author-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}'">
                     <div class="author-info">
-                        <span class="author-name">${authorName}</span>
+                        <span class="author-name">${escapeHTML(authorName)}</span>
                         <span class="event-time">${dateStr}</span>
                     </div>
                 </div>
                 <div class="card-content">
-                    ${changesHTML}
+                    <div class="changes-list">
+                        ${changeHTML}
+                    </div>
                 </div>
             </div>
         `;
@@ -257,25 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return itemDiv;
     }
 
-    function createChangeHTML(change) {
-        const field = change.field || 'Desconhecido';
-        const fromVal = change.fromString ? escapeHTML(change.fromString) : '<span class="value-box empty">Vazio</span>';
-        const toVal = change.toString ? escapeHTML(change.toString) : '<span class="value-box empty">Vazio</span>';
-
-        return `
-            <div class="change-item">
-                <span class="change-field">${field}</span>
-                <div class="change-values">
-                    ${change.fromString ? `<span class="value-box">${fromVal}</span>` : fromVal}
-                    <span class="arrow">➔</span>
-                    ${change.toString ? `<span class="value-box">${toVal}</span>` : toVal}
-                </div>
-            </div>
-        `;
-    }
-
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, 
+        return str.replace(/[&<>'"]/g,
             tag => ({
                 '&': '&amp;',
                 '<': '&lt;',

@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panorama Jira | Impacto Executivo</title>
+  <style>
+    :root {
+      --bg0: #090b0f;
+      --bg1: #10151d;
+      --bg2: #151c26;
+      --card: rgba(18, 24, 34, 0.94);
+      --line: rgba(255, 255, 255, 0.09);
+      --ink: #f6f7fb;
+      --muted: #a7b1c2;
+      --accent: #f9c74f;
+      --accent2: #6ee7ff;
+      --danger: #ff6b6b;
+      --warn: #ffb84d;
+      --good: #64d9a0;
+      --shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", "Calibri", "Arial", sans-serif;
+      background:
+        radial-gradient(1100px 480px at 10% -10%, rgba(246, 196, 81, 0.12) 0%, transparent 55%),
+        radial-gradient(900px 420px at 100% 0%, rgba(110, 231, 255, 0.11) 0%, transparent 55%),
+        linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 45%, var(--bg2) 100%);
+    }
+
+    .slide {
+      width: 1366px;
+      height: 768px;
+      margin: 0 auto;
+      padding: 18px 22px 14px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .header > div {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .title {
+      font-size: 31px;
+      line-height: 1.05;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .subtitle {
+      margin-top: 5px;
+      font-size: 14px;
+      color: var(--muted);
+      max-width: none;
+      width: 100%;
+      line-height: 1.3;
+    }
+
+    .base {
+      font-size: 11px;
+      color: #c0cad7;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+      white-space: nowrap;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .kpi {
+      padding: 8px 9px;
+      min-height: 72px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(23, 29, 42, 0.94) 0%, rgba(17, 23, 34, 0.98) 100%);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .kpi.kpi-eco {
+      grid-column: span 2;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      min-height: 0;
+    }
+
+    .kpi.kpi-eco .label {
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+      white-space: nowrap;
+    }
+
+    .kpi .label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .kpi .value {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .kpi .value-line {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .kpi .sep {
+      font-family: "Segoe UI", "Calibri", "Arial", sans-serif !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      color: rgba(255, 255, 255, 0.5) !important;
+      line-height: 16px !important;
+      letter-spacing: 0 !important;
+    }
+
+    .kpi .pct {
+      font-family: "Segoe UI", "Calibri", "Arial", sans-serif !important;
+      font-size: 24px !important;
+      font-weight: 800 !important;
+      color: #fff !important;
+      line-height: 1 !important;
+      letter-spacing: 0 !important;
+    }
+
+    .kpi .value.accent { color: var(--accent); }
+    .kpi .value.danger { color: var(--danger); }
+    .kpi .value.good { color: var(--good); }
+    .kpi .value.warn { color: var(--warn); }
+
+    .kpi .pct.accent { color: var(--accent) !important; }
+    .kpi .pct.danger { color: var(--danger) !important; }
+    .kpi .pct.good { color: var(--good) !important; }
+    .kpi .pct.warn { color: var(--warn) !important; }
+
+    .eco-counter {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 0;
+    }
+
+    .eco-item {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 9px;
+      padding: 2px 5px;
+      background: rgba(255, 255, 255, 0.03);
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .eco-item .n {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .eco-item .pc {
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      color: #dbe4f2;
+      opacity: 0.95;
+    }
+
+    .eco-item.sim {
+      border-color: rgba(86, 214, 139, 0.62);
+      background: rgba(86, 214, 139, 0.18);
+    }
+
+    .eco-item.sim .n { color: var(--good); }
+
+    .eco-item.nao {
+      border-color: rgba(255, 107, 107, 0.6);
+      background: rgba(255, 107, 107, 0.16);
+    }
+
+    .eco-item.nao .n { color: var(--danger); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, var(--card) 0%, rgba(14, 19, 28, 0.98) 100%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .timeline,
+    .side { padding: 11px 12px; min-width: 0; }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .section-title span { font-size: 11px; color: var(--muted); }
+
+    .due-unified {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 9px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .due-unified h4 {
+      margin: 0 0 4px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--accent2);
+    }
+
+    .impact-inline {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin: 0 0 4px;
+    }
+
+    .impact-inline .item {
+      border: 1px solid rgba(255, 208, 137, 0.34);
+      border-radius: 10px;
+      background: rgba(106, 75, 19, 0.2);
+      padding: 5px 6px;
+      min-width: 0;
+    }
+
+    .impact-inline h3 {
+      margin: 0 0 2px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #ffd089;
+      line-height: 1.1;
+    }
+
+    .impact-inline ul {
+      margin: 0;
+      padding-left: 14px;
+      font-size: 10px;
+      line-height: 1.15;
+      color: #ffe7c2;
+    }
+
+    .impact-inline li {
+      margin: 0 0 2px;
+    }
+
+    .impact-inline li:last-child {
+      margin-bottom: 0;
+    }
+
+    .impact-inline .item.attention {
+      border-color: rgba(255, 107, 107, 0.52);
+      background: rgba(130, 24, 24, 0.42);
+    }
+
+    .impact-inline .item.attention h3 {
+      color: #ffd9d9;
+    }
+
+    .impact-inline .item.attention ul {
+      color: #ffe8e8;
+    }
+
+    .desc-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding-right: 0;
+    }
+
+    .schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 4px 5px;
+      vertical-align: top;
+      text-align: left;
+      line-height: 1.1;
+    }
+
+    .schedule-table thead th {
+      border-top: 0;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      background: rgba(16, 21, 29, 0.96);
+      z-index: 1;
+    }
+
+    .schedule-table td.period {
+      color: #9edcf7;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .schedule-table td.period-total {
+      color: #dbe4f2;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .schedule-table td.day-date {
+      color: #9edcf7;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .schedule-table td.day-item-count {
+      white-space: nowrap;
+    }
+
+    .schedule-table td.activity-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .desc-row {
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      display: grid;
+      grid-template-columns: 86px 64px 1fr;
+      gap: 10px;
+      padding: 6px 0;
+    }
+
+    .desc-row:first-child { border-top: 0; }
+
+    .desc-period {
+      color: #9edcf7;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+      padding-top: 2px;
+    }
+
+    .desc-count {
+      padding-top: 1px;
+      color: #dbe4f2;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .desc-count .n,
+    .day-item-count .n,
+    .period-total .n {
+      display: inline-block;
+      min-width: 30px;
+      text-align: center;
+      border-radius: 999px;
+      padding: 1px 7px;
+      margin-right: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+
+    .desc-count .n.high,
+    .day-item-count .n.high,
+    .period-total .n.high { background: rgba(255, 107, 107, 0.28); border-color: rgba(255, 107, 107, 0.5); }
+    .desc-count .n.mid,
+    .day-item-count .n.mid,
+    .period-total .n.mid { background: rgba(255, 184, 77, 0.28); border-color: rgba(255, 184, 77, 0.5); }
+    .desc-count .n.low,
+    .day-item-count .n.low,
+    .period-total .n.low { background: rgba(140, 150, 167, 0.26); border-color: rgba(140, 150, 167, 0.45); }
+
+    .desc-items {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .day-activities {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .day-date {
+      color: #9edcf7;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 10px;
+      line-height: 1.1;
+      color: #dbe4f2;
+    }
+
+    .tag.eco-sim {
+      background: rgba(86, 214, 139, 0.28);
+      border-color: rgba(86, 214, 139, 0.72);
+      color: #e9fff3;
+    }
+
+    .tag.eco-nao {
+      background: rgba(255, 107, 107, 0.28);
+      border-color: rgba(255, 107, 107, 0.62);
+      color: #ffecec;
+    }
+
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      padding-top: 1px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff1d0;
+      white-space: nowrap;
+    }
+
+    .legend-chip.eco-sim {
+      background: rgba(86, 214, 139, 0.28);
+      border-color: rgba(86, 214, 139, 0.72);
+      color: #e9fff3;
+    }
+
+    .legend-chip.eco-nao {
+      background: rgba(255, 107, 107, 0.28);
+      border-color: rgba(255, 107, 107, 0.62);
+      color: #ffecec;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .dot.high { background: var(--danger); }
+    .dot.mid { background: var(--warn); }
+    .dot.low { background: #8c96a7; }
+  </style>
+</head>
+<body>
+  <main class="slide" role="img" aria-label="Slide executivo com panorama do Jira baseado em exportacao XLSX">
+    <header class="header">
+      <div>
+        <div class="title">Confiabilidade de Dados | [GPPGI-325] Implementação Oracle Tier Gold</div>
+        <div class="subtitle"><strong>Objetivo:</strong> Bases de dados críticas do PagBank estão hospedadas em ambientes com recursos de disponibilidade limitados em relação ao padrão proposto para o projeto, aumentando o risco de indisponibilidade em manutenções e falhas de infraestrutura, com potencial impacto na continuidade dos serviços e na experiência dos clientes.</div>
+      </div>
+    </header>
+
+    <section class="kpis" aria-label="Indicadores principais do arquivo XLSX">
+      <div class="kpi">
+        <div class="label">Total de Atividades</div>
+        <div class="value accent">46</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Total de Atividades Concluídas</div>
+        <div class="value-line">
+          <div class="value good">13</div>
+          <div class="sep">|</div>
+          <div class="pct good">28.3%</div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="label">Total de atividades a fazer</div>
+        <div class="value-line">
+          <div class="value accent">33</div>
+          <div class="sep">|</div>
+          <div class="pct accent">71.7%</div>
+        </div>
+      </div>
+      <div class="kpi kpi-eco">
+        <div class="label">Contador Ecossistema PIX/PSI</div>
+        <div class="eco-counter" aria-label="Contador de classificacao Eco PIX/PSI">
+          <div class="eco-item sim"><div class="n">15</div><div class="pc">45.5%</div><div class="n">sim</div></div>
+          <div class="eco-item nao"><div class="n">18</div><div class="pc">54.5%</div><div class="n">não</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel timeline due-unified" aria-label="Carga e descritivo de atividades por due date">
+          <div class="impact-inline" aria-label="Ganhos e indicadores impactados">
+            <div class="item">
+              <h3>Ganhos previstos</h3>
+              <ul>
+                <li>Reduzir downtime.</li>
+                <li>Elevar resiliencia e disponibilidade.</li>
+                <li>Garantir continuidade operacional.</li>
+                <li>Manter ou melhorar performance das aplicacoes.</li>
+              </ul>
+            </div>
+            <div class="item">
+              <h3>Indicadores-alvo impactados</h3>
+              <ul>
+                <li>Disponibilidade da base.</li>
+                <li>Reducao de indisponibilidades.</li>
+                <li>MTTR.</li>
+                <li>Indicadores de confiabilidade e excelencia tecnica.</li>
+              </ul>
+            </div>
+            <div class="item attention">
+              <h3>Pontos de Atenção</h3>
+              <ul>
+                <li>Prazo para conclusao das atividades: novembro de 2026.</li>
+                <li>Muitos ambientes do ecossistema de PIX/PSI, na qual requer janela exclusiva.</li>
+                <li>A maior porcentagem de migracoes e referente a este escopo devido a criticidade do mesmo.</li>
+              </ul>
+            </div>
+          </div>
+          <h4>Cronograma proposto de entrega das atividades</h4>
+          <div class="desc-scroll">
+            <table class="schedule-table" aria-label="Tabela de cronograma por periodo e data">
+              <thead>
+                <tr>
+                  <th style="width: 86px;">Periodo</th>
+                  <th style="width: 64px;">Qtde Mensal</th>
+                  <th style="width: 86px;">Data</th>
+                  <th style="width: 64px;">Qtde Diário</th>
+                  <th>Lista de atividades</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="period" rowspan="4">Agosto</td>
+                  <td class="period-total" rowspan="4"><span class="n high">13</span></td>
+                  <td class="day-date">12/08/2026</td>
+                  <td class="day-item-count"><span class="n low">1</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">REYK-334 PDBRECEIVABLESETTLEMENT</span></td>
+                </tr>
+                <tr>
+                  <td class="day-date">27/08/2026</td>
+                  <td class="day-item-count"><span class="n low">1</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">REYK-420 PDBBCKPI</span></td>
+                </tr>
+                <tr>
+                  <td class="day-date">28/08/2026</td>
+                  <td class="day-item-count"><span class="n low">2</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">NASH-5986 PDBQRCODEORCHESTRATOR</span><span class="tag eco-sim">NASH-5980 PDBBALTRANSFERCONSUMER</span></td>
+                </tr>
+                <tr>
+                  <td class="day-date">31/08/2026</td>
+                  <td class="day-item-count"><span class="n high">9</span></td>
+                  <td class="activity-list"><span class="tag eco-nao">NASH-6499 PDBISSUERLIMITACCOUNT</span><span class="tag eco-nao">NASH-5393 OPENFINITPAUTOCONSENTS</span><span class="tag eco-sim">REYK-419 PDBBCCORE</span><span class="tag eco-nao">REYK-417 PDBHRU</span><span class="tag eco-nao">NASH-6505 PDBISSUERLIMACTMANAGER</span><span class="tag eco-nao">NASH-6502 PDBCREDITLIMITMANAGER</span><span class="tag eco-nao">NASH-6496 PDBISSUERLIMORCHESTRATOR</span><span class="tag eco-nao">NASH-6493 PDBLIMITMAINTENANCE</span><span class="tag eco-nao">NASH-5392 OPENFINITPAUTOPAYMENTS</span></td>
+                </tr>
+
+                <tr>
+                  <td class="period" rowspan="3">Setembro</td>
+                  <td class="period-total" rowspan="3"><span class="n mid">8</span></td>
+                  <td class="day-date">08/09/2026</td>
+                  <td class="day-item-count"><span class="n low">1</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">REYK-690 PDBRISKANALYSIS</span></td>
+                </tr>
+                <tr>
+                  <td class="day-date">22/09/2026</td>
+                  <td class="day-item-count"><span class="n low">2</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">REYK-446 PDBBUSINESSCONDITION</span><span class="tag eco-sim">REYK-252 PDBBCPOSTPAID</span></td>
+                </tr>
+                <tr>
+                  <td class="day-date">30/09/2026</td>
+                  <td class="day-item-count"><span class="n mid">5</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">REYK-130 PDBBCCALCULATOR</span><span class="tag eco-nao">REYK-813 RISK DATA CENTRALIZER</span><span class="tag eco-nao">REYK-657 RISKANALYSIS RESULT DATA</span><span class="tag eco-nao">NASH-6490 PDBISSUERAUTHORIZATION</span><span class="tag eco-nao">NVGRD-1544 ALEUT5 TAC</span></td>
+                </tr>
+
+                <tr>
+                  <td class="period">Outubro</td>
+                  <td class="period-total"><span class="n mid">7</span></td>
+                  <td class="day-date">30/10/2026</td>
+                  <td class="day-item-count"><span class="n mid">7</span></td>
+                  <td class="activity-list"><span class="tag eco-nao">REYK-443 PDBCONTRACTMANAGER ESCROW TAC</span><span class="tag eco-sim">IR-5440 PDBPSCOREPAYSYNC</span><span class="tag eco-sim">IR-5898 PDBQRCODE</span><span class="tag eco-nao">REYK-680 ANALYSIS DECISION</span><span class="tag eco-nao">IR-5904 PDBNOTIFICATIONSENDER</span><span class="tag eco-nao">BL-3259 PDBCASHINDEBIT</span><span class="tag eco-nao">NVGRD-1557 ALE11 TAC</span></td>
+                </tr>
+
+                <tr>
+                  <td class="period" rowspan="2">Novembro</td>
+                  <td class="period-total" rowspan="2"><span class="n low">4</span></td>
+                  <td class="day-date">13/11/2026</td>
+                  <td class="day-item-count"><span class="n low">1</span></td>
+                  <td class="activity-list"><span class="tag eco-nao">IR-5788 PDBINTERCHANGE</span></td>
+                </tr>
+                <tr>
+                  <td class="day-date">30/11/2026</td>
+                  <td class="day-item-count"><span class="n low">3</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">BL-3258 PDBDEBITSCHEDULE</span><span class="tag eco-sim">BL-2192 CC02 TAC</span><span class="tag eco-sim">BL-2187 CC01 TAC</span></td>
+                </tr>
+
+                <tr>
+                  <td class="period">Dezembro</td>
+                  <td class="period-total"><span class="n low">1</span></td>
+                  <td class="day-date">31/12/2026</td>
+                  <td class="day-item-count"><span class="n low">1</span></td>
+                  <td class="activity-list"><span class="tag eco-sim">BL-2974 CIMA NOVO TAC PAGCLOUD</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+    </section>
+
+    <footer class="footer">
+      <div class="legend">
+        <span><i class="dot high"></i>Alta concentracao</span>
+        <span><i class="dot mid"></i>Media concentracao</span>
+        <span><i class="dot low"></i>Baixa concentracao</span>
+        <span class="legend-chip eco-sim">Eco PIX/PSI: sim</span>
+        <span class="legend-chip eco-nao">Eco PIX/PSI: nao</span>
+      </div>
+      <div>Confiabilidade de Dados - Atualizado em Agosto/2026</div>
+    </footer>
+  </main>
+</body>
+</html>

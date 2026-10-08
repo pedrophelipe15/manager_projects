@@ -1,6 +1,12 @@
 _bmad/
 _bmad-output/
 .agent/
+.kiro/skills/
+temp/
 __pycache__/
 *.db
 *.json
+
+# Excecoes: hooks do Kiro sao config versionavel (apesar do *.json acima)
+!.kiro/hooks/
+!.kiro/hooks/*.json

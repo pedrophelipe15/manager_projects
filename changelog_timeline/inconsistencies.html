@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Inconsistências - Changelog Timeline</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="ui.css?v=3">
+    <link rel="stylesheet" href="nav.css?v=1">
+    <link rel="stylesheet" href="inconsistencies.css?v=4">
+</head>
+<body>
+    <div class="page-container">
+        <nav id="main-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>Inconsistências</h1>
+            <p class="subtitle">Validações de dados por projeto</p>
+        </header>
+
+        <!-- Filtro de Projeto -->
+        <section class="filter-section glass">
+            <label for="projectFilter">Projeto:</label>
+            <select id="projectFilter">
+                <option value="">Selecione um projeto...</option>
+            </select>
+            <span class="total-badge" id="totalBadge" style="display:none;">0 inconsistências</span>
+            <button class="btn-settings" onclick="openValidationSettings()">Ajustes de Validações</button>
+        </section>
+
+        <!-- Modal de Ajustes -->
+        <div class="modal-overlay" id="validationModal" onclick="closeValidationModal(event)">
+            <div class="modal-content glass" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2>Ajustes de Validações</h2>
+                    <button class="close-btn" onclick="closeValidationModal()">&times;</button>
+                </div>
+                <div class="modal-body" id="validationModalBody">
+                    <p>Carregando...</p>
+                </div>
+                <div class="modal-footer">
+                    <span class="save-status" id="saveStatus"></span>
+                    <button class="btn-modal-cancel" onclick="closeValidationModal()">Cancelar</button>
+                    <button class="btn-modal-save" onclick="saveAllValidations()">Salvar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        <div id="results-container">
+            <p class="empty-state">Selecione um projeto para verificar inconsistências.</p>
+        </div>
+    </div>
+
+    <script src="context.js?v=1"></script>
+    <script src="nav.js?v=2"></script>
+    <script src="ui.js?v=3"></script>
+    <script src="inconsistencies.js?v=7"></script>
+</body>
+</html>

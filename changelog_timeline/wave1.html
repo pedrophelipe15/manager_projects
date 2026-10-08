@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Wave 1: Gargalo e Fluxo - Changelog Timeline</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="ui.css?v=3">
+    <link rel="stylesheet" href="nav.css?v=1">
+    <link rel="stylesheet" href="wave1.css?v=8">
+</head>
+<body>
+    <div class="page-container">
+        <nav id="main-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>Wave 1: Gargalo e Fluxo</h1>
+            <p class="subtitle">Identifique onde o trabalho fica parado e quanto tempo leva cada etapa</p>
+        </header>
+
+        <!-- Filtro de Projeto -->
+        <section class="filter-section glass">
+            <label for="projectFilter">Projeto:</label>
+            <select id="projectFilter">
+                <option value="">Selecione um projeto...</option>
+            </select>
+            <span class="last-sync-info" id="lastSyncInfo"></span>
+            <button id="btnSync" class="btn-sync" onclick="startSync()" style="display:none;">Atualizar Dados</button>
+        </section>
+
+        <!-- Sync Progress -->
+        <div class="sync-log-container glass" id="sync-log-container" style="display:none;">
+            <div class="sync-log-header">
+                <h3>Progresso da Sincronização</h3>
+                <span class="sync-status-badge running" id="sync-badge">Em execução</span>
+            </div>
+            <div class="sync-log" id="sync-log"></div>
+        </div>
+
+        <!-- Conteúdo -->
+        <div id="content-container">
+            <p class="empty-state">Selecione um projeto para visualizar as métricas.</p>
+        </div>
+    </div>
+
+    <script src="context.js?v=1"></script>
+    <script src="nav.js?v=2"></script>
+    <script src="ui.js?v=3"></script>
+    <script src="wave1.js?v=16"></script>
+</body>
+</html>

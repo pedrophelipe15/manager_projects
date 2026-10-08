@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maturidade - Changelog Timeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="ui.css?v=3">
+    <style>
+        :root {
+            /* Herdam do design system (tokens.css) — tema claro PagBank.
+               Mantidos como aliases para o CSS local desta pagina. */
+            --bg-primary: var(--surface-0);
+            --text-primary: var(--text-1);
+            --text-muted: var(--text-2);
+            --accent: var(--action);
+            --glass-bg: var(--surface-1);
+            --glass-border: var(--border-subtle);
+            --danger: var(--risk);
+            --warning: var(--warn);
+            --success: var(--ok);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem 0.5rem;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .page-container { max-width: 100%; margin: 0 auto; padding: 1.5rem 0.5rem; }
+        .page-header { margin-bottom: 1.5rem; }
+        .page-header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+        .subtitle { color: var(--text-muted); font-size: 1rem; margin-top: 0.3rem; }
+
+        /* Nav: estilo em nav.css compartilhado. */
+
+        /* Filtro */
+        .filter-bar { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .filter-bar select {
+            background: var(--surface-1); border: 1px solid var(--border-strong);
+            color: var(--text-1); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem; font-family: inherit;
+        }
+        .filter-bar select option { background: var(--surface-1); }
+        .btn-action {
+            background: var(--accent); border: none; color: #fff; padding: 0.5rem 1.2rem;
+            border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit;
+        }
+        .btn-action:hover { background: #2563eb; }
+        .btn-action.copied { background: var(--success); }
+
+        /* Resumo */
+        .summary-bar {
+            display: flex; gap: 1.5rem; margin-bottom: 1.5rem; padding: 0.75rem 1rem;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;
+            font-size: 0.85rem; flex-wrap: wrap; align-items: center;
+        }
+        .summary-item { display: flex; align-items: center; gap: 0.4rem; }
+        .summary-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* Assignee group */
+        .assignee-group { margin-bottom: 2rem; }
+        .assignee-header {
+            font-size: 0.95rem; font-weight: 700; padding: 0.6rem 0.8rem;
+            background: rgba(59, 130, 246, 0.08); border-radius: 6px; margin-bottom: 0.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .assignee-actions { display: flex; align-items: center; gap: 0.5rem; }
+        .assignee-count { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
+        .btn-copy-sm {
+            background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: var(--accent);
+            padding: 0.25rem 0.7rem; border-radius: 4px; font-size: 0.72rem; font-weight: 500;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .btn-copy-sm:hover { background: rgba(59,130,246,0.25); color: #fff; }
+        .btn-copy-sm.copied { background: var(--success); border-color: var(--success); color: #fff; }
+
+        /* Tabela */
+        .report-table {
+            width: 100%; border-collapse: collapse; font-size: 0.82rem;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; overflow: hidden;
+            table-layout: fixed;
+        }
+        .report-table th {
+            text-align: left; padding: 0.6rem 0.7rem; background: var(--surface-2);
+            color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .report-table td { padding: 0.55rem 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: top; overflow: hidden; text-overflow: ellipsis; }
+        .report-table tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* Larguras fixas das colunas */
+        .report-table th:nth-child(1), .report-table td:nth-child(1) { width: 105px; white-space: nowrap; }
+        .report-table th:nth-child(2), .report-table td:nth-child(2) { width: 20%; }
+        .report-table th:nth-child(3), .report-table td:nth-child(3) { width: 90px; }
+        .report-table th:nth-child(4), .report-table td:nth-child(4) { width: 110px; }
+        .report-table th:nth-child(5), .report-table td:nth-child(5) { width: 96px; white-space: nowrap; }
+        .report-table th:nth-child(6), .report-table td:nth-child(6) { width: 27%; }
+        .report-table th:nth-child(7), .report-table td:nth-child(7) { width: 27%; }
+        .report-table th:nth-child(8), .report-table td:nth-child(8) { width: 100px; }
+        .report-table td.due-cell { font-variant-numeric: tabular-nums; }
+
+        .severity-critico { color: var(--danger); font-weight: 600; }
+        .severity-atencao { color: var(--warning); font-weight: 600; }
+        .severity-informativo { color: var(--accent); }
+        .severity-critical { color: var(--danger); font-weight: 600; }
+        .type-badge {
+            font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 3px;
+            background: rgba(255,255,255,0.06); color: var(--text-muted); white-space: nowrap;
+        }
+
+        .issue-link { color: var(--accent); text-decoration: none; font-weight: 500; }
+        .issue-link:hover { text-decoration: underline; }
+
+        .empty-state { text-align: center; color: var(--text-muted); padding: 3rem; }
+        .loading { text-align: center; color: var(--text-muted); padding: 2rem; }
+
+        /* Botão config */
+        .btn-config {
+            background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.3); color: var(--text-muted);
+            padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .btn-config:hover { color: var(--text-primary); border-color: var(--accent); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: flex-start;
+            z-index: 1000; padding: 3rem 1rem; overflow-y: auto;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-content {
+            background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: 12px;
+            width: 100%; max-width: 900px; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h2 { font-size: 1.3rem; font-weight: 700; }
+        .modal-close {
+            background: none; border: none; color: var(--text-muted); font-size: 1.5rem;
+            cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px;
+        }
+        .modal-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+
+        .rule-card {
+            background: var(--surface-2); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem;
+        }
+        .rule-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .rule-card-title { font-size: 0.9rem; font-weight: 600; }
+        .rule-card-type { font-size: 0.7rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 0.15rem 0.5rem; border-radius: 3px; }
+        .rule-fields { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+        .rule-field { display: flex; flex-direction: column; gap: 0.25rem; }
+        .rule-field label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+        .rule-field input {
+            background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text-primary);
+            padding: 0.4rem 0.6rem; border-radius: 4px; font-size: 0.85rem; font-family: inherit; width: 80px;
+        }
+        .rule-field input:focus { outline: none; border-color: var(--accent); }
+        .btn-save-rule {
+            background: var(--accent); border: none; color: #fff; padding: 0.4rem 0.8rem;
+            border-radius: 4px; font-size: 0.78rem; font-weight: 500; cursor: pointer; font-family: inherit;
+        }
+        .btn-save-rule:hover { background: #2563eb; }
+    </style>
+    <link rel="stylesheet" href="nav.css?v=1">
+</head>
+<body>
+    <div class="page-container">
+        <nav id="main-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>&#x1F331; Maturidade</h1>
+            <p class="subtitle">Report por assignee — ações pendentes consolidadas. Copie e envie para cada responsável.</p>
+        </header>
+
+        <div class="filter-bar">
+            <select id="project-select" onchange="loadReport()">
+                <option value="">Selecione um projeto...</option>
+            </select>
+            <select id="type-select" onchange="applyFilters()">
+                <option value="">Todos os tipos de problema</option>
+            </select>
+            <button class="btn-config" onclick="clearFilters()">Limpar Filtros</button>
+            <button class="btn-action" onclick="copyAllTables()">Copiar Todos</button>
+            <button class="btn-config" onclick="openConfigModal()">&#9881; Regras</button>
+        </div>
+
+        <div id="summary-container"></div>
+        <div id="report-content">
+            <p class="empty-state">Selecione um projeto para gerar o report.</p>
+        </div>
+    </div>
+
+    <!-- Modal Config -->
+    <div id="config-modal" class="modal-overlay"></div>
+
+    <script src="context.js?v=1"></script>
+    <script src="nav.js?v=2"></script>
+    <script src="ui.js?v=3"></script>
+    <script>
+        // Estado: acoes carregadas do projeto atual (para filtrar sem recarregar)
+        let allActions = [];
+
+        // Formata 'YYYY-MM-DD' -> 'DD/MM/YYYY'
+        function fmtBR(iso) {
+            if (!iso) return "--";
+            const p = String(iso).split("T")[0].split("-");
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+        }
+
+        // ==================== FILTROS ====================
+        function populateTypeFilter(actions) {
+            const sel = document.getElementById("type-select");
+            const current = sel.value;
+            const types = [...new Set(actions.map(a => a.type))].sort();
+            sel.innerHTML = `<option value="">Todos os tipos de problema</option>` +
+                types.map(t => `<option value="${t}">${t}</option>`).join("");
+            // mantem selecao se ainda existir
+            if (types.includes(current)) sel.value = current;
+        }
+
+        function applyFilters() {
+            const projectKey = document.getElementById("project-select").value;
+            const typeFilter = document.getElementById("type-select").value;
+            let filtered = allActions;
+            if (typeFilter) filtered = filtered.filter(a => a.type === typeFilter);
+            renderSummary(filtered, projectKey);
+            renderReport(filtered, projectKey);
+        }
+
+        function clearFilters() {
+            document.getElementById("type-select").value = "";
+            applyFilters();
+        }
+
+        // ==================== INIT ====================
+        async function init() {
+            const select = document.getElementById("project-select");
+            try {
+                const res = await fetch("/api/settings/projects");
+                const projects = await res.json();
+                for (const p of projects) {
+                    const opt = document.createElement("option");
+                    opt.value = p.key;
+                    opt.textContent = `${p.key} - ${p.name}`;
+                    select.appendChild(opt);
+                }
+                // Restaura o projeto salvo (contexto compartilhado) e gera o report.
+                if (window.CTContext) {
+                    CTContext.bindProjectSelect(select, loadReport);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar projetos:", err);
+            }
+        }
+
+        // ==================== LOAD ====================
+        async function loadReport() {
+            const projectKey = document.getElementById("project-select").value;
+            const container = document.getElementById("report-content");
+            const summaryContainer = document.getElementById("summary-container");
+
+            if (!projectKey) {
+                container.innerHTML = `<p class="empty-state">Selecione um projeto para gerar o report.</p>`;
+                summaryContainer.innerHTML = "";
+                return;
+            }
+
+            container.innerHTML = `<p class="loading">Carregando dados de ${projectKey}...</p>`;
+            summaryContainer.innerHTML = "";
+
+            try {
+                const [wipRes, inconsRes, agingRes, dueChangesRes] = await Promise.all([
+                    fetch(`/api/metrics/wave3/wip?project_key=${projectKey}`),
+                    fetch(`/api/inconsistencies?project_key=${projectKey}`),
+                    fetch(`/api/metrics/wave1/aging-wip?project_key=${projectKey}`),
+                    fetch(`/api/metrics/due-date-changes?project_key=${projectKey}&min_changes=${RULES.due_date_changes_atencao}`),
+                ]);
+
+                const wip = await wipRes.json();
+                const inconsRaw = await inconsRes.json();
+                const incons = inconsRaw.inconsistencies || inconsRaw;
+                const aging = await agingRes.json();
+                const dueChanges = await dueChangesRes.json();
+
+                allActions = buildActions(wip, incons, aging, dueChanges);
+                populateTypeFilter(allActions);
+                applyFilters();
+
+            } catch (err) {
+                container.innerHTML = `<p class="empty-state">Erro: ${err.message}</p>`;
+            }
+        }
+
+        // ==================== BUILD ACTIONS ====================
+        function buildActions(wip, incons, aging, dueChanges) {
+            const actions = [];
+
+            // --- Due date postergado (contador de alteracoes) ---
+            if (dueChanges && dueChanges.issues) {
+                for (const issue of dueChanges.issues) {
+                    const vezes = `<strong style="color:var(--danger)">${issue.changes} vezes</strong>`;
+                    const d = issue.days_postponed;
+                    let problem;
+                    if (d === null || d === undefined) {
+                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, indicando baixa previsibilidade e necessidade de validação do gestor`;
+                    } else if (d >= 0) {
+                        problem = `O prazo (due date) desta atividade foi adiado ${vezes}, empurrando a entrega em <strong style="color:var(--danger)">${d} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validação do gestor`;
+                    } else {
+                        problem = `O prazo (due date) desta atividade foi alterado ${vezes}, antecipando a entrega em <strong style="color:var(--success)">${Math.abs(d)} dias</strong> no total (de ${fmtBR(issue.first_due_date)} para ${fmtBR(issue.last_due_date)}). Isso indica baixa previsibilidade e precisa de validação do gestor`;
+                    }
+                    actions.push({
+                        assignee: issue.assignee || "Sem assignee",
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        due_date: issue.last_due_date || issue.due_date || null,
+                        type: "POSTERGACAO",
+                        problem: problem,
+                        action: "Valide com o gestor o motivo das repactuações de prazo. Reavalie escopo/dependências e defina uma data realista e comprometida.",
+                        severity: issue.changes >= RULES.due_date_changes_critico ? "critico" : "atencao",
+                    });
+                }
+            }
+
+            // --- WIP alto ---
+            if (wip.people) {
+                for (const person of wip.people) {
+                    if (person.wip_count >= RULES.wip_atencao) {
+                        for (const issue of person.issues) {
+                            actions.push({
+                                assignee: person.name,
+                                key: issue.key,
+                                summary: issue.summary,
+                                status: issue.status,
+                                due_date: issue.due_date || null,
+                                type: "WIP",
+                                problem: `Você está com <strong style="color:var(--danger)">${person.wip_count} atividades</strong> simultâneas em andamento (recomendado: máximo <strong style="color:var(--warning)">${RULES.wip_recomendado}</strong>), o que indica <strong style="color:var(--accent)">multitasking</strong> excessivo e pode estar gerando atrasos`,
+                                action: "Foque em concluir as atividades já iniciadas antes de pegar novas. Converse com seu líder se precisar repriorizar.",
+                                severity: person.wip_count >= RULES.wip_critico ? "critico" : "atencao",
+                            });
+                        }
+                    }
+                    // Blocked
+                    if (person.blocked_issues && person.blocked_issues.length >= RULES.blocked_atencao) {
+                        const blockedCount = person.blocked_issues.length;
+                        for (const issue of person.blocked_issues) {
+                            actions.push({
+                                assignee: person.name,
+                                key: issue.key,
+                                summary: issue.summary,
+                                status: issue.status,
+                                due_date: issue.due_date || null,
+                                type: "BLOCKED",
+                                problem: `Você está com <strong style="color:var(--danger)">${blockedCount} atividade(s) bloqueada(s)</strong> (recomendado: máximo <strong style="color:var(--warning)">${RULES.blocked_recomendado}</strong>), o que impacta o fluxo e gera <strong style="color:var(--accent)">gargalo</strong> no time`,
+                                action: "Identifique o impedimento, registre no Jira e escale para quem pode resolver. Não deixe parada sem visibilidade.",
+                                severity: blockedCount >= RULES.blocked_critico ? "critico" : "atencao",
+                            });
+                        }
+                    }
+                }
+            }
+
+            // --- Due date vazio ---
+            if (incons.due_date_empty) {
+                for (const issue of incons.due_date_empty) {
+                    actions.push({
+                        assignee: issue.assignee || "Sem assignee",
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        due_date: issue.due_date || null,
+                        type: "DUE DATE",
+                        problem: "Esta atividade está ativa mas não possui data de entrega (due date) definida, impossibilitando o acompanhamento de prazos",
+                        action: "Acesse o Jira e preencha o campo Due Date com a data prevista de conclusão.",
+                        severity: "atencao",
+                    });
+                }
+            }
+
+            // --- Sem assignee ---
+            if (incons.active_without_assignee) {
+                for (const issue of incons.active_without_assignee) {
+                    actions.push({
+                        assignee: "SEM ASSIGNEE",
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        due_date: issue.due_date || null,
+                        type: "ASSIGNEE",
+                        problem: "Esta atividade está em andamento mas não tem nenhum responsável atribuído — ninguém está cuidando dela",
+                        action: "Atribua um responsável imediatamente no Jira. Atividades sem dono tendem a ficar paradas.",
+                        severity: "critico",
+                    });
+                }
+            }
+
+            // --- Aging WIP ---
+            if (aging.issues) {
+                const p85Days = Math.round((aging.p85_ms || 0) / 86400000);
+                for (const issue of aging.issues) {
+                    // Calcula dias desde updated_at
+                    let days = 0;
+                    const updatedAt = issue.updated_at;
+                    if (updatedAt) {
+                        const updated = new Date(updatedAt);
+                        const now = new Date();
+                        days = Math.round((now - updated) / 86400000);
+                    }
+                    // Só reporta se parada há mais de N dias sem atualização
+                    if (days < RULES.aging_min_dias) continue;
+
+                    actions.push({
+                        assignee: issue.assignee_name || issue.assignee || "Sem assignee",
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        due_date: issue.due_date || null,
+                        type: "AGING",
+                        problem: `Esta atividade está sem atualização há <strong style="color:var(--danger)">${days} dias</strong>, o que compromete o <strong style="color:var(--accent)">cycle time</strong> do time que atualmente está em <strong style="color:var(--warning)">${p85Days} dias</strong> (P85). Enquanto permanecer parada, essa métrica continuará sendo impactada negativamente.`,
+                        action: days > RULES.aging_critico_dias
+                            ? "Atividade parada há mais de 1 mês. Avalie se ainda faz sentido ou se deve ser cancelada. Se for continuar, desbloqueie e escale."
+                            : "Atualize o status desta atividade no Jira. Se estiver bloqueada, registre o impedimento. Se não fizer mais sentido, mova para Canceled. O time precisa de visibilidade.",
+                        severity: days > RULES.aging_critico_dias ? "critico" : "atencao",
+                    });
+                }
+            }
+
+            // --- Due date parent vs subtask ---
+            if (incons.due_date_parent_vs_subtask) {
+                for (const issue of incons.due_date_parent_vs_subtask) {
+                    actions.push({
+                        assignee: issue.child_assignee || "Sem assignee",
+                        key: issue.child_key,
+                        summary: issue.child_summary,
+                        status: issue.child_status,
+                        due_date: issue.child_due_date || null,
+                        type: "PRAZO",
+                        problem: `A data de entrega desta atividade é posterior à data da story pai (${issue.parent_key}: ${issue.parent_due_date}), o que gera inconsistência no planejamento`,
+                        action: "Ajuste a due date para ser igual ou anterior à data da story pai, ou renegocie o prazo da story.",
+                        severity: "atencao",
+                    });
+                }
+            }
+
+            // --- Done sem métricas ---
+            if (incons.done_without_metrics) {
+                for (const issue of incons.done_without_metrics) {
+                    actions.push({
+                        assignee: issue.assignee || "Sem assignee",
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        due_date: issue.due_date || null,
+                        type: "METRICAS",
+                        problem: "Esta atividade foi concluída (Done) mas não possui Lead Time nem Cycle Time calculados — provavelmente foi movida direto para Done sem passar pelo fluxo",
+                        action: "Verifique se o fluxo no Jira foi seguido corretamente. Para próximas atividades, mova pelo board normalmente (Open → In Progress → Done).",
+                        severity: "informativo",
+                    });
+                }
+            }
+
+            // --- Active sem cycle time ---
+            if (incons.active_without_cycle) {
+                for (const issue of incons.active_without_cycle) {
+                    actions.push({
+                        assignee: issue.assignee || "Sem assignee",
+                        key: issue.key,
+                        summary: issue.summary,
+                        status: issue.status,
+                        due_date: issue.due_date || null,
+                        type: "FLUXO",
+                        problem: "Esta atividade está em andamento mas não tem Cycle Time computado — provavelmente foi movida para o status atual sem passar por In Progress",
+                        action: "Mova a atividade para In Progress primeiro e depois para o status desejado, para que o tempo seja contabilizado corretamente.",
+                        severity: "informativo",
+                    });
+                }
+            }
+
+            return actions;
+        }
+
+        // ==================== RENDER SUMMARY ====================
+        function renderSummary(actions, projectKey) {
+            const container = document.getElementById("summary-container");
+            if (actions.length === 0) { container.innerHTML = ""; return; }
+
+            const critical = actions.filter(a => a.severity === "critico").length;
+            const warning = actions.filter(a => a.severity === "atencao").length;
+            const info = actions.filter(a => a.severity === "informativo").length;
+            const types = {};
+            for (const a of actions) { types[a.type] = (types[a.type] || 0) + 1; }
+
+            const grouped = {};
+            for (const a of actions) { if (!grouped[a.assignee]) grouped[a.assignee] = []; grouped[a.assignee].push(a); }
+
+            container.innerHTML = `
+                <div class="summary-bar">
+                    <span><strong>${projectKey}</strong> — ${actions.length} ações pendentes</span>
+                    <span class="summary-item"><span class="summary-dot" style="background:var(--danger)"></span> ${critical} críticos</span>
+                    <span class="summary-item"><span class="summary-dot" style="background:var(--warning)"></span> ${warning} atenção</span>
+                    <span class="summary-item"><span class="summary-dot" style="background:var(--accent)"></span> ${info} informativos</span>
+                    <span style="color:var(--text-muted)">|</span>
+                    <span>${Object.keys(grouped).length} pessoas</span>
+                    <span style="color:var(--text-muted)">|</span>
+                    ${Object.entries(types).map(([t, c]) => `<span class="summary-item"><span class="type-badge">${t}</span> ${c}</span>`).join("")}
+                </div>
+            `;
+        }
+
+        // ==================== RENDER REPORT ====================
+        function renderReport(actions, projectKey) {
+            const container = document.getElementById("report-content");
+
+            if (actions.length === 0) {
+                container.innerHTML = `<p class="empty-state">Nenhuma ação pendente encontrada para ${projectKey}. Parabéns!</p>`;
+                return;
+            }
+
+            // Agrupa por assignee
+            const grouped = {};
+            for (const a of actions) { if (!grouped[a.assignee]) grouped[a.assignee] = []; grouped[a.assignee].push(a); }
+
+            // Ordena: SEM ASSIGNEE primeiro, depois por qtd de ações (desc)
+            const sorted = Object.keys(grouped).sort((a, b) => {
+                if (a === "SEM ASSIGNEE" || a === "Sem assignee") return -1;
+                if (b === "SEM ASSIGNEE" || b === "Sem assignee") return 1;
+                return grouped[b].length - grouped[a].length;
+            });
+
+            let html = "";
+            for (const assignee of sorted) {
+                const items = grouped[assignee];
+                const critCount = items.filter(i => i.severity === "critico").length;
+                const safeAssignee = assignee.replace(/'/g, "\\'");
+
+                html += `
+                    <div class="assignee-group">
+                        <div class="assignee-header">
+                            <span>${assignee} ${critCount > 0 ? `<span class="severity-critico">(${critCount} críticos)</span>` : ""}</span>
+                            <div class="assignee-actions">
+                                <span class="assignee-count">${items.length} ação(es)</span>
+                                <button class="btn-copy-sm" onclick="copyAssigneeTable('${safeAssignee}')">Copiar</button>
+                            </div>
+                        </div>
+                        <table class="report-table" data-assignee="${assignee}">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Atividade</th>
+                                    <th>Status</th>
+                                    <th>Tipo</th>
+                                    <th>Due Date</th>
+                                    <th>Problema</th>
+                                    <th>Ação Necessária</th>
+                                    <th>Severidade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${items.map(i => `
+                                    <tr>
+                                        <td><a href="https://jiraps.atlassian.net/browse/${i.key}" target="_blank" class="issue-link">${i.key}</a></td>
+                                        <td>${i.summary}</td>
+                                        <td>${i.status}</td>
+                                        <td><span class="type-badge">${i.type}</span></td>
+                                        <td class="due-cell">${fmtBR(i.due_date)}</td>
+                                        <td>${i.problem}</td>
+                                        <td>${i.action}</td>
+                                        <td class="severity-${i.severity}">${i.severity.toUpperCase()}</td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // ==================== COPY ====================
+        function copyAssigneeTable(assignee) {
+            const table = document.querySelector(`.report-table[data-assignee="${assignee}"]`);
+            if (!table) return;
+
+            let text = "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAção Necessária\tSeveridade\n";
+            const rows = table.querySelectorAll("tbody tr");
+            for (const row of rows) {
+                const cells = [...row.querySelectorAll("td")].map(c => c.textContent.trim());
+                text += cells.join("\t") + "\n";
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = table.closest(".assignee-group").querySelector(".btn-copy-sm");
+                btn.textContent = "Copiado!";
+                btn.classList.add("copied");
+                setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("copied"); }, 2000);
+            });
+        }
+
+        function copyAllTables() {
+            const groups = document.querySelectorAll(".assignee-group");
+            let text = "";
+            for (const group of groups) {
+                const assignee = group.querySelector(".assignee-header span:first-child").textContent.trim();
+                text += `=== ${assignee} ===\n`;
+                text += "Key\tAtividade\tStatus\tTipo\tDue Date\tProblema\tAção Necessária\tSeveridade\n";
+                const rows = group.querySelectorAll("tbody tr");
+                for (const row of rows) {
+                    const cells = [...row.querySelectorAll("td")].map(c => c.textContent.trim());
+                    text += cells.join("\t") + "\n";
+                }
+                text += "\n";
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector(".btn-action");
+                btn.textContent = "Copiado!";
+                btn.classList.add("copied");
+                setTimeout(() => { btn.textContent = "Copiar Todos"; btn.classList.remove("copied"); }, 2000);
+            });
+        }
+
+        // ==================== CONFIG MODAL ====================
+        const DEFAULT_RULES = {
+            wip_atencao: 4,
+            wip_critico: 6,
+            wip_recomendado: 3,
+            blocked_atencao: 1,
+            blocked_critico: 3,
+            blocked_recomendado: 0,
+            aging_min_dias: 14,
+            aging_critico_dias: 30,
+            due_date_changes_atencao: 2,
+            due_date_changes_critico: 4,
+        };
+
+        function getRules() {
+            const saved = localStorage.getItem("report_rules");
+            if (saved) {
+                try { return { ...DEFAULT_RULES, ...JSON.parse(saved) }; } catch(e) {}
+            }
+            return { ...DEFAULT_RULES };
+        }
+
+        function saveRule(ruleKey, value) {
+            const rules = getRules();
+            rules[ruleKey] = parseInt(value) || 0;
+            localStorage.setItem("report_rules", JSON.stringify(rules));
+        }
+
+        const RULES = getRules();
+
+        function openConfigModal() {
+            const rules = getRules();
+            document.getElementById("config-modal").innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Configuração de Regras</h2>
+                        <button class="modal-close" onclick="closeConfigModal()">&times;</button>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header">
+                            <span class="rule-card-title">WIP (Work In Progress)</span>
+                            <span class="rule-card-type">WIP</span>
+                        </div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-wip-recomendado" value="${rules.wip_recomendado}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-wip-atencao" value="${rules.wip_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-wip-critico" value="${rules.wip_critico}"></div>
+                            <button class="btn-save-rule" onclick="saveRuleGroup('wip')">Salvar</button>
+                        </div>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header">
+                            <span class="rule-card-title">Blocked (Atividades Bloqueadas)</span>
+                            <span class="rule-card-type">BLOCKED</span>
+                        </div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Recomendado</label><input type="number" id="cfg-blocked-recomendado" value="${rules.blocked_recomendado}"></div>
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-blocked-atencao" value="${rules.blocked_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-blocked-critico" value="${rules.blocked_critico}"></div>
+                            <button class="btn-save-rule" onclick="saveRuleGroup('blocked')">Salvar</button>
+                        </div>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header">
+                            <span class="rule-card-title">Aging (Atividades Paradas)</span>
+                            <span class="rule-card-type">AGING</span>
+                        </div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Mín. dias sem atualiz.</label><input type="number" id="cfg-aging-min" value="${rules.aging_min_dias}"></div>
+                            <div class="rule-field"><label>Crítico (> dias)</label><input type="number" id="cfg-aging-critico" value="${rules.aging_critico_dias}"></div>
+                            <button class="btn-save-rule" onclick="saveRuleGroup('aging')">Salvar</button>
+                        </div>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-card-header">
+                            <span class="rule-card-title">Postergação de Due Date (alterações de prazo)</span>
+                            <span class="rule-card-type">POSTERGACAO</span>
+                        </div>
+                        <div class="rule-fields">
+                            <div class="rule-field"><label>Atenção (>=)</label><input type="number" id="cfg-due-atencao" value="${rules.due_date_changes_atencao}"></div>
+                            <div class="rule-field"><label>Crítico (>=)</label><input type="number" id="cfg-due-critico" value="${rules.due_date_changes_critico}"></div>
+                            <button class="btn-save-rule" onclick="saveRuleGroup('due')">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById("config-modal").classList.add("open");
+        }
+
+        function closeConfigModal() {
+            document.getElementById("config-modal").classList.remove("open");
+        }
+
+        function saveRuleGroup(group) {
+            if (!confirm("Confirma a alteração desta regra? A página será recarregada.")) return;
+
+            if (group === "wip") {
+                saveRule("wip_recomendado", document.getElementById("cfg-wip-recomendado").value);
+                saveRule("wip_atencao", document.getElementById("cfg-wip-atencao").value);
+                saveRule("wip_critico", document.getElementById("cfg-wip-critico").value);
+            } else if (group === "blocked") {
+                saveRule("blocked_recomendado", document.getElementById("cfg-blocked-recomendado").value);
+                saveRule("blocked_atencao", document.getElementById("cfg-blocked-atencao").value);
+                saveRule("blocked_critico", document.getElementById("cfg-blocked-critico").value);
+            } else if (group === "aging") {
+                saveRule("aging_min_dias", document.getElementById("cfg-aging-min").value);
+                saveRule("aging_critico_dias", document.getElementById("cfg-aging-critico").value);
+            } else if (group === "due") {
+                saveRule("due_date_changes_atencao", document.getElementById("cfg-due-atencao").value);
+                saveRule("due_date_changes_critico", document.getElementById("cfg-due-critico").value);
+            }
+
+            window.location.reload();
+        }
+
+        // Fechar modal ao clicar fora
+        document.addEventListener("click", (e) => {
+            const modal = document.getElementById("config-modal");
+            if (e.target === modal) closeConfigModal();
+        });
+
+        init();
+    </script>
+</body>
+</html>

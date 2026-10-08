@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Atualizar DATASHEET antes de commitar",
+      "trigger": "UserPromptSubmit",
+      "action": {
+        "type": "agent",
+        "prompt": "PROCEDIMENTO OBRIGATÓRIO DE COMMIT: Se — e somente se — a mensagem do usuário pede para commitar (ex.: \"commitar\", \"commit\", \"pode commitar\", \"faça o commit\", \"suba o commit\"), então ANTES de executar qualquer `git commit` você DEVE:\n\n1. Identificar o que mudou desde o último commit (git diff / arquivos modificados).\n2. Atualizar `changelog_timeline/docs/DATASHEET.md` para refletir essas mudanças (novas telas, endpoints, métricas/waves, colunas, componentes de UI, comportamento) — mantendo o cabeçalho de versão/status coerente. Se nada relevante para o DATASHEET mudou, registrar explicitamente que foi avaliado e nenhuma atualização era necessária.\n3. Verificar a atualização (arquivo salvo, coerente).\n4. SOMENTE DEPOIS incluir o DATASHEET no stage junto com as demais mudanças e realizar o commit.\n\nSe a mensagem NÃO for sobre commit, ignore completamente esta instrução e prossiga normalmente."
+      }
+    }
+  ]
+}

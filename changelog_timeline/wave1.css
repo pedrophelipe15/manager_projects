@@ -1,0 +1,466 @@
+/* Tokens em tokens.css (fonte unica). */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 0.5rem;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+.page-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 1.5rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.glass {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation */
+/* Nav: estilo em nav.css compartilhado. */
+
+/* Header */
+.page-header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { color: var(--text-muted); font-size: 1rem; margin-top: 0.3rem; }
+
+/* Filter */
+.filter-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+}
+.filter-section label { font-size: 0.9rem; font-weight: 500; color: var(--text-2); }
+.filter-section select {
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: inherit;
+    font-size: 0.85rem;
+    outline: none;
+    min-width: 220px;
+}
+
+.empty-state { text-align: center; padding: 3rem; color: var(--text-muted); font-style: italic; }
+
+/* Sections */
+.metrics-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Duas seções lado a lado (ex.: Percentis | Flow Efficiency semanal) */
+.side-by-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: stretch;
+}
+.side-by-side > .metric-section {
+    min-width: 0; /* evita overflow do canvas dentro do grid */
+}
+/* Variante 1:2 — esquerda com metade da largura da direita
+   (Flow Efficiency menor, Evolução Semanal ocupa o espaço extra) */
+.side-by-side--1-2 {
+    grid-template-columns: 1fr 2fr;
+}
+@media (max-width: 768px) {
+    .side-by-side {
+        grid-template-columns: 1fr;
+    }
+}
+
+.metric-section {
+    padding: 1.5rem;
+}
+
+.metric-section h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.metric-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 1.2rem;
+}
+
+/* KPIs row */
+.kpis-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-box {
+    padding: 1rem;
+    background: var(--surface-2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.kpi-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+}
+
+.kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.kpi-value.accent { color: var(--accent); }
+.kpi-value.warning { color: var(--warning); }
+.kpi-value.success { color: var(--success); }
+
+/* Tables */
+.metric-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.metric-table th {
+    text-align: left;
+    padding: 0.6rem 0.7rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.metric-table td {
+    padding: 0.6rem 0.7rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.metric-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+.metric-table .highlight { color: var(--warning); font-weight: 600; }
+
+/* Bar visual */
+.bar-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+}
+
+.bar-fill.bottleneck { background: var(--warning); }
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    height: 350px;
+    width: 100%;
+}
+
+/* Status badges */
+.status-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.status-progress { background: rgba(59, 130, 246, 0.2); color: var(--action); }
+.status-blocked { background: rgba(239, 68, 68, 0.2); color: var(--risk); }
+
+/* Charts section grid */
+.charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .charts-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    .page-container { padding: 1rem; }
+}
+
+
+/* Sync button and info */
+.btn-sync {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--action);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-sync:hover:not(:disabled) { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.btn-sync:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-cancel {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--risk);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.btn-cancel:hover:not(:disabled) { background: rgba(239, 68, 68, 0.3); }
+.btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.last-sync-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+/* Sync Log */
+.sync-log-container { padding: 1.2rem 1.5rem; }
+.sync-log-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.sync-log-header h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+
+.sync-status-badge {
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.sync-status-badge.running { background: rgba(59, 130, 246, 0.2); color: var(--action); animation: pulse 1.5s infinite; }
+.sync-status-badge.completed { background: rgba(16, 185, 129, 0.2); color: var(--ok); }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+.sync-log {
+    background: var(--surface-2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 250px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: var(--text-2);
+}
+.sync-log .log-line { white-space: pre-wrap; }
+.sync-log .log-line.success { color: var(--ok); }
+.sync-log .log-line.error { color: var(--risk); }
+.sync-log .log-line.info { color: var(--action); }
+
+/* Formula details - audit info */
+.formula-details {
+    margin: 0.75rem 0 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.formula-details summary {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.03);
+    transition: background 0.2s;
+}
+
+.formula-details summary:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary, #f8fafc);
+}
+
+.formula-details[open] summary {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.formula-content {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text-muted, #94a3b8);
+}
+
+.formula-content p {
+    margin: 0.3rem 0;
+}
+
+.formula-content strong {
+    color: var(--text-primary, #f8fafc);
+}
+
+.formula-content em {
+    color: var(--accent, #3b82f6);
+    font-style: normal;
+}
+
+/* Nota explicativa do gráfico semanal de Flow Efficiency */
+.flow-week-note {
+    padding: 0.75rem 1rem;
+    background: rgba(59, 130, 246, 0.08);
+    border-left: 3px solid var(--accent, #3b82f6);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-2, #94a3b8);
+    line-height: 1.5;
+}
+.flow-week-note p { margin: 0.35rem 0; }
+.flow-week-note ul { margin: 0.35rem 0; padding-left: 1.1rem; }
+.flow-week-note li { margin: 0.2rem 0; }
+.flow-week-note strong { color: var(--text-primary, #f8fafc); }
+.flow-week-note em { color: var(--accent, #3b82f6); font-style: normal; }
+
+/* Interpretação do gráfico semanal: o que sobe (positivo) x o que desce (negativo) */
+.flow-interpret {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+.flow-interpret-col {
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--text-2, #94a3b8);
+}
+.flow-interpret-up {
+    background: rgba(16, 185, 129, 0.08);
+    border-left: 3px solid #10b981;
+}
+.flow-interpret-down {
+    background: rgba(239, 68, 68, 0.08);
+    border-left: 3px solid #ef4444;
+}
+.flow-interpret-col h4 {
+    margin: 0 0 0.4rem 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.flow-interpret-up h4 { color: #34d399; }
+.flow-interpret-down h4 { color: #f87171; }
+.flow-interpret-col p { margin: 0.35rem 0; }
+.flow-interpret-col ul { margin: 0.35rem 0; padding-left: 1.1rem; }
+.flow-interpret-col li { margin: 0.25rem 0; }
+.flow-interpret-col strong { color: var(--text-primary, #f8fafc); }
+@media (max-width: 768px) {
+    .flow-interpret { grid-template-columns: 1fr; }
+}
+
+/* Flow Efficiency row (inside percentiles section) */
+.flow-efficiency-row {
+    padding: 1rem 1.2rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.flow-main {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.flow-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary, #f8fafc);
+}
+
+.flow-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary, #f8fafc);
+}
+
+.flow-value.success { color: var(--ok); }
+.flow-value.good { color: #22d3ee; }
+.flow-value.moderate { color: var(--warn); }
+.flow-value.danger { color: var(--risk); }
+.flow-value.warning { color: var(--warn); }
+
+.flow-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+.flow-ref {
+    font-size: 0.7rem;
+    color: var(--text-muted, #94a3b8);
+    margin-top: 0.3rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.flow-scale {
+    font-size: 0.7rem;
+}
+
+.flow-scale.scale-danger { color: var(--risk); }
+.flow-scale.scale-moderate { color: var(--warn); }
+.flow-scale.scale-good { color: #22d3ee; }
+.flow-scale.scale-success { color: var(--ok); }
+
+/* Inline formula description (always visible) */
+.inline-formula {
+    font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+    line-height: 1.5;
+    margin-bottom: 0.6rem;
+}
+
+.inline-formula strong {
+    color: var(--text-primary, #f8fafc);
+}
+
+/* Flow analysis text */
+.flow-analysis {
+    line-height: 1.7;
+    margin-top: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.flow-analysis strong {
+    color: var(--text-primary, #f8fafc);
+}

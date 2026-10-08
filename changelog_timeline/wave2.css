@@ -1,0 +1,130 @@
+/* Wave 2: Previsibilidade */
+/* Tokens em tokens.css (fonte unica). */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 0.5rem;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+.page-container { max-width: 100%; margin: 0 auto; padding: 1.5rem 0.5rem; }
+
+/* Nav: estilo em nav.css compartilhado. */
+
+/* Header */
+.page-header { margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { color: var(--text-muted); font-size: 1rem; margin-top: 0.3rem; }
+
+/* Filter */
+.filter-section { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+.filter-section label { font-size: 0.85rem; color: var(--text-muted); }
+.filter-section select { padding: 0.5rem 1rem; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 8px; font-size: 0.85rem; }
+
+.glass { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; backdrop-filter: blur(10px); }
+
+/* Metrics grid */
+.metrics-grid { display: flex; flex-direction: column; gap: 2rem; }
+.metric-section { padding: 1.5rem; }
+.metric-section h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
+.metric-desc { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 1rem; }
+
+/* KPIs */
+.kpis-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.kpi-box { padding: 1rem; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; text-align: center; }
+.kpi-label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 1.4rem; font-weight: 700; }
+.kpi-value.accent { color: var(--accent); }
+.kpi-value.warning { color: var(--warning); }
+
+/* Chart */
+.chart-container { position: relative; height: 300px; width: 100%; margin-top: 1rem; }
+.chart-small { height: 200px; }
+
+/* Table */
+.metric-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.metric-table th { text-align: left; padding: 0.6rem 0.8rem; color: var(--text-muted); border-bottom: 1px solid var(--glass-border); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-table td { padding: 0.6rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.metric-table tr:hover { background: rgba(255,255,255,0.02); }
+
+/* Progress bar */
+.progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; display: inline-block; width: 70px; vertical-align: middle; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
+.progress-label { font-size: 0.72rem; color: var(--text-muted); margin-left: 0.4rem; }
+
+/* Forecast button */
+.btn-forecast { padding: 0.3rem 0.7rem; background: rgba(59, 130, 246, 0.2); color: var(--accent); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
+.btn-forecast:hover { background: rgba(59, 130, 246, 0.4); }
+
+/* Forecast result */
+.forecast-result { margin-top: 1.5rem; }
+.forecast-card { padding: 1.5rem; margin-top: 1rem; }
+.forecast-card h3 { font-size: 1rem; margin-bottom: 1rem; }
+.forecast-detail { font-size: 0.78rem; color: var(--text-muted); margin-top: 1rem; }
+
+/* Brackets */
+.brackets-row { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.bracket-badge { padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+.bracket-badge.danger { background: rgba(239, 68, 68, 0.2); color: var(--risk); }
+.bracket-badge.warning { background: rgba(245, 158, 11, 0.2); color: var(--warn); }
+.bracket-badge.info { background: rgba(59, 130, 246, 0.2); color: var(--action); }
+
+/* Highlights */
+.highlight-danger { color: var(--risk); font-weight: 600; }
+.highlight-warning { color: var(--warn); font-weight: 600; }
+
+/* Table footer */
+.table-footer { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem; text-align: center; }
+
+/* Formula details */
+.formula-details { margin: 0.75rem 0 1rem; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; overflow: hidden; }
+.formula-details summary { padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-muted); cursor: pointer; background: rgba(255, 255, 255, 0.03); transition: background 0.2s; }
+.formula-details summary:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
+.formula-details[open] summary { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.formula-content { padding: 0.75rem 1rem; font-size: 0.8rem; line-height: 1.6; color: var(--text-muted); }
+.formula-content p { margin: 0.3rem 0; }
+.formula-content strong { color: var(--text-primary); }
+
+/* Empty/loading */
+.empty-state { text-align: center; color: var(--text-muted); padding: 3rem 1rem; font-size: 0.9rem; }
+.loading { color: var(--text-muted); font-size: 0.85rem; }
+.error { color: var(--danger); font-size: 0.85rem; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-container { padding: 1rem; }
+    .kpis-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* --- Modo "Analisar melhoria (marco)" no Throughput Semanal --- */
+.tp-marker-bar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0; }
+.tp-marker-hint { font-size: 0.8rem; color: var(--brand-blue, #0a66c2); background: rgba(10,102,194,0.08); padding: 0.4rem 0.7rem; border-radius: 6px; }
+
+/* Botao de destaque do modo marco */
+.tp-marker-btn {
+    background: var(--action); color: #fff; border: 1px solid var(--action);
+    font-weight: 600; box-shadow: 0 2px 6px rgba(15,157,88,0.3);
+}
+.tp-marker-btn:hover:not(:disabled) { background: var(--action-hover); border-color: var(--action-hover); }
+.tp-marker-btn--on {
+    background: var(--risk); border-color: var(--risk);
+    box-shadow: 0 2px 6px rgba(226,59,59,0.3);
+}
+.tp-marker-btn--on:hover:not(:disabled) { background: var(--risk); filter: brightness(0.95); }
+
+.tp-impact { margin-bottom: 1rem; }
+.tp-impact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+@media (max-width: 768px) { .tp-impact-grid { grid-template-columns: 1fr; } }
+.tp-cal { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 0.9rem 1rem; box-shadow: var(--shadow-sm); }
+.tp-cal-v { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text-1); }
+.tp-cal-v.good { color: var(--ok); }
+.tp-cal-l { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-top: 0.1rem; }
+.tp-cal-s { font-size: 0.8rem; color: var(--text-2); margin-top: 0.3rem; }
+.tp-impact-note { font-size: 0.78rem; color: var(--text-2); background: var(--warn-bg); border-left: 3px solid var(--warn); padding: 0.5rem 0.75rem; border-radius: 6px; margin-top: 0.75rem; }

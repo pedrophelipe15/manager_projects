@@ -12,9 +12,12 @@ from typing import Callable, Optional
 
 @dataclass(frozen=True)
 class NavItem:
+    """Item do menu principal. Itens com o mesmo `group` aparecem juntos."""
     label: str
     href: str
-    order: int = 100
+    group: str = ""            # nome do grupo no menu (vazio => grupo próprio com o nome do módulo)
+    group_order: int = 100     # posição do grupo no menu (menor primeiro)
+    order: int = 100           # posição do item dentro do grupo
 
 
 @dataclass
@@ -27,6 +30,12 @@ class Module:
     # caminhos "pacote.modulo" cujo atributo `router` (APIRouter) será incluído
     routers: tuple[str, ...] = ()
     nav: tuple[NavItem, ...] = ()
+    # URL de entrada do módulo (usada pela rota "/" do kernel)
+    home: str = ""
+    # pastas web (primeiro segmento da URL) que pertencem ao módulo; 404 se desligado
+    static_dirs: tuple[str, ...] = ()
+    # True se o módulo é dono dos arquivos web da RAIZ (exceto os assets da plataforma)
+    static_root: bool = False
     # chamado uma vez ao ligar o módulo (criar banco/tabelas etc.)
     on_enable: Optional[Callable[[], None]] = None
     on_disable: Optional[Callable[[], None]] = None
@@ -43,3 +52,4 @@ class ModuleStatus:
     error: Optional[str] = None
     requires: tuple[str, ...] = ()
     nav: tuple[NavItem, ...] = field(default_factory=tuple)
+    home: str = ""

@@ -1,69 +1,20 @@
 /**
- * nav.js — Navegacao compartilhada (Onda 2 UX).
+ * nav.js — Menu principal da plataforma (asset da plataforma, usado por todos os módulos).
  *
- * Fonte UNICA da barra de navegacao. Substitui as 10 navs duplicadas.
+ * O menu NÃO é mais fixo no código: vem de GET /api/platform/modules (campo "menu"),
+ * montado pelo kernel a partir dos módulos LIGADOS. Módulo desligado = sem itens no menu;
+ * módulo novo aparece sozinho (basta declarar `nav` no manifest).
+ *
  * Injeta a nav dentro de <nav id="main-nav" class="nav-bar"></nav>.
- *
- * Organizada por PERGUNTA que o gestor faz, nao por area tecnica:
- *   Minha Visao  -> o que preciso fazer hoje?
- *   Prazos       -> vamos entregar? (Compromisso, Previsibilidade)
- *   Pessoas      -> quem precisa de ajuda? (Maturidade, Pessoas)
- *   Fluxo        -> onde trava? (Gargalo, Portfolio)
- *   Hierarquia   -> como esta a iniciativa?
- *   Dados        -> da pra confiar? (Inconsistencias, Config)
- *
- * A aba ativa e detectada pelo pathname atual.
+ * A aba ativa é detectada pelo pathname atual.
+ * O último menu recebido fica em sessionStorage só para evitar "piscar" entre páginas.
  */
 (function () {
     "use strict";
 
-    // Grupos e suas abas, na ordem de leitura do gestor.
-    var GROUPS = [
-        {
-            label: "Minha Visão",
-            links: [
-                { href: "/minha-visao.html", label: "Minha Visão" },
-            ],
-        },
-        {
-            label: "Prazos",
-            links: [
-                { href: "/compromisso.html", label: "Compromisso" },
-                { href: "/wave2.html", label: "Previsibilidade" },
-            ],
-        },
-        {
-            label: "Pessoas",
-            links: [
-                { href: "/maturidade.html", label: "Maturidade" },
-                { href: "/wave3.html", label: "Pessoas" },
-            ],
-        },
-        {
-            label: "Fluxo",
-            links: [
-                { href: "/wave1.html", label: "Gargalo e Fluxo" },
-                { href: "/wave4.html", label: "Portfólio" },
-                { href: "/dashboard.html", label: "Dashboard" },
-            ],
-        },
-        {
-            label: "Hierarquia",
-            links: [
-                { href: "/hierarchy/dashboard-v2.html", label: "Hierarquia" },
-            ],
-        },
-        {
-            label: "Dados",
-            links: [
-                { href: "/inconsistencies.html", label: "Inconsistências" },
-                { href: "/settings.html", label: "Configurações" },
-            ],
-        },
-    ];
+    var CACHE_KEY = "platform.menu.v1";
 
     function normalize(path) {
-        // '/', '/index.html' e afins normalizam para o proprio pathname.
         try {
             return decodeURIComponent(path || "").split("?")[0];
         } catch (e) {
@@ -71,33 +22,71 @@
         }
     }
 
-    function render() {
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;  // textContent: sem injeção de HTML
+        return node;
+    }
+
+    function render(menu) {
         var nav = document.getElementById("main-nav");
-        if (!nav) return;
+        if (!nav || !Array.isArray(menu)) return;
 
         var current = normalize(window.location.pathname);
-        var html = "";
+        nav.textContent = "";
 
-        GROUPS.forEach(function (group, gi) {
+        menu.forEach(function (group, gi) {
             if (gi > 0) {
-                html += '<span class="nav-sep" aria-hidden="true"></span>';
+                var sep = el("span", "nav-sep");
+                sep.setAttribute("aria-hidden", "true");
+                nav.appendChild(sep);
             }
-            html += '<span class="nav-group">';
-            html += '<span class="nav-group-label">' + group.label + "</span>";
-            html += '<span class="nav-group-links">';
-            group.links.forEach(function (link) {
+            var g = el("span", "nav-group");
+            g.appendChild(el("span", "nav-group-label", group.group));
+            var links = el("span", "nav-group-links");
+            (group.links || []).forEach(function (link) {
                 var active = current === normalize(link.href) ? " active" : "";
-                html += '<a href="' + link.href + '" class="nav-link' + active + '">' + link.label + "</a>";
+                var a = el("a", "nav-link" + active, link.label);
+                a.setAttribute("href", link.href);
+                links.appendChild(a);
             });
-            html += "</span></span>";
+            g.appendChild(links);
+            nav.appendChild(g);
         });
+    }
 
-        nav.innerHTML = html;
+    function readCache() {
+        try {
+            var raw = window.sessionStorage.getItem(CACHE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeCache(menu) {
+        try {
+            window.sessionStorage.setItem(CACHE_KEY, JSON.stringify(menu));
+        } catch (e) { /* storage indisponível: segue sem cache */ }
+    }
+
+    function load() {
+        var cached = readCache();
+        if (cached) render(cached);  // pinta já; a resposta da API atualiza em seguida
+
+        fetch("/api/platform/modules", { cache: "no-store" })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
+            .then(function (data) {
+                writeCache(data.menu || []);
+                render(data.menu || []);
+            })
+            .catch(function () { /* sem API: mantém o menu em cache, se houver */ });
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", render);
+        document.addEventListener("DOMContentLoaded", load);
     } else {
-        render();
+        load();
     }
 })();

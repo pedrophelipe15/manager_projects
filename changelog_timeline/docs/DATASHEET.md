@@ -1,6 +1,15 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.7.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+> **Versao:** v2.8.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+>
+> A **v2.8.0** (fases 4-5 da modularizacao): codigo compartilhado foi para `kernel/`
+> (`shared/`, `jira/`, `paths.py`) e as fronteiras entre modulos passaram a ser verificadas
+> (`.importlinter`); o **menu e dinamico** (`GET /api/platform/modules` -> `menu`); os
+> **estaticos pertencem aos modulos**: `/hierarchy/*` retorna 404 com a hierarquia desligada, e as
+> paginas da raiz (flow) com o flow desligado; assets da plataforma (`tokens.css`, `nav.css`,
+> `nav.js`, `ui.*`, `context.js`, `dashboard.css`) ficam sempre disponiveis. A rota `/` agora
+> **redireciona para a home do primeiro modulo ligado** (antes servia o `index.html`, que segue em
+> `/index.html`). O botao "VOLTAR" da hierarquia leva a `/`. A pagina `visao-projeto.html` passou a usar o menu dinamico.
 >
 > A **v2.7.0** e uma **refatoracao estrutural sem mudanca de telas**: (1) o `api.py` (3.500 linhas)
 > foi dividido em `routers/` por dominio e passou a ser so o ponto de entrada; (2) nasceu o
@@ -359,7 +368,10 @@ Acesso: `http://localhost:8000`
 
 A partir da v2.0.0 a nav e **injetada por `nav.js`** (estilo em `nav.css`) num placeholder
 `<nav id="main-nav" class="nav-bar">`, substituindo as barras duplicadas por pagina. E
-**agrupada por pergunta do gestor** (a ordem/abas vivem no array `GROUPS` de `nav.js`):
+**agrupada por pergunta do gestor**. **Desde a v2.8.0 o menu e dinamico:** `nav.js` le `menu` de
+`GET /api/platform/modules`, montado pelo kernel a partir dos `NavItem` declarados no manifest
+de cada modulo **ligado** (`modules/*/module.py`); modulo desligado nao aparece, modulo novo
+aparece sozinho. A tabela abaixo e o menu atual (flow + hierarchy):
 
 | Grupo | Abas | Pergunta |
 |-------|------|----------|
@@ -1402,7 +1414,7 @@ Um badge dinamico na nav bar mostra a contagem total de alertas em todas as pagi
 4. Registrar no `ingest_to_db.py`: `from metrics.wave2_NOME import run_wave2`
 5. Criar endpoints em um router de `routers/` (e listar o router em `modules/flow/module.py`): `GET /api/metrics/wave2/*`
 6. Criar `wave2.html/js/css` (flat na raiz)
-7. Adicionar link na navegacao
+7. Adicionar o item de menu como `NavItem` em `modules/flow/module.py` (nao ha mais lista fixa no `nav.js`)
 8. Atualizar este DATASHEET
 
 ---

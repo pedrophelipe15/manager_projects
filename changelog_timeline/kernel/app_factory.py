@@ -6,6 +6,7 @@ import sys
 from typing import Optional
 
 from fastapi import APIRouter, FastAPI
+from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
@@ -51,10 +52,19 @@ def create_app(modules_file: Optional[str] = None, package: str = "modules") -> 
     @kernel_router.get("/api/platform/modules")
     def api_modules():
         """Estado dos módulos configurados (ligado/desligado/falhou) e seus itens de menu."""
-        return {"modules": registry.describe()}
+        return {"modules": registry.describe(), "menu": registry.menu()}
+
+    @kernel_router.get("/", include_in_schema=False)
+    def root():
+        """Entrada: leva à home do primeiro módulo ligado (antes servia o index.html do flow)."""
+        home = registry.home()
+        if home:
+            return RedirectResponse(home)
+        return HTMLResponse("<h1>Nenhum módulo ligado</h1><p>Edite config/modules.yaml e reinicie.</p>",
+                            status_code=503)
 
     app.include_router(kernel_router)
 
     # Estáticos: SEMPRE por último, para não sombrear as rotas /api/*.
-    app.mount("/", SafeStaticFiles(directory=BASE_DIR, html=True), name="static")
+    app.mount("/", SafeStaticFiles(directory=BASE_DIR, html=True, policy=registry.static_policy), name="static")
     return app

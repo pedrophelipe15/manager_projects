@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="nav.css?v=1">
     <link rel="stylesheet" href="insights.css?v=1">
 
     <style>
@@ -135,19 +136,7 @@
 </head>
 <body>
     <div class="page-container">
-        <nav class="nav-bar">
-            <a href="/hierarchy/dashboard-v2.html" class="nav-link">&#x1F4CA; Hierarquia</a>
-            <a href="/dashboard.html" class="nav-link">Dashboard</a>
-            <a href="/wave1.html" class="nav-link">Gargalo e Fluxo</a>
-            <a href="/wave2.html" class="nav-link">Previsibilidade</a>
-            <a href="/wave3.html" class="nav-link">Pessoas</a>
-            <a href="/wave4.html" class="nav-link">Portfólio</a>
-            <a href="/visao-projeto.html" class="nav-link active">&#x2705; Ações</a>
-            <a href="/insights.html" class="nav-link">Insights</a>
-            <a href="/maturidade.html" class="nav-link">&#x1F331; Maturidade</a>
-            <a href="/inconsistencies.html" class="nav-link">Inconsistências</a>
-            <a href="/settings.html" class="nav-link">Configurações</a>
-        </nav>
+        <nav id="main-nav" class="nav-bar"></nav>
 
         <header class="page-header">
             <h1>Ações do Projeto <span class="mvp-tag">MVP</span></h1>
@@ -582,5 +571,6 @@
             if (e.target === modal) closeConfigModal();
         });
     </script>
+    <script src="nav.js?v=3"></script>
 </body>
 </html>

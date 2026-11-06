@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from kernel.static import is_allowed
+from kernel.static import StaticPolicy, is_allowed
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -31,9 +31,15 @@ def test_frontend_is_served(client, path):
 
 
 def test_is_allowed_unit():
-    assert is_allowed("") and is_allowed("wave1.html") and is_allowed("hierarchy/x.js")
-    assert not is_allowed("issues.db") and not is_allowed(".env")
-    assert not is_allowed("docs/a.html") and not is_allowed("hierarchy/a.json")
+    both = StaticPolicy(dirs=frozenset({"hierarchy"}), root=True)
+    assert is_allowed("", both) and is_allowed("wave1.html", both) and is_allowed("hierarchy/x.js", both)
+    assert not is_allowed("issues.db", both) and not is_allowed(".env", both)
+    assert not is_allowed("docs/a.html", both) and not is_allowed("hierarchy/a.json", both)
+    # sem módulos ligados: só os assets da plataforma
+    none = StaticPolicy()
+    assert is_allowed("tokens.css", none) and is_allowed("nav.js", none)
+    assert not is_allowed("wave1.html", none) and not is_allowed("hierarchy/x.js", none)
+    assert not is_allowed("", none)
 
 
 def _local_refs(html_path):

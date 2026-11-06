@@ -13,6 +13,7 @@ import yaml
 from fastapi import APIRouter
 
 from kernel.module_base import Module, ModuleStatus
+from kernel.static import StaticPolicy
 
 DEFAULT_CONFIG = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "modules.yaml"
@@ -110,11 +111,45 @@ class Registry:
         self.routers.extend((mid, r) for r in loaded)
         self.status[mid] = ModuleStatus(
             id=mid, state="enabled", name=module.name, version=module.version,
-            requires=module.requires, nav=module.nav,
+            requires=module.requires, nav=module.nav, home=module.home,
         )
         return True
 
     # ------------------------------------------------------------------
+    def static_policy(self) -> StaticPolicy:
+        """Quais pastas/raiz web estão liberadas, conforme os módulos LIGADOS."""
+        mods = self.modules.values()
+        return StaticPolicy(
+            dirs=frozenset(d for m in mods for d in m.static_dirs),
+            root=any(m.static_root for m in mods),
+        )
+
+    def home(self) -> str:
+        """URL de entrada: a `home` do primeiro módulo ligado (ordem do modules.yaml)."""
+        for mid in self.config:
+            m = self.modules.get(mid)
+            if m and m.home:
+                return m.home
+        return ""
+
+    def menu(self) -> list[dict]:
+        """Menu principal montado a partir dos módulos LIGADOS: [{group, links:[{label, href}]}]."""
+        groups: dict[str, dict] = {}
+        for mid in self.config:
+            m = self.modules.get(mid)
+            if not m:
+                continue
+            for item in m.nav:
+                name = item.group or m.name
+                g = groups.setdefault(name, {"order": item.group_order, "items": []})
+                g["order"] = min(g["order"], item.group_order)
+                g["items"].append(item)
+        out = []
+        for name, g in sorted(groups.items(), key=lambda kv: (kv[1]["order"], kv[0])):
+            items = sorted(g["items"], key=lambda i: (i.order, i.label))
+            out.append({"group": name, "links": [{"label": i.label, "href": i.href} for i in items]})
+        return out
+
     def describe(self) -> list[dict]:
         """Estado de todos os módulos configurados, com saúde dos ligados."""
         items = []
@@ -133,6 +168,8 @@ class Registry:
             items.append({
                 "id": st.id, "state": st.state, "name": st.name, "version": st.version,
                 "error": st.error, "requires": list(st.requires), "health": health,
-                "nav": [{"label": n.label, "href": n.href, "order": n.order} for n in st.nav],
+                "home": st.home,
+                "nav": [{"label": n.label, "href": n.href, "group": n.group, "order": n.order}
+                        for n in st.nav],
             })
         return items

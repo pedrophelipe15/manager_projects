@@ -17,7 +17,7 @@
         const nav = document.getElementById("hierarchy-nav");
         if (!nav) return;
 
-        let html = `<a href="/dashboard.html" class="nav-link nav-back" title="Voltar ao projeto principal">&larr; VOLTAR</a>`;
+        let html = `<a href="/" class="nav-link nav-back" title="Voltar ao início">&larr; VOLTAR</a>`;
         html += `<span class="nav-separator"></span>`;
 
         for (const p of pages) {

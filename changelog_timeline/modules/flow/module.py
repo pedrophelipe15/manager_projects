@@ -37,7 +37,20 @@ module = Module(
         "routers.wave3",
         "routers.wave4",
     ),
-    nav=(NavItem("Minha Visão", "/minha-visao.html", 10),),
+    home="/minha-visao.html",
+    static_root=True,  # dono dos arquivos web da raiz (exceto assets da plataforma)
+    nav=(
+        NavItem("Minha Visão", "/minha-visao.html", "Minha Visão", 10, 10),
+        NavItem("Compromisso", "/compromisso.html", "Prazos", 20, 10),
+        NavItem("Previsibilidade", "/wave2.html", "Prazos", 20, 20),
+        NavItem("Maturidade", "/maturidade.html", "Pessoas", 30, 10),
+        NavItem("Pessoas", "/wave3.html", "Pessoas", 30, 20),
+        NavItem("Gargalo e Fluxo", "/wave1.html", "Fluxo", 40, 10),
+        NavItem("Portfólio", "/wave4.html", "Fluxo", 40, 20),
+        NavItem("Dashboard", "/dashboard.html", "Fluxo", 40, 30),
+        NavItem("Inconsistências", "/inconsistencies.html", "Dados", 60, 10),
+        NavItem("Configurações", "/settings.html", "Dados", 60, 20),
+    ),
     on_enable=_on_enable,
     health=_health,
 )

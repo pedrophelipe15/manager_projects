@@ -1,0 +1,27 @@
+/* Painel de módulos — usa só tokens do design system (tokens.css). */
+.modules-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0 0 1rem; }
+.modules-actions { margin-top: 1rem; }
+.badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: var(--fs-sm, 0.8rem);
+    font-weight: 600;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+.badge-ok   { color: var(--ok);   background: var(--ok-bg);   border-color: var(--ok); }
+.badge-warn { color: var(--warn); background: var(--warn-bg); border-color: var(--warn); }
+.badge-fail { color: var(--risk); background: rgba(239, 95, 95, 0.12); border-color: var(--risk); }
+.badge-off  { color: var(--text-2); background: var(--surface-2); border-color: var(--border-strong); }
+.muted { color: var(--text-2); }
+.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.8rem; }
+.health-detail { color: var(--text-2); font-size: 0.85rem; }
+.module-error {
+    margin-top: 0.35rem;
+    color: var(--risk);
+    font-size: 0.85rem;
+    max-width: 48ch;
+    overflow-wrap: anywhere;
+}
+code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.9em; }

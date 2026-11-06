@@ -15,7 +15,10 @@ def _on_enable():
 def _health():
     import os
     from core.db import DB_PATH
-    return os.path.exists(DB_PATH), DB_PATH
+    from kernel.migrations import read_version
+    v = read_version(DB_PATH)
+    detail = f"{os.path.basename(DB_PATH)} · schema v{v}" if v is not None else f"{os.path.basename(DB_PATH)} · sem schema"
+    return v is not None, detail
 
 
 module = Module(

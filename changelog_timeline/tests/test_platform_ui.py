@@ -20,6 +20,7 @@ OLD_HARDCODED_MENU = [   # o que o antigo nav.js tinha fixo no código
     ("Hierarquia", [("Hierarquia", "/hierarchy/dashboard-v2.html")]),
     ("Dados", [("Inconsistências", "/inconsistencies.html"), ("Configurações", "/settings.html")]),
 ]
+PLATFORM_MENU = ("Plataforma", [("Módulos", "/modules.html")])   # item da própria plataforma (fase 7)
 
 
 def _app(tmp_path, flow, hier, package="modules"):
@@ -35,14 +36,14 @@ def _menu(c):
 
 # ------------------------------------------------------------------ menu
 def test_menu_equals_the_old_hardcoded_menu(client):
-    assert _menu(client) == OLD_HARDCODED_MENU
+    assert _menu(client) == OLD_HARDCODED_MENU + [PLATFORM_MENU]
 
 
 def test_menu_hides_disabled_module(tmp_path):
     c = _app(tmp_path, flow=True, hier=False)
     assert "Hierarquia" not in [g for g, _ in _menu(c)]
     c = _app(tmp_path, flow=False, hier=True)
-    assert _menu(c) == [("Hierarquia", [("Hierarquia", "/hierarchy/dashboard-v2.html")])]
+    assert _menu(c) == [("Hierarquia", [("Hierarquia", "/hierarchy/dashboard-v2.html")]), PLATFORM_MENU]
 
 
 def test_nav_js_has_no_hardcoded_links():
@@ -81,7 +82,9 @@ def test_no_module_enabled_still_serves_platform_assets(tmp_path):
     assert c.get("/").status_code == 503
     assert c.get("/tokens.css").status_code == 200 and c.get("/nav.js").status_code == 200
     assert c.get("/wave1.html").status_code == 404 and c.get("/hierarchy/dashboard-v2.html").status_code == 404
-    assert c.get("/api/platform/modules").json()["menu"] == []
+    # a plataforma mantém o próprio item de menu (painel de módulos), mesmo sem módulos
+    assert _menu(c) == [PLATFORM_MENU]
+    assert c.get("/modules.html").status_code == 200
 
 
 # ------------------------------------------------------------------ módulo novo aparece sozinho

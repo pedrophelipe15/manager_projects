@@ -26,6 +26,7 @@ ALLOWED_EXT = {
 # dashboard.css entra aqui porque a hierarquia (pendencias.html) também o usa.
 PLATFORM_ASSETS = frozenset({
     "tokens.css", "nav.css", "nav.js", "ui.css", "ui.js", "context.js", "dashboard.css",
+    "modules.html", "modules.js", "modules.css",   # painel de módulos (plataforma)
 })
 
 

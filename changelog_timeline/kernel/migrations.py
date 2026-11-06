@@ -48,6 +48,20 @@ def current_version(conn: sqlite3.Connection) -> int:
     return int(row[0])
 
 
+def read_version(db_path: str) -> int | None:
+    """Versão do schema de um banco, sem criar nada. None se o arquivo/tabela não existe."""
+    if not os.path.exists(db_path):
+        return None
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+    try:
+        row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
+        return int(row[0]) if row and row[0] is not None else None
+    except sqlite3.OperationalError:
+        return None
+    finally:
+        conn.close()
+
+
 def _load_py(path: str):
     spec = importlib.util.spec_from_file_location(f"_migration_{os.path.basename(path)[:-3]}", path)
     mod = importlib.util.module_from_spec(spec)

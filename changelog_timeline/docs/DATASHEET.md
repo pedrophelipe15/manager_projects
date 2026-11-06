@@ -1,6 +1,13 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.9.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+> **Versao:** v2.10.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+>
+> A **v2.10.0** adicionou o **painel de modulos** (`/modules.html`, menu "Plataforma → Modulos"):
+> mostra, somente leitura, o estado de cada modulo (ligado/desligado/falhou), versao, dependencias,
+> saude (banco + versao do schema) e a causa de falhas de carga, a partir de
+> `GET /api/platform/modules`. A pagina e os arquivos `modules.html/js/css` sao assets da plataforma
+> (sempre servidos). `config/modules.yaml` agora rejeita ids de modulo que o YAML le como booleano
+> (`off`, `on`, `yes`, `no` sem aspas).
 >
 > A **v2.9.0** unificou os jobs em background no **`kernel/jobs.py` (JobRunner)**: sync do flow
 > (`/api/settings/projects/sync*`), recalculo Wave 1 (`/api/metrics/wave1/recalculate*`) e sync da

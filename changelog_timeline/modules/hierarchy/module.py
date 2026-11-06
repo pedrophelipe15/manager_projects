@@ -16,8 +16,12 @@ def _on_enable():
 
 def _health():
     import os
+    from kernel.migrations import read_version
     from modules.hierarchy.db import HIERARCHY_DB_PATH
-    return os.path.exists(HIERARCHY_DB_PATH), HIERARCHY_DB_PATH
+    v = read_version(HIERARCHY_DB_PATH)
+    name = os.path.basename(HIERARCHY_DB_PATH)
+    detail = f"{name} · schema v{v}" if v is not None else f"{name} · sem schema"
+    return v is not None, detail
 
 
 module = Module(

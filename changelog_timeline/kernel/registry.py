@@ -12,8 +12,11 @@ from typing import Optional
 import yaml
 from fastapi import APIRouter
 
-from kernel.module_base import Module, ModuleStatus
+from kernel.module_base import Module, ModuleStatus, NavItem
 from kernel.static import StaticPolicy
+
+# Itens de menu da PRÓPRIA plataforma (existem mesmo sem nenhum módulo ligado).
+PLATFORM_NAV = (NavItem("Módulos", "/modules.html", "Plataforma", 90, 10),)
 
 DEFAULT_CONFIG = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "modules.yaml"
@@ -33,6 +36,9 @@ def load_config(path: Optional[str] = None) -> dict[str, bool]:
         raise ValueError(f"{path}: chave 'modules' ausente ou vazia")
     out: dict[str, bool] = {}
     for mid, cfg in raw.items():
+        if not isinstance(mid, str):
+            # YAML 1.1 lê on/off/yes/no/null sem aspas como booleano/None
+            raise ValueError(f"{path}: id de módulo inválido ({mid!r}); coloque entre aspas se for on/off/yes/no")
         enabled = cfg.get("enabled", True) if isinstance(cfg, dict) else bool(cfg)
         out[str(mid)] = bool(enabled)
     return out
@@ -135,6 +141,9 @@ class Registry:
     def menu(self) -> list[dict]:
         """Menu principal montado a partir dos módulos LIGADOS: [{group, links:[{label, href}]}]."""
         groups: dict[str, dict] = {}
+        for item in PLATFORM_NAV:
+            g = groups.setdefault(item.group, {"order": item.group_order, "items": []})
+            g["items"].append(item)
         for mid in self.config:
             m = self.modules.get(mid)
             if not m:

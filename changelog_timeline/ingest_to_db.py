@@ -49,83 +49,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def setup_db(conn: sqlite3.Connection) -> None:
-    """Cria as tabelas se não existirem."""
-    cursor = conn.cursor()
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS issues (
-        key TEXT PRIMARY KEY,
-        summary TEXT,
-        issuetype_name TEXT,
-        issuetype_hierarchy_level INTEGER,
-        status TEXT,
-        project_key TEXT,
-        project_name TEXT,
-        parent_key TEXT,
-        assignee_name TEXT,
-        reporter_name TEXT,
-        labels TEXT,
-        created_at TEXT,
-        updated_at TEXT,
-        due_date TEXT,
-        resolved_at TEXT,
-        executors_teams TEXT,
-        pagseguro_teams TEXT,
-        start_date TEXT
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS metrics (
-        issue_key TEXT PRIMARY KEY,
-        project_key TEXT,
-        project_name TEXT,
-        parent_key TEXT,
-        status TEXT,
-        created_at TEXT,
-        updated_at TEXT,
-        due_date TEXT,
-        resolved_at TEXT,
-        lead_time_ms INTEGER,
-        cycle_time_ms INTEGER,
-        FOREIGN KEY(issue_key) REFERENCES issues(key)
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS parsed_changelogs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        issue_key TEXT,
-        project_key TEXT,
-        project_name TEXT,
-        author_name TEXT,
-        author_avatar_url TEXT,
-        event_date TEXT,
-        field TEXT,
-        from_value TEXT,
-        to_value TEXT,
-        is_cycle_time_interval BOOLEAN,
-        FOREIGN KEY(issue_key) REFERENCES issues(key)
-    )
-    ''')
-
-    # Mapa de keys antigas -> key atual (issues migradas entre projetos)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS key_aliases (
-        old_key TEXT PRIMARY KEY,
-        current_key TEXT NOT NULL
-    )
-    ''')
-
-    # Índices de performance
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_changelogs_issue_field ON parsed_changelogs(issue_key, field)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_key_aliases_current ON key_aliases(current_key)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_changelogs_project ON parsed_changelogs(project_key)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_issues_project ON issues(project_key)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_issues_status ON issues(status)')
-    cursor.execute('CREATE INDEX IF NOT EXISTS idx_metrics_project ON metrics(project_key)')
-
-    conn.commit()
+    """Garante o schema do issues.db (migrações versionadas em modules/flow/migrations)."""
+    from modules.flow.schema import ensure_flow_schema
+    ensure_flow_schema(conn)
 
 
 def clear_tables(conn: sqlite3.Connection) -> None:

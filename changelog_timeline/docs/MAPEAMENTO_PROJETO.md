@@ -23,7 +23,7 @@ ingest_to_db.py  ──►  issues.db  (+ cálculo de métricas base + Wave 1)
 api.py (FastAPI + uvicorn, porta 8000)
    │
    ▼
-Frontend estático (HTML/JS/CSS) servido a partir da raiz + /hierarchy + /mvp_slide
+Frontend estático (HTML/JS/CSS) servido a partir da raiz + /hierarchy
 ```
 
 Há **dois bancos SQLite isolados**:
@@ -204,7 +204,7 @@ Todas as rotas foram cruzadas com as chamadas `fetch()` do frontend. **Nenhuma c
 | PUT/DELETE | `/api/hierarchy/config/{key}` | **PUT sem consumidor** (ver §6) |
 | GET/POST/DELETE | `/api/settings/excluded-projects[/{key}]` | hierarchy/settings.js |
 | GET | `/api/hierarchy/sync/history` | hierarchy/settings.js |
-| GET | `/api/hierarchy/tree` | epic-health.js, timeline.js, executive-slide.js |
+| GET | `/api/hierarchy/tree` | epic-health.js, timeline.js |
 | POST | `/api/hierarchy/sync` | hierarchy dashboards |
 | GET | `/api/hierarchy/sync/status` | hierarchy dashboards |
 | GET | `/api/hierarchy/last-sync` | hierarchy/dashboard.js |
@@ -245,11 +245,6 @@ Todas as rotas foram cruzadas com as chamadas `fetch()` do frontend. **Nenhuma c
 | `initiative-health.html` + js | Alcançável via clique de linha (não na nav) |
 | `dashboard.html` + js | ✅ **Removida (10/09/2026)** — legado; substituída por dashboard-v2. Sem referências no código; retorna 404 |
 | `timeline.html` + js | ✅ **Reconectada (10/09/2026)** — link "Timeline" na `nav.js`, validada em runtime |
-
-### 5.3 `mvp_slide/`
-| Página | Situação |
-|--------|----------|
-| `executive-slide.html` + js | Standalone (só por URL direta, com `?key=`). Usa `/api/hierarchy/tree` + JSONs locais opcionais (`eco_classification.json`, `initiative_meta.json`). OK |
 
 ---
 

@@ -10,22 +10,9 @@ import math
 
 
 def setup_table(conn: sqlite3.Connection):
-    """Cria tabela metrics_percentiles se não existir."""
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS metrics_percentiles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            project_key TEXT NOT NULL,
-            metric_type TEXT NOT NULL,
-            p50_ms INTEGER,
-            p70_ms INTEGER,
-            p85_ms INTEGER,
-            p95_ms INTEGER,
-            avg_ms INTEGER,
-            count INTEGER,
-            UNIQUE(project_key, metric_type)
-        )
-    ''')
-    conn.commit()
+    """Schema versionado em modules/flow/migrations (garante que está aplicado)."""
+    from modules.flow.schema import ensure_flow_schema
+    ensure_flow_schema(conn)
 
 
 def _percentile(sorted_values: list[int], pct: float) -> int:

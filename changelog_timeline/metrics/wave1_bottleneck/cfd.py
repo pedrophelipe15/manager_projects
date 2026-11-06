@@ -15,19 +15,9 @@ from ..changelog_cache import StatusTransitions
 
 
 def setup_table(conn: sqlite3.Connection):
-    """Cria tabela metrics_cfd se não existir."""
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS metrics_cfd (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            project_key TEXT NOT NULL,
-            snapshot_date TEXT NOT NULL,
-            status TEXT NOT NULL,
-            count INTEGER NOT NULL,
-            UNIQUE(project_key, snapshot_date, status)
-        )
-    ''')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_cfd_project_date ON metrics_cfd(project_key, snapshot_date)')
-    conn.commit()
+    """Schema versionado em modules/flow/migrations (garante que está aplicado)."""
+    from modules.flow.schema import ensure_flow_schema
+    ensure_flow_schema(conn)
 
 
 def calculate_cfd(

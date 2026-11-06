@@ -1,6 +1,19 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.6.2 · **Status:** produtivo · **Atualizado:** 2026-10-08
+> **Versao:** v2.7.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+>
+> A **v2.7.0** e uma **refatoracao estrutural sem mudanca de telas**: (1) o `api.py` (3.500 linhas)
+> foi dividido em `routers/` por dominio e passou a ser so o ponto de entrada; (2) nasceu o
+> `kernel/` (registry de modulos, `create_app`, migracoes, ConfigStore) e os modulos **flow** e
+> **hierarchy** (`modules/*/module.py`), ligados/desligados em `config/modules.yaml` (reinicio);
+> (3) o schema de `issues.db` e `hierarchy.db` agora vem de **migracoes versionadas**
+> (`modules/*/migrations/`, tabela `schema_version`) — `core/db_init.py` e o auto-setup de
+> `hierarchy_db.py` foram removidos; (4) `projects.yaml` e acessado so pelo **ConfigStore**
+> (lock + escrita atomica + secoes por modulo); (5) estaticos servidos por **allowlist** (antes
+> qualquer arquivo da pasta, inclusive `.db`, era servido); (6) `mvp_slide/` removido; (7) suite
+> `tests/` (pytest). Novas rotas: `GET /api/platform/modules`, `/api/hierarchy/excluded-projects`
+> (a antiga `/api/settings/excluded-projects` segue como deprecated). Detalhes e plano:
+> [`ESTUDO_MODULARIZACAO.md`](ESTUDO_MODULARIZACAO.md).
 >
 > A **v2.6.2** aplicou uma **revisao ortografica (pt-BR)** nos textos de interface de todo o
 > `changelog_timeline` — acentuacao/grafia em titulos, subtitulos, labels, placeholders,
@@ -294,7 +307,9 @@ api.py (FastAPI + uvicorn) ---> Browser (HTML/JS/CSS)
 
 | Componente | Arquivo | Funcao |
 |-----------|---------|--------|
-| API Backend | `api.py` | FastAPI servindo endpoints REST + arquivos estaticos |
+| API Backend | `api.py` → `kernel/app_factory.py` | `api.py` so chama `create_app()`; o kernel carrega os modulos ligados (`config/modules.yaml`), inclui seus routers (`routers/*.py`), expoe `/api/platform/modules` e serve estaticos por allowlist (`kernel/static.py`) |
+| Modulos | `modules/flow/`, `modules/hierarchy/` | Manifest (`module.py`: routers, menu, `on_enable`, health), `migrations/` (schema versionado) e `config.py` (secao do `projects.yaml`) |
+| Config | `kernel/config_store.py` | Acesso ao `projects.yaml` com lock, escrita atomica, `.bak` e secoes por modulo (`projects` = flow; `hierarchy`, `excluded_projects` = hierarchy) |
 | Extrator Jira | `exporter_jira/export_jira.py` | Extrai issues e changelogs do Jira via API |
 | Cliente Jira | `exporter_jira/jira_client.py` | Conexao, autenticacao, paginacao, retry |
 | Mapper | `exporter_jira/jira_mapper.py` | Transforma payload bruto Jira em formato flat |
@@ -993,7 +1008,13 @@ JIRA_REQUEST_TIMEOUT_SECONDS=30
 
 ```
 changelog_timeline/
-├── api.py                    # Backend FastAPI (endpoints + sync)
+├── api.py                    # Ponto de entrada (uvicorn api:app): create_app()
+├── kernel/                   # module_base, registry, app_factory, migrations, config_store, static
+├── modules/                  # flow/ e hierarchy/: module.py + migrations/ + config.py + schema.py
+├── routers/                  # APIRouters por dominio (issues, projects, wave1..5, hierarchy_*...)
+├── core/db.py                # BASE_DIR, DB_PATH, get_db_connection, resolve_key
+├── config/modules.yaml       # Modulos ligados/desligados (reinicio)
+├── tests/                    # pytest: contrato OpenAPI, smoke, migracoes, kernel, config, estaticos
 ├── ingest_to_db.py           # Ingestao JSONL -> SQLite + orquestra metricas
 ├── run_pipeline.py           # Orquestrador CLI (legado)
 ├── projects.yaml             # Configuracao de projetos e pipelines
@@ -1377,9 +1398,9 @@ Um badge dinamico na nav bar mostra a contagem total de alertas em todas as pagi
 
 1. Criar pasta `metrics/wave2_NOME/`
 2. Criar `__init__.py` com `run_wave2(conn, only_keys)`
-3. Criar 1 arquivo .py por sub-metrica com `setup_table()` + `calculate_X()`
+3. Criar 1 arquivo .py por sub-metrica com `calculate_X()`; tabelas novas entram como **migracao** em `modules/flow/migrations/` (nao mais `CREATE TABLE` no codigo da metrica; `setup_table()` apenas delega para `ensure_flow_schema`)
 4. Registrar no `ingest_to_db.py`: `from metrics.wave2_NOME import run_wave2`
-5. Criar endpoints em `api.py`: `GET /api/metrics/wave2/*`
+5. Criar endpoints em um router de `routers/` (e listar o router em `modules/flow/module.py`): `GET /api/metrics/wave2/*`
 6. Criar `wave2.html/js/css` (flat na raiz)
 7. Adicionar link na navegacao
 8. Atualizar este DATASHEET
@@ -1390,7 +1411,7 @@ Um badge dinamico na nav bar mostra a contagem total de alertas em todas as pagi
 
 ### Indices de banco de dados
 
-O projeto cria indices automaticamente no `setup_db()` do `ingest_to_db.py`:
+Os indices sao criados pela migracao `modules/flow/migrations/001_baseline.sql` (aplicada no `on_enable` do modulo e no `setup_db()` do `ingest_to_db.py`):
 
 | Tabela | Indice | Proposito |
 |--------|--------|-----------|
@@ -1456,7 +1477,7 @@ Pipeline **completamente isolada** do projeto padrao. Extrai a hierarquia Jira (
 ```
 changelog_timeline/
 ├── hierarchy.db                      # Banco isolado
-├── hierarchy_db.py                   # Schema + setup (7 tabelas, 6 indices)
+├── hierarchy_db.py                   # Conexao do hierarchy.db; schema em modules/hierarchy/migrations/ (8 tabelas, 8 indices)
 ├── exporter_jira/
 │   └── export_hierarchy.py           # Extrator cascata (Iniciativa→Epico→Story→Subtask)
 ├── metrics/

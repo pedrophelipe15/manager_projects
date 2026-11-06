@@ -21,25 +21,9 @@ from datetime import datetime
 
 
 def setup_table(conn: sqlite3.Connection):
-    """Cria a tabela metrics_due_date_slippage se nao existir."""
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS metrics_due_date_slippage (
-            issue_key TEXT PRIMARY KEY,
-            project_key TEXT NOT NULL,
-            assignee_name TEXT,
-            reschedules INTEGER NOT NULL DEFAULT 0,
-            pushes INTEGER NOT NULL DEFAULT 0,
-            pulls INTEGER NOT NULL DEFAULT 0,
-            total_days_pushed INTEGER NOT NULL DEFAULT 0,
-            original_due TEXT,
-            current_due TEXT,
-            last_changed_at TEXT,
-            classification TEXT NOT NULL DEFAULT 'kept'
-        )
-    ''')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_slippage_project ON metrics_due_date_slippage(project_key)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_slippage_assignee ON metrics_due_date_slippage(assignee_name)')
-    conn.commit()
+    """Schema versionado em modules/flow/migrations (garante que está aplicado)."""
+    from modules.flow.schema import ensure_flow_schema
+    ensure_flow_schema(conn)
 
 
 def _parse_due(value: str | None) -> datetime | None:

@@ -25,8 +25,7 @@ Prompts e planos de evolução já executados ou propostos — mantidos para ras
 | `melhorias_v4.md` | Hierarquia Jira (iniciativas/épicos/visão executiva). |
 | `melhorias_v5.md` | Roadmap/Gantt simplificado. |
 | `melhorias_v6.md` | Rascunho: report copiável por assignee. |
-| `melhorias_v7.md` | Slide executivo data-driven (mvp_slide). |
 | `aba_arquivada_insights.md` | Ciclo arquivamento→reativação da aba Insights. |
 
-> READMEs de subpacotes (`exporter_jira/README.md`, `mvp_slide/README.md`) permanecem
+> READMEs de subpacotes (`exporter_jira/README.md`) permanecem
 > junto ao respectivo código, propositalmente.

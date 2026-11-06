@@ -12,7 +12,7 @@ async function init() {
 
 async function loadExcluded() {
     try {
-        const res = await fetch("/api/settings/excluded-projects");
+        const res = await fetch("/api/hierarchy/excluded-projects");
         const data = await res.json();
         renderExcluded(data.excluded_projects || []);
     } catch (err) {
@@ -41,7 +41,7 @@ async function addExcluded() {
     if (!key) return alert("Informe o project key (ex: PSDC).");
 
     try {
-        const res = await fetch("/api/settings/excluded-projects", {
+        const res = await fetch("/api/hierarchy/excluded-projects", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ key }),
@@ -68,7 +68,7 @@ async function deleteExcluded(key) {
     if (!confirm(`Reativar o projeto "${key}"? Ele voltará a ser consolidado e exibido.`)) return;
 
     try {
-        const res = await fetch(`/api/settings/excluded-projects/${encodeURIComponent(key)}`, { method: "DELETE" });
+        const res = await fetch(`/api/hierarchy/excluded-projects/${encodeURIComponent(key)}`, { method: "DELETE" });
         if (!res.ok) {
             const err = await res.json();
             alert(err.detail || "Erro ao remover.");

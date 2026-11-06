@@ -11,21 +11,9 @@ from ..changelog_cache import StatusTransitions
 
 
 def setup_table(conn: sqlite3.Connection):
-    """Cria tabela metrics_per_status se não existir."""
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS metrics_per_status (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            issue_key TEXT NOT NULL,
-            project_key TEXT NOT NULL,
-            status TEXT NOT NULL,
-            duration_ms INTEGER NOT NULL,
-            entered_at TEXT,
-            exited_at TEXT
-        )
-    ''')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_mps_project ON metrics_per_status(project_key)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_mps_issue ON metrics_per_status(issue_key)')
-    conn.commit()
+    """Schema versionado em modules/flow/migrations (garante que está aplicado)."""
+    from modules.flow.schema import ensure_flow_schema
+    ensure_flow_schema(conn)
 
 
 def calculate_time_per_status(

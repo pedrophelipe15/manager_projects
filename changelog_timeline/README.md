@@ -109,7 +109,6 @@ changelog_timeline/
 ├── metrics/               # Pacote de métricas (base, waves 1-4, insights, hierarquia)
 ├── exporter_jira/         # Extrator Jira (standalone) + .env
 ├── hierarchy/             # Páginas do módulo de hierarquia
-├── mvp_slide/             # Slide executivo por iniciativa
 │
 ├── *.html / *.js / *.css  # Páginas do dashboard (dashboard, wave1-4, insights, etc.)
 ├── mock_full_load.py      # Gera dados de demonstração

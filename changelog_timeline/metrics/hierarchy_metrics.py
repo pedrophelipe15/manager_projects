@@ -6,11 +6,9 @@ lendo h_changelogs e persistindo em h_metrics.
 
 from __future__ import annotations
 
-import os
 import sqlite3
 from datetime import datetime
 
-import yaml
 
 
 # Estados considerados "ativos" (issue está sendo trabalhada)
@@ -24,27 +22,20 @@ DONE_STATES = {"Done", "Resolved", "Canceled"}
 # é agregado a "Done". "Canceled" é contabilizado à parte (não é entrega).
 DONE_EQUIVALENT = {"Done", "Resolved"}
 
-# Caminho do projects.yaml (fonte da lista de projetos excluídos)
-_PROJECTS_YAML = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "projects.yaml"
-)
-
-
 def get_excluded_projects() -> list[str]:
     """Retorna os project_keys excluídos (uppercase) definidos em projects.yaml.
 
     Projetos excluídos não devem ser consolidados nos cálculos nem exibidos.
     O project_key é o prefixo da issue key antes do último hífen (ex: 'PSDC'
-    em 'PSDC-1404').
+    em 'PSDC-1404'). Lido via ConfigStore (seção do módulo hierarchy); arquivo
+    ausente ou inválido => lista vazia (comportamento anterior).
     """
-    if not os.path.exists(_PROJECTS_YAML):
-        return []
+    from kernel.config_store import ConfigError
+    from modules.hierarchy.config import load_excluded_raw
     try:
-        with open(_PROJECTS_YAML, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-    except (OSError, yaml.YAMLError):
+        raw = load_excluded_raw()
+    except (OSError, ConfigError):
         return []
-    raw = data.get("excluded_projects", []) or []
     return [str(k).strip().upper() for k in raw if str(k).strip()]
 
 

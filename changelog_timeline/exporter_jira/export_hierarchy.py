@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from jira_client import JiraClient
-from hierarchy_db import get_hierarchy_connection, HIERARCHY_DB_PATH
+from hierarchy_db import get_hierarchy_connection, HIERARCHY_DB_PATH, setup_hierarchy_db
 
 
 FIELDS_METADATA = "key,summary,status,project,assignee,issuetype,created,updated,resolutiondate,duedate,parent,labels,issuelinks"
@@ -139,9 +139,10 @@ def main():
         print("ERRO: Forneça --initiative ou --epics")
         sys.exit(1)
 
+    setup_hierarchy_db()  # garante o schema (antes era efeito colateral do import de hierarchy_db)
     client = JiraClient()
     start_time = time.time()
-    
+
     print("=" * 60)
     print("EXTRATOR HIERÁRQUICO")
     print("=" * 60)

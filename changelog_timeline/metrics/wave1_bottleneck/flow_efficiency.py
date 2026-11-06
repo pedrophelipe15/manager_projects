@@ -12,19 +12,9 @@ from ..changelog_cache import StatusTransitions
 
 
 def setup_table(conn: sqlite3.Connection):
-    """Cria tabela metrics_flow se não existir."""
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS metrics_flow (
-            issue_key TEXT PRIMARY KEY,
-            project_key TEXT NOT NULL,
-            work_time_ms INTEGER DEFAULT 0,
-            wait_time_ms INTEGER DEFAULT 0,
-            lead_time_ms INTEGER DEFAULT 0,
-            flow_efficiency REAL DEFAULT 0.0
-        )
-    ''')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_mf_project ON metrics_flow(project_key)')
-    conn.commit()
+    """Schema versionado em modules/flow/migrations (garante que está aplicado)."""
+    from modules.flow.schema import ensure_flow_schema
+    ensure_flow_schema(conn)
 
 
 def calculate_flow_efficiency(

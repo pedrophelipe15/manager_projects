@@ -5,7 +5,7 @@
 >
 > Este documento e a **fonte unica de verdade** para cores, tokens e uso visual
 > do tema executivo claro. Pode ser consumido por qualquer pagina do projeto
-> (MVP do slide executivo e futuras telas institucionais).
+> (futuras telas institucionais).
 >
 > Ha dois temas no projeto:
 > - **Tema Dashboard (escuro)** — `hierarchy/hierarchy.css`, usado nas telas operacionais.
@@ -184,7 +184,7 @@ Para KPIs no formato "numero · percentual" (ex.: `129 · 55%`):
 ## 7. Como reutilizar em outras partes do projeto
 
 1. Copiar o bloco CSS da secao 3 para um arquivo compartilhado (ex.:
-   `changelog_timeline/shared/executive-theme.css`) e importar onde precisar.
+   `changelog_timeline/shared/theme-executivo.css`) e importar onde precisar.
 2. Consumir SEMPRE os tokens semanticos (secao 2), nunca os hex crus.
 3. Se surgir uma nova cor necessaria, adicionar primeiro na paleta base (secao 1)
    e depois expor via token semantico — mantendo este documento como fonte unica.

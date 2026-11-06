@@ -100,6 +100,19 @@ JIRA_REQUEST_TIMEOUT_SECONDS=30
 
 > **Nunca commitar o `.env`.** Já está no `.gitignore`.
 
+### Testes
+
+```powershell
+cd changelog_timeline
+pip install -r requirements-dev.txt
+python -m pytest tests -q
+```
+
+Os testes usam bancos e `projects.yaml` temporários (variáveis `MANAGER_DB_PATH`,
+`MANAGER_HIERARCHY_DB_PATH`, `MANAGER_PROJECTS_YAML`); não tocam nos dados reais.
+Se mudar a API de propósito, regenere o snapshot: `set UPDATE_SNAPSHOT=1` e rode
+`pytest tests/test_openapi_contract.py`.
+
 ### Sincronização
 
 Via UI em `/settings.html` (botão "Atualizar") ou via CLI (ver DATASHEET).
@@ -111,7 +124,12 @@ Via UI em `/settings.html` (botão "Atualizar") ou via CLI (ver DATASHEET).
 ```
 manager_projects_v2/
 ├── changelog_timeline/       # Aplicação (backend + frontend + métricas)
-│   ├── api.py                # FastAPI: endpoints REST + estáticos
+│   ├── api.py                # FastAPI: monta app, middleware, routers e estáticos
+│   ├── core/                 # db.py (conexão issues.db)
+│   ├── kernel/               # registry de módulos, app factory, migrações
+│   ├── modules/              # manifests + migrations/ (schema versionado) de flow e hierarchy
+│   ├── config/modules.yaml   # módulos ligados/desligados
+│   ├── routers/              # um APIRouter por domínio (issues, projects, wave1..5, hierarchy_*)
 │   ├── ingest_to_db.py       # Ingestão JSONL → SQLite + orquestra métricas
 │   ├── metrics/              # Pacote de métricas (base, wave1..5, insights)
 │   ├── exporter_jira/        # Extrator do Jira

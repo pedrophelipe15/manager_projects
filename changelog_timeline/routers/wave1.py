@@ -1,9 +1,9 @@
 import sqlite3
 import sys
-import threading
 from fastapi import HTTPException
 from metrics.wave1_bottleneck.aging_wip import get_aging_wip
 from core.db import BASE_DIR, DB_PATH, get_db_connection
+from kernel.jobs import JobRunner
 from fastapi import APIRouter
 
 router = APIRouter()
@@ -338,30 +338,18 @@ def api_recalculate_wave1(project_key: str):
 
     conn.close()
 
-    # Verifica se já está rodando
-    with wave1_lock:
-        if wave1_state["running"]:
-            raise HTTPException(status_code=409, detail="Recálculo já em andamento")
-
-    # Inicia em background
-    thread = threading.Thread(target=_run_wave1_recalculate, args=(project_key,), daemon=True)
-    thread.start()
+    # Inicia em background (início atômico: 409 se já estiver rodando)
+    if not wave1_job.start(_run_wave1_recalculate, args=(project_key,), init={"project_key": project_key}):
+        raise HTTPException(status_code=409, detail="Recálculo já em andamento")
 
     return {"message": "Recálculo iniciado", "project_key": project_key}
 
 
-# Estado do recalculate Wave1
-wave1_state = {
-    "running": False,
-    "progress": [],
-    "project_key": None,
-}
+# Job do recálculo Wave 1 (estado/log/thread geridos pelo kernel.jobs)
+wave1_job = JobRunner("wave1_recalc", extras={"project_key": None})
 
 
-wave1_lock = threading.Lock()
-
-
-def _run_wave1_recalculate(project_key: str):
+def _run_wave1_recalculate(job: JobRunner, project_key: str):
     """Recalcula métricas em background com progresso detalhado."""
     import time as time_mod
     import sys
@@ -372,13 +360,6 @@ def _run_wave1_recalculate(project_key: str):
     from metrics.wave1_bottleneck.flow_efficiency import calculate_flow_efficiency, setup_table as setup_flow
     from metrics.wave1_bottleneck.cfd import calculate_cfd, setup_table as setup_cfd
 
-    global wave1_state
-
-    with wave1_lock:
-        wave1_state["running"] = True
-        wave1_state["progress"] = []
-        wave1_state["project_key"] = project_key
-
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.execute("PRAGMA journal_mode=WAL")
 
@@ -387,8 +368,7 @@ def _run_wave1_recalculate(project_key: str):
     cursor.execute("SELECT key FROM issues WHERE project_key = ?", (project_key,))
     keys = [r[0] for r in cursor.fetchall()]
 
-    with wave1_lock:
-        wave1_state["progress"].append(f"Projeto: {project_key} ({len(keys)} issues)")
+    job.log(f"Projeto: {project_key} ({len(keys)} issues)")
 
     steps = [
         ("Métricas base (lead/cycle time)", lambda: calc_base(conn, keys)),
@@ -401,19 +381,16 @@ def _run_wave1_recalculate(project_key: str):
 
     total = len(steps)
     for idx, (name, fn) in enumerate(steps, 1):
-        with wave1_lock:
-            wave1_state["progress"].append(f"[{idx}/{total}] {name}...")
+        job.log(f"[{idx}/{total}] {name}...")
 
         t0 = time_mod.time()
         try:
             result = fn()
             elapsed = round(time_mod.time() - t0, 1)
-            with wave1_lock:
-                wave1_state["progress"].append(f"  ✓ Concluído ({elapsed}s) — {result} registros")
+            job.log(f"  ✓ Concluído ({elapsed}s) — {result} registros")
         except Exception as e:
             elapsed = round(time_mod.time() - t0, 1)
-            with wave1_lock:
-                wave1_state["progress"].append(f"  ✗ Erro ({elapsed}s): {str(e)[:150]}")
+            job.log(f"  ✗ Erro ({elapsed}s): {str(e)[:150]}")
 
     conn.close()
 
@@ -428,9 +405,7 @@ def _run_wave1_recalculate(project_key: str):
     conn3.commit()
     conn3.close()
 
-    with wave1_lock:
-        wave1_state["progress"].append("Recálculo finalizado!")
-        wave1_state["running"] = False
+    job.log("Recálculo finalizado!")
 
 
 def _cleanup_orphans(conn):
@@ -445,12 +420,7 @@ def _cleanup_orphans(conn):
 @router.get("/api/metrics/wave1/recalculate/status")
 def api_recalculate_status():
     """Status do recálculo Wave 1 em andamento."""
-    with wave1_lock:
-        return {
-            "running": wave1_state["running"],
-            "project_key": wave1_state["project_key"],
-            "progress": list(wave1_state["progress"]),
-        }
+    return wave1_job.snapshot("running", "project_key", "progress")
 
 
 @router.get("/api/metrics/wave1/last-update")

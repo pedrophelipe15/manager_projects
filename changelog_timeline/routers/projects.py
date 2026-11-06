@@ -2,11 +2,11 @@ import os
 import sqlite3
 import subprocess
 import sys
-import threading
 from fastapi import HTTPException
 from pydantic import BaseModel
 from core.db import BASE_DIR, DB_PATH, get_db_connection
 from kernel.config_store import default_path
+from kernel.jobs import JobRunner
 from kernel.paths import EXPORTER_DIR
 from modules.flow.config import load_projects, update_projects
 from fastapi import APIRouter
@@ -25,21 +25,8 @@ PROJECTS_YAML = default_path()
 # EXPORTER_DIR vem de kernel.paths
 
 
-# Estado global de sincronização
-sync_state = {
-    "running": False,
-    "current_project": None,
-    "progress": [],  # lista de mensagens de log
-    "completed": [],  # projetos finalizados
-    "error": None,
-    "cancel_requested": False,
-}
-
-
-sync_lock = threading.Lock()
-
-
-sync_process: subprocess.Popen | None = None
+# Job de sincronização (estado, log, cancelamento e thread geridos pelo kernel.jobs)
+sync_job = JobRunner("sync", extras={"current_project": None, "completed": []})
 
 
 def _load_projects() -> list[dict]:
@@ -126,47 +113,41 @@ def _run_extraction(jql: str, output_dir: str, key: str) -> dict:
         return {"ok": False, "error": str(e)[:300]}
 
 
-def _run_sync(project_keys: list[str], mode: str = "delta"):
+def _run_sync(job: JobRunner, project_keys: list[str], mode: str = "delta"):
+    """Corpo do job de sync: garante que current_project é limpo mesmo se algo falhar."""
+    try:
+        _sync_projects(job, project_keys, mode)
+    finally:
+        job.set(current_project=None)
+
+
+def _sync_projects(job: JobRunner, project_keys: list[str], mode: str = "delta"):
     """Executa 1 extração unificada por projeto (JQLs combinadas)."""
     import sys
     import time as time_mod
     from datetime import datetime as dt
 
-    global sync_state
-
-    with sync_lock:
-        sync_state["running"] = True
-        sync_state["progress"] = []
-        sync_state["completed"] = []
-        sync_state["error"] = None
-        sync_state["current_project"] = None
-        sync_state["cancel_requested"] = False
-
     projects = _load_projects()
     if project_keys:
         projects = [p for p in projects if p.get("key") in project_keys]
 
-    with sync_lock:
-        sync_state["progress"].append(f"Iniciando sincronização de {len(projects)} projeto(s)...")
+    job.log(f"Iniciando sincronização de {len(projects)} projeto(s)...")
 
     for idx, project in enumerate(projects):
         # Verifica cancelamento
-        with sync_lock:
-            if sync_state["cancel_requested"]:
-                sync_state["progress"].append("Sincronização cancelada pelo usuário.")
-                break
+        if job.cancelled:
+            job.log("Sincronização cancelada pelo usuário.")
+            break
 
         key = project.get("key", "unknown")
         name = project.get("name", key)
         pipelines = project.get("pipelines", {})
 
-        with sync_lock:
-            sync_state["current_project"] = key
-            sync_state["progress"].append(f"\n[{idx+1}/{len(projects)}] {name} ({key})")
+        job.set(current_project=key)
+        job.log(f"\n[{idx+1}/{len(projects)}] {name} ({key})")
 
         if not pipelines:
-            with sync_lock:
-                sync_state["progress"].append(f"  AVISO: {key} sem pipelines definidas. Pulando.")
+            job.log(f"  AVISO: {key} sem pipelines definidas. Pulando.")
             continue
 
         # Registra início no banco
@@ -202,48 +183,41 @@ def _run_sync(project_keys: list[str], mode: str = "delta"):
                 pipeline_names.append(pipe.get("name", pipe_key))
 
         if not jql_parts:
-            with sync_lock:
-                sync_state["progress"].append(f"  AVISO: {key} sem JQLs válidas. Pulando.")
+            job.log(f"  AVISO: {key} sem JQLs válidas. Pulando.")
             _finish_sync_record(sync_id, start_time, 0, 0, 0, "error", "Nenhuma JQL válida")
             continue
 
         merged_jql = " OR ".join(jql_parts)
 
-        with sync_lock:
-            sync_state["progress"].append(f"  ├─ Extração unificada ({len(jql_parts)} pipelines: {', '.join(pipeline_names)})")
-            sync_state["progress"].append(f"  │    Extraindo issues...")
+        job.log(f"  ├─ Extração unificada ({len(jql_parts)} pipelines: {', '.join(pipeline_names)})")
+        job.log(f"  │    Extraindo issues...")
 
         # Verifica cancelamento antes da extração
-        with sync_lock:
-            if sync_state["cancel_requested"]:
-                sync_state["progress"].append("  Sincronização cancelada pelo usuário.")
-                _finish_sync_record(sync_id, start_time, 0, 0, 0, "cancelled", "Cancelado pelo usuário")
-                break
+        if job.cancelled:
+            job.log("  Sincronização cancelada pelo usuário.")
+            _finish_sync_record(sync_id, start_time, 0, 0, 0, "cancelled", "Cancelado pelo usuário")
+            break
 
         # Uma única extração com JQL combinada — elimina duplicatas automaticamente
         result = _run_extraction(merged_jql, project_output_dir, key)
 
         if not result["ok"]:
-            with sync_lock:
-                sync_state["progress"].append(f"  │    ERRO: {result['error'][:150]}")
+            job.log(f"  │    ERRO: {result['error'][:150]}")
             _finish_sync_record(sync_id, start_time, 0, 0, 0, "error", result["error"][:200])
             continue
 
         # Mostra info
         for line in result.get("info", []):
-            with sync_lock:
-                sync_state["progress"].append(f"  │    {line}")
+            job.log(f"  │    {line}")
 
-        with sync_lock:
-            sync_state["progress"].append(f"  │    ✓ Extração concluída")
+        job.log(f"  │    ✓ Extração concluída")
 
         # Fase de Ingestão (arquivos já estão no project_output_dir, sem necessidade de combinar)
-        with sync_lock:
-            if sync_state["cancel_requested"]:
-                sync_state["progress"].append("  Sincronização cancelada pelo usuário.")
-                _finish_sync_record(sync_id, start_time, 0, 0, 0, "cancelled", "Cancelado pelo usuário")
-                break
-            sync_state["progress"].append(f"  └─ Ingestão no banco...")
+        if job.cancelled:
+            job.log("  Sincronização cancelada pelo usuário.")
+            _finish_sync_record(sync_id, start_time, 0, 0, 0, "cancelled", "Cancelado pelo usuário")
+            break
+        job.log(f"  └─ Ingestão no banco...")
 
         # Executa ingestão
         exclude_statuses = project.get("exclude_statuses", [])
@@ -259,20 +233,17 @@ def _run_sync(project_keys: list[str], mode: str = "delta"):
         try:
             result = subprocess.run(cmd_ingest, cwd=BASE_DIR, capture_output=True, text=True, timeout=600)
             if result.returncode != 0:
-                with sync_lock:
-                    sync_state["progress"].append(f"  ERRO na ingestão: {result.stderr[:200]}")
+                job.log(f"  ERRO na ingestão: {result.stderr[:200]}")
                 _finish_sync_record(sync_id, start_time, 0, 0, 0, "error", result.stderr[:200])
                 continue
 
             for line in result.stdout.strip().split("\n"):
                 line = line.strip()
                 if "inseridas" in line or "inseridos" in line or "calculadas" in line:
-                    with sync_lock:
-                        sync_state["progress"].append(f"     {line}")
+                    job.log(f"     {line}")
 
         except Exception as e:
-            with sync_lock:
-                sync_state["progress"].append(f"  ERRO ingestão: {str(e)[:200]}")
+            job.log(f"  ERRO ingestão: {str(e)[:200]}")
             _finish_sync_record(sync_id, start_time, 0, 0, 0, "error", str(e)[:200])
             continue
 
@@ -295,14 +266,11 @@ def _run_sync(project_keys: list[str], mode: str = "delta"):
         _finish_sync_record(sync_id, start_time, issues_inserted, max(0, issues_updated), changelogs_count, "success", None)
 
         elapsed = round(time_mod.time() - start_time, 1)
-        with sync_lock:
-            sync_state["completed"].append(key)
-            sync_state["progress"].append(f"  ✓ {key} concluído! ({elapsed}s) — {issues_inserted} novos, {issues_updated} atualizados")
+        job.add("completed", key)
+        job.log(f"  ✓ {key} concluído! ({elapsed}s) — {issues_inserted} novos, {issues_updated} atualizados")
 
-    with sync_lock:
-        sync_state["running"] = False
-        sync_state["current_project"] = None
-        sync_state["progress"].append("\nPipeline finalizada.")
+    job.set(current_project=None)
+    job.log("\nPipeline finalizada.")
 
 
 @router.get("/api/settings/projects")
@@ -536,13 +504,10 @@ class SyncRequest(BaseModel):
 @router.post("/api/settings/projects/sync")
 def start_sync(req: SyncRequest):
     """Inicia sincronização em background."""
-    if sync_state["running"]:
-        raise HTTPException(status_code=409, detail="Sincronização já em andamento")
-
     keys = req.project_keys or []
     mode = req.mode if req.mode in ("full", "delta") else "delta"
-    thread = threading.Thread(target=_run_sync, args=(keys, mode), daemon=True)
-    thread.start()
+    if not sync_job.start(_run_sync, args=(keys, mode)):  # início atômico
+        raise HTTPException(status_code=409, detail="Sincronização já em andamento")
 
     return {"message": "Sincronização iniciada", "project_keys": keys or "todos", "mode": mode}
 
@@ -550,21 +515,12 @@ def start_sync(req: SyncRequest):
 @router.get("/api/settings/projects/sync/status")
 def get_sync_status():
     """Retorna status da sincronização em andamento."""
-    with sync_lock:
-        return {
-            "running": sync_state["running"],
-            "current_project": sync_state["current_project"],
-            "progress": list(sync_state["progress"]),
-            "completed": list(sync_state["completed"]),
-        }
+    return sync_job.snapshot("running", "current_project", "progress", "completed")
 
 
 @router.post("/api/settings/projects/sync/cancel")
 def cancel_sync():
     """Solicita cancelamento da sincronização em andamento."""
-    with sync_lock:
-        if not sync_state["running"]:
-            raise HTTPException(status_code=400, detail="Nenhuma sincronização em andamento")
-        sync_state["cancel_requested"] = True
-        sync_state["progress"].append("Cancelamento solicitado. Aguardando finalização da etapa atual...")
+    if not sync_job.request_cancel("Cancelamento solicitado. Aguardando finalização da etapa atual..."):
+        raise HTTPException(status_code=400, detail="Nenhuma sincronização em andamento")
     return {"message": "Cancelamento solicitado"}

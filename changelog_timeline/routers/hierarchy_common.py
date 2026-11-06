@@ -1,4 +1,4 @@
-import threading
+from kernel.jobs import JobRunner
 from modules.hierarchy.config import load_entries
 from fastapi import APIRouter
 
@@ -10,15 +10,8 @@ router = APIRouter()
 # =============================================================================
 
 
-# Estado global de sync hierárquica
-hierarchy_sync_state = {
-    "running": False,
-    "progress": [],
-    "error": None,
-}
-
-
-hierarchy_sync_lock = threading.Lock()
+# Job da sync hierárquica (estado/log/thread geridos pelo kernel.jobs)
+hierarchy_sync_job = JobRunner("hierarchy_sync")
 
 
 def _load_hierarchy_config() -> list[dict]:

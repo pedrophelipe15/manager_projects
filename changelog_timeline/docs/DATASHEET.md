@@ -1,6 +1,13 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.8.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+> **Versao:** v2.9.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+>
+> A **v2.9.0** unificou os jobs em background no **`kernel/jobs.py` (JobRunner)**: sync do flow
+> (`/api/settings/projects/sync*`), recalculo Wave 1 (`/api/metrics/wave1/recalculate*`) e sync da
+> hierarquia (`/api/hierarchy/sync*`) usam o mesmo mecanismo (estado, log, cancelamento). O formato
+> das respostas de status nao mudou. Correcoes: o inicio do job e atomico (dois POSTs simultaneos
+> nao iniciam dois jobs), `running` ja e verdadeiro na resposta do POST e uma excecao inesperada
+> nao deixa mais o job preso em "rodando" (antes so reiniciando o servidor).
 >
 > A **v2.8.0** (fases 4-5 da modularizacao): codigo compartilhado foi para `kernel/`
 > (`shared/`, `jira/`, `paths.py`) e as fronteiras entre modulos passaram a ser verificadas

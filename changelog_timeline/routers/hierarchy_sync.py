@@ -1,11 +1,11 @@
 import os
 import subprocess
 import sys
-import threading
 from fastapi import HTTPException
 from modules.hierarchy.db import get_hierarchy_connection
 from metrics.hierarchy_metrics import calculate_hierarchy_metrics
-from routers.hierarchy_common import _load_hierarchy_config, hierarchy_sync_lock, hierarchy_sync_state
+from routers.hierarchy_common import _load_hierarchy_config, hierarchy_sync_job
+from kernel.jobs import JobRunner
 from kernel.paths import EXPORTER_DIR
 from fastapi import APIRouter
 
@@ -24,9 +24,8 @@ def start_hierarchy_sync(initiative_key: str | None = None, epic_keys: str | Non
     
     Se nenhum parâmetro for passado, usa a configuração do projects.yaml.
     """
-    with hierarchy_sync_lock:
-        if hierarchy_sync_state["running"]:
-            raise HTTPException(status_code=409, detail="Sincronização hierárquica já em andamento")
+    if hierarchy_sync_job.running:  # resposta rápida; o início atômico (abaixo) é a garantia real
+        raise HTTPException(status_code=409, detail="Sincronização hierárquica já em andamento")
 
     # Determina o que sincronizar
     if not initiative_key and not epic_keys:
@@ -35,12 +34,8 @@ def start_hierarchy_sync(initiative_key: str | None = None, epic_keys: str | Non
         if not config:
             raise HTTPException(status_code=400, detail="Nenhuma hierarquia configurada em projects.yaml e nenhum parâmetro fornecido")
 
-    thread = threading.Thread(
-        target=_run_hierarchy_sync,
-        args=(initiative_key, epic_keys),
-        daemon=True,
-    )
-    thread.start()
+    if not hierarchy_sync_job.start(_run_hierarchy_sync, args=(initiative_key, epic_keys)):
+        raise HTTPException(status_code=409, detail="Sincronização hierárquica já em andamento")
 
     return {
         "message": "Sincronização hierárquica iniciada",
@@ -52,12 +47,7 @@ def start_hierarchy_sync(initiative_key: str | None = None, epic_keys: str | Non
 @router.get("/api/hierarchy/sync/status")
 def get_hierarchy_sync_status():
     """Retorna status da sincronização hierárquica em andamento."""
-    with hierarchy_sync_lock:
-        return {
-            "running": hierarchy_sync_state["running"],
-            "progress": list(hierarchy_sync_state["progress"]),
-            "error": hierarchy_sync_state["error"],
-        }
+    return hierarchy_sync_job.snapshot("running", "progress", "error")
 
 
 @router.get("/api/hierarchy/last-sync")
@@ -79,16 +69,11 @@ def get_hierarchy_last_sync():
     return {"last_sync": dict(row)}
 
 
-def _run_hierarchy_sync(initiative_key: str | None, epic_keys: str | None):
+def _run_hierarchy_sync(job: JobRunner, initiative_key: str | None, epic_keys: str | None):
     """Executa a sincronização hierárquica em background."""
     import sys
     import time as time_mod
     from datetime import datetime as dt
-
-    with hierarchy_sync_lock:
-        hierarchy_sync_state["running"] = True
-        hierarchy_sync_state["progress"] = []
-        hierarchy_sync_state["error"] = None
 
     start_time = time_mod.time()
 
@@ -98,12 +83,10 @@ def _run_hierarchy_sync(initiative_key: str | None, epic_keys: str | None):
 
         if initiative_key:
             cmd.extend(["--initiative", initiative_key])
-            with hierarchy_sync_lock:
-                hierarchy_sync_state["progress"].append(f"Iniciando extração para iniciativa: {initiative_key}")
+            job.log(f"Iniciando extração para iniciativa: {initiative_key}")
         elif epic_keys:
             cmd.extend(["--epics", epic_keys])
-            with hierarchy_sync_lock:
-                hierarchy_sync_state["progress"].append(f"Iniciando extração para épicos: {epic_keys}")
+            job.log(f"Iniciando extração para épicos: {epic_keys}")
         else:
             # Usa configuração do projects.yaml
             config = _load_hierarchy_config()
@@ -114,91 +97,70 @@ def _run_hierarchy_sync(initiative_key: str | None, epic_keys: str | None):
             if initiatives:
                 # Executa para cada iniciativa
                 for ini_key in initiatives:
-                    with hierarchy_sync_lock:
-                        hierarchy_sync_state["progress"].append(f"Extraindo iniciativa: {ini_key}")
+                    job.log(f"Extraindo iniciativa: {ini_key}")
                     _exec_hierarchy_extraction(["--initiative", ini_key])
 
                 # Se também tem épicos avulsos, executa em batch
                 if epics:
-                    with hierarchy_sync_lock:
-                        hierarchy_sync_state["progress"].append(f"Extraindo épicos: {','.join(epics)}")
+                    job.log(f"Extraindo épicos: {','.join(epics)}")
                     _exec_hierarchy_extraction(["--epics", ",".join(epics)])
 
                 # Calcula métricas
-                with hierarchy_sync_lock:
-                    hierarchy_sync_state["progress"].append("Calculando métricas (lead/cycle time)...")
+                job.log("Calculando métricas (lead/cycle time)...")
                 conn = get_hierarchy_connection()
                 count = calculate_hierarchy_metrics(conn)
                 conn.close()
-                with hierarchy_sync_lock:
-                    hierarchy_sync_state["progress"].append(f"  ✓ {count} métricas calculadas")
+                job.log(f"  ✓ {count} métricas calculadas")
 
                 # Registra sucesso
                 _record_hierarchy_sync(start_time, "success", None)
 
-                with hierarchy_sync_lock:
-                    elapsed = round(time_mod.time() - start_time, 1)
-                    hierarchy_sync_state["progress"].append(f"Sincronização hierárquica concluída ({elapsed}s)")
-                    hierarchy_sync_state["running"] = False
+                elapsed = round(time_mod.time() - start_time, 1)
+                job.log(f"Sincronização hierárquica concluída ({elapsed}s)")
                 return
 
             elif epics:
                 cmd.extend(["--epics", ",".join(epics)])
-                with hierarchy_sync_lock:
-                    hierarchy_sync_state["progress"].append(f"Extraindo épicos do config: {','.join(epics)}")
+                job.log(f"Extraindo épicos do config: {','.join(epics)}")
             else:
-                with hierarchy_sync_lock:
-                    hierarchy_sync_state["error"] = "Nenhuma hierarquia configurada"
-                    hierarchy_sync_state["running"] = False
+                job.set(error="Nenhuma hierarquia configurada")
                 return
 
         # Execução direta (initiative_key ou epic_keys fornecidos como parâmetro)
-        with hierarchy_sync_lock:
-            hierarchy_sync_state["progress"].append("Executando extrator hierárquico...")
+        job.log("Executando extrator hierárquico...")
 
         result = subprocess.run(cmd, cwd=EXPORTER_DIR, capture_output=True, text=True, timeout=600)
 
         if result.returncode != 0:
-            with hierarchy_sync_lock:
-                hierarchy_sync_state["progress"].append(f"ERRO: {result.stderr[:300]}")
-                hierarchy_sync_state["error"] = result.stderr[:300]
-                hierarchy_sync_state["running"] = False
+            job.log(f"ERRO: {result.stderr[:300]}")
+            job.set(error=result.stderr[:300])
             _record_hierarchy_sync(start_time, "error", result.stderr[:200])
             return
 
         # Log do output
         for line in result.stdout.strip().split("\n")[-15:]:
-            with hierarchy_sync_lock:
-                hierarchy_sync_state["progress"].append(f"  {line.strip()}")
+            job.log(f"  {line.strip()}")
 
         # Calcula métricas
-        with hierarchy_sync_lock:
-            hierarchy_sync_state["progress"].append("Calculando métricas (lead/cycle time)...")
+        job.log("Calculando métricas (lead/cycle time)...")
         conn = get_hierarchy_connection()
         count = calculate_hierarchy_metrics(conn)
         conn.close()
-        with hierarchy_sync_lock:
-            hierarchy_sync_state["progress"].append(f"  ✓ {count} métricas calculadas")
+        job.log(f"  ✓ {count} métricas calculadas")
 
         _record_hierarchy_sync(start_time, "success", None)
 
         elapsed = round(time_mod.time() - start_time, 1)
-        with hierarchy_sync_lock:
-            hierarchy_sync_state["progress"].append(f"Sincronização hierárquica concluída ({elapsed}s)")
-            hierarchy_sync_state["running"] = False
+        job.log(f"Sincronização hierárquica concluída ({elapsed}s)")
 
     except subprocess.TimeoutExpired:
-        with hierarchy_sync_lock:
-            hierarchy_sync_state["progress"].append("ERRO: Timeout (>10min)")
-            hierarchy_sync_state["error"] = "Timeout"
-            hierarchy_sync_state["running"] = False
+        job.log("ERRO: Timeout (>10min)")
+        job.set(error="Timeout")
         _record_hierarchy_sync(start_time, "error", "Timeout")
 
     except Exception as e:
-        with hierarchy_sync_lock:
-            hierarchy_sync_state["progress"].append(f"ERRO: {str(e)[:300]}")
-            hierarchy_sync_state["error"] = str(e)[:200]
-            hierarchy_sync_state["running"] = False
+        job.log(f"ERRO: {str(e)[:300]}")
+        job.set(error=str(e)[:200])
         _record_hierarchy_sync(start_time, "error", str(e)[:200])
 
 

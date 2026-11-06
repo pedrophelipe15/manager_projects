@@ -1,7 +1,7 @@
 import json as _json
 from fastapi import HTTPException
-from hierarchy_db import get_hierarchy_connection
-from metrics.constants import ACTIVE_STATES
+from modules.hierarchy.db import get_hierarchy_connection
+from kernel.shared.constants import ACTIVE_STATES
 from fastapi import APIRouter
 
 router = APIRouter()

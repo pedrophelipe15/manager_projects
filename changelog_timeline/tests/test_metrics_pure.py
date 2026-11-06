@@ -1,11 +1,11 @@
 """Testes unitarios das funcoes puras compartilhadas (metrics/)."""
 import random
 
-from metrics.constants import (
+from kernel.shared.constants import (
     ACTIVE_STATES, WIP_ACTIVE_STATES, is_backward_transition,
 )
-from metrics.forecast_core import MAX_WEEKS, percentile_from_sorted, simulate_completion_weeks
-from metrics.timeutils import week_to_date_range
+from kernel.shared.forecast_core import MAX_WEEKS, percentile_from_sorted, simulate_completion_weeks
+from kernel.shared.timeutils import week_to_date_range
 
 
 def test_week_to_date_range_iso():

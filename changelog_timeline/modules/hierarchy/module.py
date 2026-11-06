@@ -16,7 +16,7 @@ def _on_enable():
 
 def _health():
     import os
-    from hierarchy_db import HIERARCHY_DB_PATH
+    from modules.hierarchy.db import HIERARCHY_DB_PATH
     return os.path.exists(HIERARCHY_DB_PATH), HIERARCHY_DB_PATH
 
 

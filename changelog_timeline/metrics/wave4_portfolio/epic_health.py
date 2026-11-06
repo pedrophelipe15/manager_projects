@@ -9,7 +9,7 @@ import sqlite3
 from collections import defaultdict
 from datetime import datetime
 
-from ..forecast_core import simulate_completion_weeks, percentile_from_sorted
+from kernel.shared.forecast_core import simulate_completion_weeks, percentile_from_sorted
 
 
 def get_epic_health(conn: sqlite3.Connection, project_key: str) -> dict:

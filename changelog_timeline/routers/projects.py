@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from core.db import BASE_DIR, DB_PATH, get_db_connection
 from kernel.config_store import default_path
+from kernel.paths import EXPORTER_DIR
 from modules.flow.config import load_projects, update_projects
 from fastapi import APIRouter
 
@@ -21,7 +22,7 @@ router = APIRouter()
 PROJECTS_YAML = default_path()
 
 
-EXPORTER_DIR = os.path.join(BASE_DIR, "exporter_jira")
+# EXPORTER_DIR vem de kernel.paths
 
 
 # Estado global de sincronização

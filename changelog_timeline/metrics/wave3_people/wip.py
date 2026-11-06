@@ -8,7 +8,7 @@ from __future__ import annotations
 import sqlite3
 from collections import defaultdict
 
-from ..constants import WIP_ACTIVE_STATES as ACTIVE_STATES
+from kernel.shared.constants import WIP_ACTIVE_STATES as ACTIVE_STATES
 
 
 def get_wip_per_person(conn: sqlite3.Connection, project_key: str) -> dict:

@@ -1,6 +1,6 @@
 import json as _json
 from fastapi import HTTPException
-from hierarchy_db import get_hierarchy_connection
+from modules.hierarchy.db import get_hierarchy_connection
 from metrics.hierarchy_metrics import get_all_epics_health
 from metrics.hierarchy_metrics import get_all_initiatives_health
 from metrics.hierarchy_metrics import get_dashboard_v2_data

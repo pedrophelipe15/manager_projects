@@ -259,7 +259,7 @@ def recalculate_hierarchy_metrics_for_keys(
 from collections import defaultdict
 from datetime import timedelta
 
-from .forecast_core import simulate_completion_weeks, percentile_from_sorted
+from kernel.shared.forecast_core import simulate_completion_weeks, percentile_from_sorted
 
 
 def get_epic_weekly_throughput(conn: sqlite3.Connection, epic_key: str, weeks: int = 12) -> list[dict]:

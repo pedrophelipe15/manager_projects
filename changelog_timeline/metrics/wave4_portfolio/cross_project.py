@@ -8,7 +8,7 @@ import sqlite3
 from collections import defaultdict
 from datetime import datetime
 
-from ..timeutils import week_to_date_range
+from kernel.shared.timeutils import week_to_date_range
 
 
 def get_cross_project_throughput(conn: sqlite3.Connection, weeks: int = 26, allowed_keys: list[str] | None = None) -> dict:

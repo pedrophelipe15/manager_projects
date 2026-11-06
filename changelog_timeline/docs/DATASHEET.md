@@ -8,7 +8,7 @@
 > **hierarchy** (`modules/*/module.py`), ligados/desligados em `config/modules.yaml` (reinicio);
 > (3) o schema de `issues.db` e `hierarchy.db` agora vem de **migracoes versionadas**
 > (`modules/*/migrations/`, tabela `schema_version`) — `core/db_init.py` e o auto-setup de
-> `hierarchy_db.py` foram removidos; (4) `projects.yaml` e acessado so pelo **ConfigStore**
+> `hierarchy_db.py` foram removidos (esse arquivo hoje e `modules/hierarchy/db.py`); (4) `projects.yaml` e acessado so pelo **ConfigStore**
 > (lock + escrita atomica + secoes por modulo); (5) estaticos servidos por **allowlist** (antes
 > qualquer arquivo da pasta, inclusive `.db`, era servido); (6) `mvp_slide/` removido; (7) suite
 > `tests/` (pytest). Novas rotas: `GET /api/platform/modules`, `/api/hierarchy/excluded-projects`
@@ -311,8 +311,10 @@ api.py (FastAPI + uvicorn) ---> Browser (HTML/JS/CSS)
 | Modulos | `modules/flow/`, `modules/hierarchy/` | Manifest (`module.py`: routers, menu, `on_enable`, health), `migrations/` (schema versionado) e `config.py` (secao do `projects.yaml`) |
 | Config | `kernel/config_store.py` | Acesso ao `projects.yaml` com lock, escrita atomica, `.bak` e secoes por modulo (`projects` = flow; `hierarchy`, `excluded_projects` = hierarchy) |
 | Extrator Jira | `exporter_jira/export_jira.py` | Extrai issues e changelogs do Jira via API |
-| Cliente Jira | `exporter_jira/jira_client.py` | Conexao, autenticacao, paginacao, retry |
-| Mapper | `exporter_jira/jira_mapper.py` | Transforma payload bruto Jira em formato flat |
+| Cliente Jira | `kernel/jira/jira_client.py` | Conexao, autenticacao, paginacao, retry (compartilhado; credenciais em `exporter_jira/.env`) |
+| Mapper | `kernel/jira/jira_mapper.py` | Transforma payload bruto Jira em formato flat |
+| Codigo compartilhado | `kernel/shared/` | `constants` (estados ativos, ordem de status), `timeutils`, `forecast_core` (Monte Carlo) — usados por flow e hierarchy |
+| Fronteiras | `.importlinter` + `tests/test_architecture.py` | Contratos: kernel nao importa modulos; flow e hierarchy nao se importam |
 | Ingestao | `ingest_to_db.py` | Le JSONL, popula SQLite, orquestra calculo de metricas |
 | Metricas Base | `metrics/base.py` | Calcula lead time e cycle time |
 | Wave 1 | `metrics/wave1_bottleneck/` | 5 sub-metricas de gargalo e fluxo |
@@ -1078,9 +1080,7 @@ changelog_timeline/
 │
 ├── exporter_jira/            # Modulo de extracao do Jira
 │   ├── export_jira.py        # CLI principal de extracao
-│   ├── jira_client.py        # Cliente Jira (auth, paginacao, retry)
-│   ├── jira_mapper.py        # Mapeamento de campos
-│   ├── jira_comments.py      # Normalizacao de comentarios
+│   │                         # (jira_client/jira_mapper/jira_comments agora em kernel/jira/)
 │   ├── .env                  # Credenciais (NAO commitar)
 │   └── requirements.txt      # Dependencias do extrator
 │
@@ -1477,7 +1477,7 @@ Pipeline **completamente isolada** do projeto padrao. Extrai a hierarquia Jira (
 ```
 changelog_timeline/
 ├── hierarchy.db                      # Banco isolado
-├── hierarchy_db.py                   # Conexao do hierarchy.db; schema em modules/hierarchy/migrations/ (8 tabelas, 8 indices)
+├── modules/hierarchy/db.py           # Conexao do hierarchy.db (antes hierarchy_db.py); schema em modules/hierarchy/migrations/ (8 tabelas, 8 indices)
 ├── exporter_jira/
 │   └── export_hierarchy.py           # Extrator cascata (Iniciativa→Epico→Story→Subtask)
 ├── metrics/

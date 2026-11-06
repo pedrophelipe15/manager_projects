@@ -8,10 +8,10 @@ from __future__ import annotations
 import os
 import sqlite3
 
+from kernel.paths import BASE_DIR
+
 # MANAGER_HIERARCHY_DB_PATH permite apontar para outro banco (ex.: testes); default inalterado.
-HIERARCHY_DB_PATH = os.environ.get("MANAGER_HIERARCHY_DB_PATH") or os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "hierarchy.db"
-)
+HIERARCHY_DB_PATH = os.environ.get("MANAGER_HIERARCHY_DB_PATH") or os.path.join(BASE_DIR, "hierarchy.db")
 
 
 def get_hierarchy_connection() -> sqlite3.Connection:

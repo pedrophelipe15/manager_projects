@@ -11,7 +11,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 from .engine import InsightsEngine, Insight
-from ..timeutils import week_to_date_range
+from kernel.shared.timeutils import week_to_date_range
 
 
 def register_flow_rules(engine: InsightsEngine) -> None:

@@ -12,6 +12,11 @@ import requests
 from requests.exceptions import ConnectionError, Timeout
 from dotenv import load_dotenv
 
+from kernel.paths import EXPORTER_DIR
+
+# Credenciais: local oficial é exporter_jira/.env; depois o fallback padrão (.env em pastas acima).
+# (antes o arquivo morava junto do módulo e load_dotenv() o achava pelo caminho dele)
+load_dotenv(os.path.join(EXPORTER_DIR, ".env"))
 load_dotenv()
 
 JIRA_BASE_URL = os.getenv("JIRA_BASE_URL", "").strip('"')

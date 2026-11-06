@@ -8,7 +8,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timedelta
 
-from ..constants import is_backward_transition
+from kernel.shared.constants import is_backward_transition
 
 
 def get_benchmarking(conn: sqlite3.Connection, allowed_keys: list[str] | None = None) -> dict:

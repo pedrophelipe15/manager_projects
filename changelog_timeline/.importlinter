@@ -1,0 +1,96 @@
+[importlinter]
+root_packages =
+    kernel
+    core
+    routers
+    metrics
+    modules
+include_external_packages = False
+
+# --- 1. O kernel nunca depende de módulo (nem de código de módulo) -------------------
+[importlinter:contract:kernel-independente]
+name = kernel nao importa codigo de modulos
+type = forbidden
+source_modules =
+    kernel
+forbidden_modules =
+    core
+    routers
+    metrics
+    modules
+
+# --- 2. Módulos não se importam entre si (um contrato por sentido) --------------------
+# Fase 8 moverá routers/metrics para modules/<id>/; até lá, cada módulo é a união dos
+# arquivos que lhe pertencem. Código compartilhado mora em kernel/ (kernel.shared, kernel.jira).
+# Ao criar um módulo novo: adicione os arquivos dele aqui (em source e nos forbidden dos outros).
+[importlinter:contract:flow-nao-importa-hierarchy]
+name = flow nao importa hierarchy
+type = forbidden
+source_modules =
+    routers.blacklist
+    routers.issues
+    routers.projects
+    routers.purge
+    routers.validations
+    routers.inconsistencies
+    routers.wave1
+    routers.insights
+    routers.wave2
+    routers.wave3
+    routers.wave4
+    routers.wave5
+    routers.home
+    metrics.base
+    metrics.changelog_cache
+    metrics.wave1_bottleneck
+    metrics.wave2_predictability
+    metrics.wave3_people
+    metrics.wave4_portfolio
+    metrics.wave5_commitment
+    metrics.insights
+    modules.flow
+    core
+forbidden_modules =
+    routers.hierarchy_common
+    routers.hierarchy_config
+    routers.hierarchy_tree
+    routers.hierarchy_sync
+    routers.hierarchy_health
+    metrics.hierarchy_metrics
+    modules.hierarchy
+
+[importlinter:contract:hierarchy-nao-importa-flow]
+name = hierarchy nao importa flow
+type = forbidden
+source_modules =
+    routers.hierarchy_common
+    routers.hierarchy_config
+    routers.hierarchy_tree
+    routers.hierarchy_sync
+    routers.hierarchy_health
+    metrics.hierarchy_metrics
+    modules.hierarchy
+forbidden_modules =
+    routers.blacklist
+    routers.issues
+    routers.projects
+    routers.purge
+    routers.validations
+    routers.inconsistencies
+    routers.wave1
+    routers.insights
+    routers.wave2
+    routers.wave3
+    routers.wave4
+    routers.wave5
+    routers.home
+    metrics.base
+    metrics.changelog_cache
+    metrics.wave1_bottleneck
+    metrics.wave2_predictability
+    metrics.wave3_people
+    metrics.wave4_portfolio
+    metrics.wave5_commitment
+    metrics.insights
+    modules.flow
+    core

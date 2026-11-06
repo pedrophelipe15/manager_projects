@@ -9,7 +9,7 @@ from fastapi import APIRouter, FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from core.db import BASE_DIR
+from kernel.paths import BASE_DIR
 from kernel.registry import Registry, load_config
 from kernel.static import SafeStaticFiles
 

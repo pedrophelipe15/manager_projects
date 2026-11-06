@@ -32,7 +32,7 @@ class ConfigError(Exception):
 
 
 def default_path() -> str:
-    from core.db import BASE_DIR
+    from kernel.paths import BASE_DIR
     return os.environ.get("MANAGER_PROJECTS_YAML") or os.path.join(BASE_DIR, "projects.yaml")
 
 

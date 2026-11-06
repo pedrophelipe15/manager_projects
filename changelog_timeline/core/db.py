@@ -3,7 +3,7 @@ import os
 import sqlite3
 
 # core/ fica um nivel abaixo da raiz da aplicacao
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from kernel.paths import BASE_DIR  # noqa: F401 (re-export)
 # MANAGER_DB_PATH permite apontar para outro banco (ex.: testes); default inalterado.
 DB_PATH = os.environ.get("MANAGER_DB_PATH") or os.path.join(BASE_DIR, "issues.db")
 

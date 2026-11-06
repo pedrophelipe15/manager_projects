@@ -8,7 +8,7 @@ import sqlite3
 from datetime import datetime
 
 from .changelog_cache import StatusTransitions
-from .constants import ACTIVE_STATES
+from kernel.shared.constants import ACTIVE_STATES
 
 
 def calculate_metrics(

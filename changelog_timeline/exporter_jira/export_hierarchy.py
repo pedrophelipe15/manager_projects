@@ -27,8 +27,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-from jira_client import JiraClient
-from hierarchy_db import get_hierarchy_connection, HIERARCHY_DB_PATH, setup_hierarchy_db
+from kernel.jira.jira_client import JiraClient
+from modules.hierarchy.db import get_hierarchy_connection, HIERARCHY_DB_PATH, setup_hierarchy_db
 
 
 FIELDS_METADATA = "key,summary,status,project,assignee,issuetype,created,updated,resolutiondate,duedate,parent,labels,issuelinks"

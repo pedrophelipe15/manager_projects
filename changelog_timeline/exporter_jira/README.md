@@ -27,9 +27,9 @@ Processo de extração de dados do Jira desacoplado do projeto principal, pronto
 
 - `export_jira.py`: CLI principal (extração de issues + changelog/comentários → JSONL)
 - `export_hierarchy.py`: extração hierárquica em cascata (Iniciativa → Épico → Story → Sub-task) que persiste direto no `hierarchy.db`
-- `jira_client.py`: cliente HTTP Jira (paginação por cursor, retry com backoff, pausa em 429)
-- `jira_mapper.py`: mapeamento de campos (inclui `extract_text_from_adf`, reutilizado por comentários)
-- `jira_comments.py`: normalização de comentários (delega a extração de texto ADF ao `jira_mapper`)
+- `../kernel/jira/jira_client.py`: cliente HTTP Jira (paginação por cursor, retry com backoff, pausa em 429) — **movido para o kernel** (compartilhado por todos os módulos); continua lendo as credenciais de `exporter_jira/.env`
+- `../kernel/jira/jira_mapper.py`: mapeamento de campos (inclui `extract_text_from_adf`, reutilizado por comentários)
+- `../kernel/jira/jira_comments.py`: normalização de comentários (delega a extração de texto ADF ao `jira_mapper`)
 - `.env.example`: variáveis de ambiente
 - `requirements.txt`: dependências do pacote (`requests`, `python-dotenv`)
 

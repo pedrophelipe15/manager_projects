@@ -8,7 +8,7 @@ from __future__ import annotations
 import sqlite3
 from collections import defaultdict
 
-from ..constants import is_backward_transition
+from kernel.shared.constants import is_backward_transition
 
 
 def get_rework_rate(conn: sqlite3.Connection, project_key: str) -> dict:

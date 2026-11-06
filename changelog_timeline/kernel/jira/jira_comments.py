@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from jira_mapper import extract_text_from_adf
+from kernel.jira.jira_mapper import extract_text_from_adf
 
 
 def extract_text_from_comment_adf(adf_doc: Any) -> str | None:

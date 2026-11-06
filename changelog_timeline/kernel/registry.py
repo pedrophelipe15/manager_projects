@@ -129,25 +129,38 @@ class Registry:
                 return m.home
         return ""
 
-    def menu(self) -> list[dict]:
-        """Menu principal montado a partir dos módulos LIGADOS: [{group, links:[{label, href}]}]."""
+    @staticmethod
+    def _groups(nav) -> list[dict]:
+        """Itens de um módulo agrupados: [{group, links:[{label, href}]}], ordenados."""
         groups: dict[str, dict] = {}
-        for item in PLATFORM_NAV:
+        for item in nav:
             g = groups.setdefault(item.group, {"order": item.group_order, "items": []})
+            g["order"] = min(g["order"], item.group_order)
             g["items"].append(item)
-        for mid in self.config:
-            m = self.modules.get(mid)
-            if not m:
-                continue
-            for item in m.nav:
-                name = item.group or m.name
-                g = groups.setdefault(name, {"order": item.group_order, "items": []})
-                g["order"] = min(g["order"], item.group_order)
-                g["items"].append(item)
         out = []
         for name, g in sorted(groups.items(), key=lambda kv: (kv[1]["order"], kv[0])):
             items = sorted(g["items"], key=lambda i: (i.order, i.label))
             out.append({"group": name, "links": [{"label": i.label, "href": i.href} for i in items]})
+        return out
+
+    def menu(self) -> list[dict]:
+        """Menu lateral: UM item por módulo (na ordem do modules.yaml), com as páginas dentro.
+
+        Módulo ligado => seus grupos/links; módulo com falha => entrada marcada (sem links);
+        módulo desligado => não aparece. A Plataforma vem sempre por último, fixa no rodapé.
+        """
+        out: list[dict] = []
+        for mid in self.config:
+            m = self.modules.get(mid)
+            st = self.status.get(mid)
+            if m:
+                out.append({"id": mid, "name": m.name, "icon": m.icon or "grid", "state": "enabled",
+                            "pinned": False, "home": m.home, "groups": self._groups(m.nav)})
+            elif st and st.state == "failed":
+                out.append({"id": mid, "name": st.name or mid, "icon": "alert", "state": "failed",
+                            "pinned": False, "home": "", "groups": []})
+        out.append({"id": "platform", "name": "Plataforma", "icon": "grid", "state": "enabled",
+                    "pinned": True, "home": PLATFORM_NAV[0].href, "groups": self._groups(PLATFORM_NAV)})
         return out
 
     def describe(self) -> list[dict]:
@@ -168,7 +181,7 @@ class Registry:
             items.append({
                 "id": st.id, "state": st.state, "name": st.name, "version": st.version,
                 "error": st.error, "requires": list(st.requires), "health": health,
-                "home": st.home,
+                "home": st.home, "icon": (self.modules[st.id].icon if st.id in self.modules else ""),
                 "nav": [{"label": n.label, "href": n.href, "group": n.group, "order": n.order}
                         for n in st.nav],
             })

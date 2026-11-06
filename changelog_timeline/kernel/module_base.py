@@ -32,6 +32,8 @@ class Module:
     nav: tuple[NavItem, ...] = ()
     # URL de entrada do módulo (usada pela rota "/" do kernel)
     home: str = ""
+    # ícone do módulo no menu lateral: chart | tree | shield | grid (ver nav.js); vazio => grid
+    icon: str = ""
     # pasta web do módulo (caminho absoluto) e o prefixo de URL em que ela é servida.
     # web_prefix vazio => o módulo é dono da RAIZ ("/"); desligado => a pasta não é montada (404).
     web_dir: str = ""

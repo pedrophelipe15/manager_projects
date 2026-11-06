@@ -212,6 +212,14 @@ Ordem sugerida: **0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**. As fases 
 | Overengineering (plataforma maior que o problema) | Fases 1–2 entregam valor sozinhas; 6–8 são opcionais e podem esperar o 3º módulo real |
 | Módulos futuros precisarem de dados de outro módulo | Serviços expostos via plataforma + `requires`; nunca import direto |
 
+## 7.1 Casca com menu lateral (implementada em 06/11/2026)
+
+Validada antes por MVP isolado (`docs/mvp-menu-lateral`). No app: `kernel/web/nav.js` + `nav.css`; menu em árvore em
+`GET /api/platform/modules`; `Module.icon`; Hierarquia com 5 itens no menu (sem sub-nav própria). Mantido como no MVP:
+vários módulos podem ficar abertos (recomendação pendente: acordeão); seletor de projeto global no topo **não** foi
+implementado (cada página mantém o seu). Guia de estilo (`docs/mvp-styleguide`) segue como MVP — próximo passo é virar
+`/design.html` + `components.css`.
+
 ## 8. Pontos que não consegui verificar
 
 - Como o serviço é operado em produção (`start_service.ps1`/`stop_services.ps1` assumem `api:app`; o plano mantém esse entrypoint, mas não validei com o ambiente real).

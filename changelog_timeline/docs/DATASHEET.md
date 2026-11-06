@@ -1,6 +1,18 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.11.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+> **Versao:** v2.12.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+>
+> A **v2.12.0** troca a barra de navegacao horizontal pela **casca com menu lateral esquerdo**: **um item por
+> modulo** (Fluxo e Metricas, Hierarquia, e os que entrarem), com as paginas do modulo dentro (grupos
+> Prazos/Pessoas/Fluxo/Dados no flow), e **Plataforma → Modulos** fixa no rodape. O topo tem o breadcrumb
+> (`Modulo › Grupo › Pagina`) e o botao de recolher o menu (so icones, lembrado entre sessoes); em tela
+> ate 900px o menu vira gaveta. O `nav.js` (kernel/web) monta a casca em volta do conteudo e remove a barra
+> antiga, entao **as paginas nao mudaram** — so carregam `nav.js` + `nav.css`. Nao monta dentro de iframe
+> (timeline embutida). `GET /api/platform/modules` devolve `menu` como arvore (`id, name, icon, state, pinned,
+> groups[{group, links[]}]`); `Module` ganhou `icon`. **Hierarquia**: as 5 paginas (Dashboard, Pendencias,
+> Roadmap, Timeline, Configuracoes) viraram itens do menu lateral e a sub-navegacao propria
+> (`hierarchy/nav.js`) foi removida. Paginas de detalhe fora do menu (epic/initiative health) ficam
+> sob o modulo da mesma pasta. Teste de contrato: toda pagina de modulo carrega a casca.
 >
 > A **v2.11.0** (fase 8 da modularizacao) **moveu os arquivos fisicos para `modules/<id>/`**, sem mudar
 > nenhuma URL nem rota: `routers/` -> `modules/flow/routers/` e `modules/hierarchy/routers/`;
@@ -391,6 +403,8 @@ Acesso: `http://localhost:8000`
 ---
 
 ## Navegacao
+
+**(Desde a v2.12.0 a navegacao e o menu lateral descrito no topo deste documento; o texto abaixo e historico.)**
 
 A partir da v2.0.0 a nav e **injetada por `nav.js`** (estilo em `nav.css`) num placeholder
 `<nav id="main-nav" class="nav-bar">`, substituindo as barras duplicadas por pagina. E

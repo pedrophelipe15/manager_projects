@@ -30,7 +30,7 @@ def test_sensitive_paths_are_not_served(client, path):
 
 @pytest.mark.parametrize("path", ["/", "/index.html", "/wave1.html", "/tokens.css", "/nav.js",
                                   "/hierarchy/dashboard-v2.html", "/hierarchy/hierarchy.css",
-                                  "/hierarchy/nav.js", "/modules.html"])
+                                  "/hierarchy/pendencias.js", "/modules.html"])
 def test_frontend_is_served(client, path):
     assert client.get(path, follow_redirects=True).status_code == 200, path
 

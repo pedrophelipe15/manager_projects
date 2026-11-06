@@ -43,6 +43,7 @@ module = Module(
         "modules.flow.routers.wave4",
     ),
     home="/minha-visao.html",
+    icon="chart",
     web_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)), "web"),  # servida na raiz "/"
     nav=(
         NavItem("Minha Visão", "/minha-visao.html", "Minha Visão", 10, 10),

@@ -14,15 +14,20 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FLOW_WEB = os.path.join(ROOT, "modules", "flow", "web")
 HIER_WEB = os.path.join(ROOT, "modules", "hierarchy", "web")
 
-OLD_HARDCODED_MENU = [   # o que o antigo nav.js tinha fixo no código
+# Menu lateral: UM item por módulo, com as páginas (em grupos) dentro. Plataforma fixa por último.
+FLOW_ENTRY = ("Fluxo e Métricas", [
     ("Minha Visão", [("Minha Visão", "/minha-visao.html")]),
     ("Prazos", [("Compromisso", "/compromisso.html"), ("Previsibilidade", "/wave2.html")]),
     ("Pessoas", [("Maturidade", "/maturidade.html"), ("Pessoas", "/wave3.html")]),
     ("Fluxo", [("Gargalo e Fluxo", "/wave1.html"), ("Portfólio", "/wave4.html"), ("Dashboard", "/dashboard.html")]),
-    ("Hierarquia", [("Hierarquia", "/hierarchy/dashboard-v2.html")]),
     ("Dados", [("Inconsistências", "/inconsistencies.html"), ("Configurações", "/settings.html")]),
-]
-PLATFORM_MENU = ("Plataforma", [("Módulos", "/modules.html")])   # item da própria plataforma (fase 7)
+])
+HIER_ENTRY = ("Hierarquia", [("", [
+    ("Dashboard", "/hierarchy/dashboard-v2.html"), ("Pendências", "/hierarchy/pendencias.html"),
+    ("Roadmap", "/hierarchy/roadmap.html"), ("Timeline", "/hierarchy/timeline.html"),
+    ("Configurações", "/hierarchy/settings.html"),
+])])
+PLATFORM_ENTRY = ("Plataforma", [("Plataforma", [("Módulos", "/modules.html")])])
 
 
 def _app(tmp_path, flow, hier, package="modules"):
@@ -33,31 +38,75 @@ def _app(tmp_path, flow, hier, package="modules"):
 
 
 def _menu(c):
-    return [(g["group"], [(l["label"], l["href"]) for l in g["links"]]) for g in c.get("/api/platform/modules").json()["menu"]]
+    """[(módulo, [(grupo, [(label, href)])])] — o que o menu lateral mostra."""
+    return [(m["name"], [(g["group"], [(l["label"], l["href"]) for l in g["links"]]) for g in m["groups"]])
+            for m in c.get("/api/platform/modules").json()["menu"]]
 
 
 # ------------------------------------------------------------------ menu
-def test_menu_equals_the_old_hardcoded_menu(client):
-    assert _menu(client) == OLD_HARDCODED_MENU + [PLATFORM_MENU]
+def test_menu_is_one_item_per_module_with_pages_inside(client):
+    assert _menu(client) == [FLOW_ENTRY, HIER_ENTRY, PLATFORM_ENTRY]
+    entries = client.get("/api/platform/modules").json()["menu"]
+    assert [e["icon"] for e in entries] == ["chart", "tree", "grid"]
+    assert [e["pinned"] for e in entries] == [False, False, True]    # Plataforma fixa no rodapé
 
 
 def test_menu_hides_disabled_module(tmp_path):
-    c = _app(tmp_path, flow=True, hier=False)
-    assert "Hierarquia" not in [g for g, _ in _menu(c)]
-    c = _app(tmp_path, flow=False, hier=True)
-    assert _menu(c) == [("Hierarquia", [("Hierarquia", "/hierarchy/dashboard-v2.html")]), PLATFORM_MENU]
+    assert _menu(_app(tmp_path, flow=True, hier=False)) == [FLOW_ENTRY, PLATFORM_ENTRY]
+    assert _menu(_app(tmp_path, flow=False, hier=True)) == [HIER_ENTRY, PLATFORM_ENTRY]
+
+
+def test_menu_marks_failed_module_without_links(tmp_path):
+    pkg = tmp_path / "failmods"
+    (pkg / "bad").mkdir(parents=True)
+    (pkg / "__init__.py").write_text("")
+    (pkg / "bad" / "__init__.py").write_text("")
+    (pkg / "bad" / "module.py").write_text("raise RuntimeError('x')\n")
+    cfg = tmp_path / "m.yaml"
+    cfg.write_text("modules:\n  bad: {enabled: true}\n")
+    sys.path.insert(0, str(tmp_path))
+    try:
+        c = TestClient(create_app(str(cfg), package="failmods"))
+        entry = c.get("/api/platform/modules").json()["menu"][0]
+        assert entry["id"] == "bad" and entry["state"] == "failed" and entry["groups"] == [] and entry["icon"] == "alert"
+        assert "error" not in entry          # a causa só aparece no painel de módulos
+    finally:
+        sys.path.remove(str(tmp_path))
+        for k in [k for k in sys.modules if k.startswith("failmods")]:
+            del sys.modules[k]
 
 
 def test_nav_js_has_no_hardcoded_links():
     src = open(os.path.join(KERNEL_WEB_DIR, "nav.js"), encoding="utf-8").read()
     assert "/api/platform/modules" in src
     assert not re.search(r"\.html", src), "nav.js não pode ter páginas fixas"
+    uses = re.findall(r"innerHTML\s*=\s*(.{0,5})", src)
+    assert uses and all(u.startswith("svg(") for u in uses)                       # innerHTML só com SVG estático (nunca dado da API)
+    assert "window.self !== window.top" in src                                  # nada de casca dentro de iframe
+
+
+def test_every_module_page_gets_the_shell():
+    """Contrato de página: toda página HTML de módulo carrega a casca (nav.js + nav.css da plataforma)
+    e não tem mais navegação própria. Página nova que esquecer isso falha aqui."""
+    bad = []
+    for base in (FLOW_WEB, HIER_WEB):
+        for f in sorted(os.listdir(base)):
+            if not f.endswith(".html"):
+                continue
+            html = open(os.path.join(base, f), encoding="utf-8").read()
+            loads_js = re.search(r'<script[^>]+src="(?:\.\./)?nav\.js[^"]*"', html)
+            loads_css = re.search(r'<link[^>]+href="(?:\.\./)?nav\.css[^"]*"', html)
+            own_nav = "hierarchy-nav" in html
+            if not (loads_js and loads_css) or own_nav:
+                bad.append(f)
+    assert not bad, f"páginas sem a casca da plataforma: {bad}"
+    assert not os.path.exists(os.path.join(HIER_WEB, "nav.js")), "a hierarquia não tem mais navegação própria"
 
 
 # ------------------------------------------------------------------ estáticos por módulo
 def test_hierarchy_disabled_pages_are_404_flow_stays(tmp_path):
     c = _app(tmp_path, flow=True, hier=False)
-    for url in ("/hierarchy/dashboard-v2.html", "/hierarchy/hierarchy.css", "/hierarchy/nav.js"):
+    for url in ("/hierarchy/dashboard-v2.html", "/hierarchy/hierarchy.css", "/hierarchy/pendencias.js"):
         assert c.get(url).status_code == 404, url
     for url in ("/wave1.html", "/minha-visao.html", "/settings.js", "/tokens.css", "/nav.js"):
         assert c.get(url).status_code == 200, url
@@ -85,7 +134,7 @@ def test_no_module_enabled_still_serves_platform_assets(tmp_path):
     assert c.get("/tokens.css").status_code == 200 and c.get("/nav.js").status_code == 200
     assert c.get("/wave1.html").status_code == 404 and c.get("/hierarchy/dashboard-v2.html").status_code == 404
     # a plataforma mantém o próprio item de menu (painel de módulos), mesmo sem módulos
-    assert _menu(c) == [PLATFORM_MENU]
+    assert _menu(c) == [PLATFORM_ENTRY]
     assert c.get("/modules.html").status_code == 200
 
 
@@ -113,7 +162,7 @@ def test_new_module_appears_in_menu_and_serves_its_static_dir(tmp_path, monkeypa
         # (hierarchy não existe no pacote fake => falha isolada; xmod sobe)
         st = {m["id"]: m for m in c.get("/api/platform/modules").json()["modules"]}
         assert st["xmod"]["state"] == "enabled" and st["hierarchy"]["state"] == "failed"
-        assert ("Extras", [("X Home", "/xmod/index.html")]) in _menu(c)
+        assert ("Módulo X", [("Extras", [("X Home", "/xmod/index.html")])]) in _menu(c)   # módulo novo = item novo no menu
         assert c.get("/").headers["location"] == "/xmod/index.html"
         assert c.get("/xmod/index.html").status_code == 200          # servido da pasta web do módulo
         assert c.get("/xmod/module.py").status_code == 404           # código do módulo nunca

@@ -126,7 +126,7 @@ manager_projects_v2/
 ├── changelog_timeline/       # Aplicação (backend + frontend + métricas)
 │   ├── api.py                # Ponto de entrada (uvicorn api:app): create_app()
 │   ├── kernel/               # registry de módulos, app factory, migrações, ConfigStore, jobs,
-│   │                         #   shared/ (código comum), jira/ (cliente), web/ (design system + menu + painel)
+│   │                         #   shared/ (código comum), jira/ (cliente), web/ (design system + casca com menu lateral + painel)
 │   ├── modules/
 │   │   ├── flow/             # dashboards: routers/, metrics/, db, ingest, migrations/, web/ (páginas na raiz)
 │   │   └── hierarchy/        # hierarquia: routers/, metrics, db, migrations/, web/ (páginas em /hierarchy/)

@@ -38,7 +38,15 @@ module = Module(
     home="/hierarchy/dashboard-v2.html",
     web_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)), "web"),
     web_prefix="hierarchy",  # servida em /hierarchy/...
-    nav=(NavItem("Hierarquia", "/hierarchy/dashboard-v2.html", "Hierarquia", 50, 10),),
+    icon="tree",
+    # as páginas que antes ficavam numa sub-navegação própria agora são itens do menu lateral
+    nav=(
+        NavItem("Dashboard", "/hierarchy/dashboard-v2.html", "", 10, 10),
+        NavItem("Pendências", "/hierarchy/pendencias.html", "", 10, 20),
+        NavItem("Roadmap", "/hierarchy/roadmap.html", "", 10, 30),
+        NavItem("Timeline", "/hierarchy/timeline.html", "", 10, 40),
+        NavItem("Configurações", "/hierarchy/settings.html", "", 10, 50),
+    ),
     on_enable=_on_enable,
     health=_health,
 )

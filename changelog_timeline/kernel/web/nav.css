@@ -1,62 +1,121 @@
 /**
- * nav.css — Estilo da navegacao compartilhada (Onda 2/3 UX).
- * Nav agrupada por pergunta. Usa os tokens de /tokens.css.
+ * nav.css — Casca da aplicação (menu lateral + topo). Asset da PLATAFORMA, usado por todo módulo.
+ * Montada por nav.js; só usa tokens de tokens.css. Nada aqui depende de página ou de módulo.
+ *
+ * Largura: 272px (68px recolhido). Em telas <= 900px o menu vira gaveta.
  */
-.nav-bar {
-    display: flex;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.75rem;
-    padding: 0.75rem 1.25rem;
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: 10px;
+:root { --shell-side: 272px; --shell-rail: 68px; }
+
+body.has-shell { padding: 0; margin: 0; }
+.shell {
+    display: grid;
+    grid-template-columns: var(--shell-side) minmax(0, 1fr);
+    min-height: 100vh;
+    transition: grid-template-columns 0.2s;
+}
+body.shell-rail .shell { grid-template-columns: var(--shell-rail) minmax(0, 1fr); }
+.shell-main { min-width: 0; display: flex; flex-direction: column; }
+.shell-content { min-width: 0; flex: 1; }
+
+.shell-skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--action); color: #fff; padding: var(--sp-2) var(--sp-4); border-radius: var(--radius);
+}
+.shell-skip:focus { left: var(--sp-2); top: var(--sp-2); }
+
+/* ---------------- menu lateral ---------------- */
+.shell-sidebar {
+    position: sticky; top: 0; height: 100vh; z-index: 30;
+    display: flex; flex-direction: column;
+    background: var(--surface-1); border-right: 1px solid var(--border-subtle);
+}
+.shell-brand { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-4) var(--sp-3); min-height: 64px; }
+.shell-logo {
+    flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--action); color: #fff;
+    display: grid; place-items: center; font-weight: 800; font-size: var(--fs-md);
+}
+.shell-brand-name { font-weight: 700; line-height: 1.1; color: var(--text-1); }
+.shell-brand-name small { display: block; font-weight: 500; color: var(--text-2); font-size: var(--fs-xs); }
+.shell-scroll { flex: 1; overflow-y: auto; padding: var(--sp-1) var(--sp-3) var(--sp-4); }
+.shell-bottom { border-top: 1px solid var(--border-subtle); padding: var(--sp-2) var(--sp-3) var(--sp-3); }
+.shell-label {
+    font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-2); padding: var(--sp-4) var(--sp-3) var(--sp-2);
 }
 
-.nav-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+.shell-mod { margin: 2px 0; }
+.shell-mod-head {
+    width: 100%; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3);
+    border: 0; background: transparent; border-radius: var(--radius); text-align: left;
+    font: inherit; font-weight: 600; color: var(--text-1); cursor: pointer;
 }
-
-.nav-group-label {
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-3);
-    padding-left: 0.4rem;
+.shell-mod-head:hover { background: var(--surface-2); }
+.shell-mod-ico {
+    flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+    background: var(--surface-2); color: var(--text-2);
 }
-
-.nav-group-links {
-    display: flex;
-    gap: 0.25rem;
+.shell-mod.has-active .shell-mod-ico { background: var(--action-quiet); color: var(--action); }
+.shell-mod.is-failed .shell-mod-ico { background: var(--risk-bg); color: var(--risk); }
+.shell-mod-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell-chev { flex: none; width: 16px; height: 16px; color: var(--text-3); transition: transform 0.15s; }
+.shell-mod.is-open .shell-chev { transform: rotate(90deg); }
+.shell-mod-body { display: none; margin: 2px 0 var(--sp-2) var(--sp-4); padding-left: var(--sp-3); border-left: 1px solid var(--border-subtle); }
+.shell-mod.is-open .shell-mod-body { display: block; }
+.shell-grp {
+    font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-2); padding: var(--sp-2) var(--sp-3) 2px;
 }
-
-.nav-link {
-    padding: 0.4rem 0.8rem;
-    color: var(--text-2);
-    text-decoration: none;
-    font-size: var(--fs-md);
-    font-weight: 500;
-    border-radius: var(--radius);
-    transition: all 0.2s;
-    white-space: nowrap;
+.shell-link {
+    display: block; position: relative; padding: 6px var(--sp-3); border-radius: var(--radius);
+    color: var(--text-2); font-size: var(--fs-md); font-weight: 500; text-decoration: none;
 }
-.nav-link:hover { color: var(--text-1); background: var(--surface-2); }
-.nav-link.active { color: var(--action); background: var(--action-quiet); }
-
-.nav-sep {
-    align-self: stretch;
-    width: 1px;
-    background: var(--border-subtle);
-    margin: 0.2rem 0.15rem;
+.shell-link:hover { background: var(--surface-2); color: var(--text-1); }
+.shell-link[aria-current="page"] { background: var(--action-quiet); color: var(--action); font-weight: 650; }
+.shell-link[aria-current="page"]::before {
+    content: ""; position: absolute; left: -13px; top: 20%; bottom: 20%; width: 3px; border-radius: 3px; background: var(--action);
 }
+.shell-fail { margin: 2px 0 var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius); background: var(--risk-bg); color: var(--risk); font-size: var(--fs-sm); }
+.shell-fail a { color: inherit; font-weight: 600; }
+.shell-sidebar :focus-visible, .shell-topbar :focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
 
-@media (max-width: 768px) {
-    .nav-bar { gap: 0.5rem; }
-    .nav-sep { display: none; }
-    .nav-group { flex-basis: 100%; flex-direction: row; align-items: center; gap: 0.5rem; }
-    .nav-group-label { padding-left: 0; min-width: 88px; }
-    .nav-group-links { flex-wrap: wrap; }
+/* ---------------- topo ---------------- */
+.shell-topbar {
+    position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-5); background: var(--surface-1); border-bottom: 1px solid var(--border-subtle);
+}
+.shell-iconbtn {
+    flex: none; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer;
+    border: 1px solid var(--border-subtle); background: var(--surface-1); color: var(--text-2); border-radius: var(--radius); font: inherit;
+}
+.shell-iconbtn:hover { background: var(--surface-2); }
+.shell-crumbs { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-2); color: var(--text-2); font-size: var(--fs-md); white-space: nowrap; overflow: hidden; }
+.shell-crumbs b { color: var(--text-1); font-weight: 650; overflow: hidden; text-overflow: ellipsis; }
+.shell-crumbs .shell-sep { color: var(--text-3); }
+#shell-menu-btn { display: none; }
+
+/* ---------------- menu recolhido (só ícones) ---------------- */
+body.shell-rail .shell-brand-name, body.shell-rail .shell-mod-name, body.shell-rail .shell-chev,
+body.shell-rail .shell-mod-body, body.shell-rail .shell-label { display: none; }
+body.shell-rail .shell-brand { justify-content: center; padding-inline: 0; }
+body.shell-rail .shell-mod-head { justify-content: center; padding: var(--sp-2) 0; }
+body.shell-rail .shell-scroll, body.shell-rail .shell-bottom { padding-inline: var(--sp-2); }
+
+.shell-overlay { display: none; }
+
+/* ---------------- celular: menu vira gaveta ---------------- */
+@media (max-width: 900px) {
+    .shell, body.shell-rail .shell { grid-template-columns: minmax(0, 1fr); }
+    .shell-sidebar {
+        position: fixed; inset: 0 auto 0 0; width: min(86vw, 300px); transform: translateX(-102%);
+        transition: transform 0.2s; box-shadow: var(--shadow-md);
+    }
+    body.shell-drawer .shell-sidebar { transform: none; }
+    body.shell-drawer .shell-overlay { display: block; position: fixed; inset: 0; background: rgba(16, 32, 58, 0.35); z-index: 25; }
+    #shell-menu-btn { display: grid; }
+    #shell-rail-btn { display: none; }
+    /* na gaveta o menu mostra os rótulos mesmo se estava recolhido no desktop */
+    body.shell-rail .shell-brand-name, body.shell-rail .shell-mod-name, body.shell-rail .shell-chev, body.shell-rail .shell-label { display: revert; }
+    body.shell-rail .shell-mod.is-open .shell-mod-body { display: block; }
+    body.shell-rail .shell-mod-head { justify-content: flex-start; padding: var(--sp-2) var(--sp-3); }
+    .shell-topbar { padding-inline: var(--sp-4); }
 }

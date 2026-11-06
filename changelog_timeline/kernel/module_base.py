@@ -32,10 +32,10 @@ class Module:
     nav: tuple[NavItem, ...] = ()
     # URL de entrada do módulo (usada pela rota "/" do kernel)
     home: str = ""
-    # pastas web (primeiro segmento da URL) que pertencem ao módulo; 404 se desligado
-    static_dirs: tuple[str, ...] = ()
-    # True se o módulo é dono dos arquivos web da RAIZ (exceto os assets da plataforma)
-    static_root: bool = False
+    # pasta web do módulo (caminho absoluto) e o prefixo de URL em que ela é servida.
+    # web_prefix vazio => o módulo é dono da RAIZ ("/"); desligado => a pasta não é montada (404).
+    web_dir: str = ""
+    web_prefix: str = ""
     # chamado uma vez ao ligar o módulo (criar banco/tabelas etc.)
     on_enable: Optional[Callable[[], None]] = None
     on_disable: Optional[Callable[[], None]] = None

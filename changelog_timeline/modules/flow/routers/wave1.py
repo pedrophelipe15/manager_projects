@@ -1,8 +1,8 @@
 import sqlite3
 import sys
 from fastapi import HTTPException
-from metrics.wave1_bottleneck.aging_wip import get_aging_wip
-from core.db import BASE_DIR, DB_PATH, get_db_connection
+from modules.flow.metrics.wave1_bottleneck.aging_wip import get_aging_wip
+from modules.flow.db import BASE_DIR, DB_PATH, get_db_connection
 from kernel.jobs import JobRunner
 from fastapi import APIRouter
 
@@ -354,11 +354,11 @@ def _run_wave1_recalculate(job: JobRunner, project_key: str):
     import time as time_mod
     import sys
     sys.path.insert(0, BASE_DIR)
-    from metrics.base import calculate_metrics as calc_base
-    from metrics.wave1_bottleneck.time_per_status import calculate_time_per_status, setup_table as setup_tps
-    from metrics.wave1_bottleneck.percentiles import calculate_percentiles, setup_table as setup_perc
-    from metrics.wave1_bottleneck.flow_efficiency import calculate_flow_efficiency, setup_table as setup_flow
-    from metrics.wave1_bottleneck.cfd import calculate_cfd, setup_table as setup_cfd
+    from modules.flow.metrics.base import calculate_metrics as calc_base
+    from modules.flow.metrics.wave1_bottleneck.time_per_status import calculate_time_per_status, setup_table as setup_tps
+    from modules.flow.metrics.wave1_bottleneck.percentiles import calculate_percentiles, setup_table as setup_perc
+    from modules.flow.metrics.wave1_bottleneck.flow_efficiency import calculate_flow_efficiency, setup_table as setup_flow
+    from modules.flow.metrics.wave1_bottleneck.cfd import calculate_cfd, setup_table as setup_cfd
 
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.execute("PRAGMA journal_mode=WAL")

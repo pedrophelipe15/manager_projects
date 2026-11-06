@@ -1,8 +1,8 @@
-from metrics.wave4_portfolio import get_benchmarking
-from metrics.wave4_portfolio import get_cross_project_throughput
-from metrics.wave4_portfolio import get_epic_health
-from core.db import get_db_connection
-from routers.projects import _configured_project_keys
+from modules.flow.metrics.wave4_portfolio import get_benchmarking
+from modules.flow.metrics.wave4_portfolio import get_cross_project_throughput
+from modules.flow.metrics.wave4_portfolio import get_epic_health
+from modules.flow.db import get_db_connection
+from modules.flow.routers.projects import _configured_project_keys
 from fastapi import APIRouter
 
 router = APIRouter()

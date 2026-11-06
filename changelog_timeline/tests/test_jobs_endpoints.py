@@ -41,7 +41,7 @@ SYNC = "/api/settings/projects/sync"
 
 @pytest.fixture
 def fake_sync(monkeypatch):
-    import routers.projects as rp
+    import modules.flow.routers.projects as rp
     gate = threading.Event()
     gate.set()  # por padrão não bloqueia
     calls = {"extraction": 0}
@@ -96,7 +96,7 @@ def test_sync_cancel(client, fake_sync):
 
 
 def test_sync_extraction_error_is_reported_and_job_ends(client, monkeypatch, fake_sync):
-    import routers.projects as rp
+    import modules.flow.routers.projects as rp
     monkeypatch.setattr(rp, "_run_extraction", lambda *a, **k: {"ok": False, "error": "Jira fora do ar"})
     client.post(SYNC, json={"project_keys": ["REYK"]})
     st = _wait_idle(client, SYNC + "/status")
@@ -105,7 +105,7 @@ def test_sync_extraction_error_is_reported_and_job_ends(client, monkeypatch, fak
 
 def test_sync_unexpected_exception_does_not_leave_job_stuck(client, monkeypatch, fake_sync):
     """Antes: exceção inesperada deixava running=True para sempre (só reiniciando o servidor)."""
-    import routers.projects as rp
+    import modules.flow.routers.projects as rp
 
     def boom(*a, **k):
         raise RuntimeError("falha inesperada no extrator")
@@ -123,7 +123,7 @@ HSYNC = "/api/hierarchy/sync"
 
 @pytest.fixture
 def fake_hier(monkeypatch):
-    import routers.hierarchy_sync as hs
+    import modules.hierarchy.routers.sync as hs
     gate = threading.Event()
     gate.set()
 
@@ -156,7 +156,7 @@ def test_hierarchy_sync_409_while_running(client, fake_hier):
 
 
 def test_hierarchy_sync_extractor_failure_sets_error(client, monkeypatch, fake_hier):
-    import routers.hierarchy_sync as hs
+    import modules.hierarchy.routers.sync as hs
     monkeypatch.setattr(hs.subprocess, "run",
                         lambda cmd, **kw: SimpleNamespace(returncode=1, stdout="", stderr="credenciais inválidas"))
     client.post(HSYNC, params={"initiative_key": "INI-1"})
@@ -206,7 +206,7 @@ def test_wave1_recalculate_shape_and_progress(client, recent_sync_record):
 
 
 def test_wave1_recalculate_409_while_running(client, recent_sync_record, monkeypatch):
-    import routers.wave1 as w1
+    import modules.flow.routers.wave1 as w1
     gate = threading.Event()
     real = w1._cleanup_orphans
     monkeypatch.setattr(w1, "_cleanup_orphans", lambda conn: (gate.wait(10), real(conn))[1])

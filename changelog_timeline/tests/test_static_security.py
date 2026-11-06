@@ -1,20 +1,25 @@
-"""Estáticos: só o frontend é servido; dados, código e segredos não."""
+"""Estáticos: só as pastas web dos módulos (e do kernel) são servidas; dados, código e segredos não."""
 import os
+import posixpath
 import re
 
 import pytest
 
-from kernel.static import StaticPolicy, is_allowed
+from kernel.static import KERNEL_WEB_DIR, is_allowed
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FLOW_WEB = os.path.join(ROOT, "modules", "flow", "web")
+HIER_WEB = os.path.join(ROOT, "modules", "hierarchy", "web")
 
 DENIED = [
     "/issues.db", "/hierarchy.db", "/projects.yaml", "/config/modules.yaml",
-    "/ingest_to_db.py", "/api.py", "/routers/wave1.py", "/core/db.py", "/kernel/registry.py",
+    "/ingest_to_db.py", "/api.py", "/kernel/registry.py", "/kernel/web/../registry.py",
+    "/modules/flow/db.py", "/modules/flow/routers/wave1.py", "/modules/flow/web/wave1.html",
+    "/modules/hierarchy/db.py", "/modules/flow/migrations/001_baseline.sql",
     "/requirements.txt", "/README.md", "/docs/DATASHEET.md", "/tests/conftest.py",
     "/exporter_jira/.env", "/exporter_jira/export_jira.py", "/.venv/pyvenv.cfg",
     "/.gitignore", "/.env", "/hierarchy/../issues.db", "/%2e%2e/issues.db",
-    "/hierarchy/.env", "/hierarchy/data.json", "/start_service.ps1",
+    "/hierarchy/.env", "/hierarchy/data.json", "/hierarchy/db.py", "/start_service.ps1",
 ]
 
 
@@ -25,21 +30,31 @@ def test_sensitive_paths_are_not_served(client, path):
 
 @pytest.mark.parametrize("path", ["/", "/index.html", "/wave1.html", "/tokens.css", "/nav.js",
                                   "/hierarchy/dashboard-v2.html", "/hierarchy/hierarchy.css",
-                                  "/hierarchy/nav.js"])
+                                  "/hierarchy/nav.js", "/modules.html"])
 def test_frontend_is_served(client, path):
-    assert client.get(path).status_code == 200, path
+    assert client.get(path, follow_redirects=True).status_code == 200, path
 
 
 def test_is_allowed_unit():
-    both = StaticPolicy(dirs=frozenset({"hierarchy"}), root=True)
-    assert is_allowed("", both) and is_allowed("wave1.html", both) and is_allowed("hierarchy/x.js", both)
-    assert not is_allowed("issues.db", both) and not is_allowed(".env", both)
-    assert not is_allowed("docs/a.html", both) and not is_allowed("hierarchy/a.json", both)
-    # sem módulos ligados: só os assets da plataforma
-    none = StaticPolicy()
-    assert is_allowed("tokens.css", none) and is_allowed("nav.js", none)
-    assert not is_allowed("wave1.html", none) and not is_allowed("hierarchy/x.js", none)
-    assert not is_allowed("", none)
+    assert is_allowed("") and is_allowed(".") and is_allowed("wave1.html") and is_allowed("a/b.js")
+    assert not is_allowed("issues.db") and not is_allowed(".env") and not is_allowed("a/.git/x.js")
+    assert not is_allowed("x.py") and not is_allowed("x.yaml") and not is_allowed("x.json")
+
+
+def test_web_dirs_contain_only_web_files():
+    """Nada além de extensões web dentro das pastas servidas (defesa em profundidade)."""
+    from kernel.static import ALLOWED_EXT
+    for base in (KERNEL_WEB_DIR, FLOW_WEB, HIER_WEB):
+        for dp, _dn, fn in os.walk(base):
+            for f in fn:
+                assert os.path.splitext(f)[1].lower() in ALLOWED_EXT, os.path.join(dp, f)
+
+
+def _html_files():
+    for base, prefix in ((FLOW_WEB, "/"), (HIER_WEB, "/hierarchy/"), (KERNEL_WEB_DIR, "/")):
+        for f in os.listdir(base):
+            if f.endswith(".html"):
+                yield os.path.join(base, f), prefix
 
 
 def _local_refs(html_path):
@@ -48,26 +63,13 @@ def _local_refs(html_path):
     return [r for r in refs if not re.match(r"^(https?:|//|mailto:|javascript:|data:)", r)]
 
 
-def _html_files():
-    out = []
-    for base in (ROOT, os.path.join(ROOT, "hierarchy")):
-        for f in os.listdir(base):
-            if f.endswith(".html"):
-                out.append(os.path.join(base, f))
-    return out
-
-
 def test_every_local_asset_referenced_by_pages_is_served(client):
-    """Nenhuma página pode referenciar um arquivo que a allowlist bloqueia."""
+    """Resolve cada referência como o navegador (pela URL) e exige 200 — nenhuma página fica sem asset."""
     missing = []
-    for html in _html_files():
-        page_dir = os.path.dirname(html)
+    for html, prefix in _html_files():
+        page_url = posixpath.join(prefix, os.path.basename(html))
         for ref in _local_refs(html):
-            target = os.path.normpath(os.path.join(page_dir, ref) if not ref.startswith("/")
-                                      else os.path.join(ROOT, ref.lstrip("/")))
-            if os.path.isdir(target) or not os.path.exists(target):
-                continue  # link de navegação para rota/dir ou arquivo inexistente (fora do escopo)
-            url = "/" + os.path.relpath(target, ROOT).replace(os.sep, "/")
+            url = ref if ref.startswith("/") else posixpath.normpath(posixpath.join(posixpath.dirname(page_url), ref))
             if client.get(url).status_code != 200:
-                missing.append((os.path.relpath(html, ROOT), ref, url))
-    assert not missing, f"referências bloqueadas: {missing}"
+                missing.append((os.path.basename(html), ref, url))
+    assert not missing, f"referências que dão 404: {missing}"

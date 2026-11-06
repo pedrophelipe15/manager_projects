@@ -1,6 +1,6 @@
-from metrics.wave5_commitment import get_commitment_summary_all
-from metrics.wave5_commitment import get_slippage_by_project
-from core.db import get_db_connection
+from modules.flow.metrics.wave5_commitment import get_commitment_summary_all
+from modules.flow.metrics.wave5_commitment import get_slippage_by_project
+from modules.flow.db import get_db_connection
 from fastapi import APIRouter
 
 router = APIRouter()

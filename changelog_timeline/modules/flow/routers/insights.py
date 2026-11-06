@@ -1,5 +1,5 @@
-from metrics.insights import run_insights
-from core.db import get_db_connection
+from modules.flow.metrics.insights import run_insights
+from modules.flow.db import get_db_connection
 from fastapi import APIRouter
 
 router = APIRouter()

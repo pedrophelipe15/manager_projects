@@ -12,7 +12,7 @@ from starlette.requests import Request
 
 from kernel.paths import BASE_DIR
 from kernel.registry import Registry, load_config
-from kernel.static import SafeStaticFiles
+from kernel.static import mount_static
 
 log = logging.getLogger("kernel")
 
@@ -66,5 +66,5 @@ def create_app(modules_file: Optional[str] = None, package: str = "modules") -> 
     app.include_router(kernel_router)
 
     # Estáticos: SEMPRE por último, para não sombrear as rotas /api/*.
-    app.mount("/", SafeStaticFiles(directory=BASE_DIR, html=True, policy=registry.static_policy), name="static")
+    mount_static(app, registry.modules.values())
     return app

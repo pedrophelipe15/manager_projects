@@ -85,8 +85,8 @@ def test_panel_page_and_assets_are_served_always(client):
 
 
 def test_panel_is_read_only_and_safe():
-    js = open(os.path.join(ROOT, "modules.js"), encoding="utf-8").read()
-    html = open(os.path.join(ROOT, "modules.html"), encoding="utf-8").read()
+    js = open(os.path.join(ROOT, "kernel", "web", "modules.js"), encoding="utf-8").read()
+    html = open(os.path.join(ROOT, "kernel", "web", "modules.html"), encoding="utf-8").read()
     assert "innerHTML" not in js and "outerHTML" not in js and "insertAdjacentHTML" not in js
     assert "method" not in js.lower().replace("addeventlistener", "")  # só GET: nenhuma escrita
     assert "POST" not in js and "PUT" not in js and "DELETE" not in js

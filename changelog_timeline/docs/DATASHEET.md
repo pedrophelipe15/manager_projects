@@ -1,6 +1,18 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.10.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+> **Versao:** v2.11.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+>
+> A **v2.11.0** (fase 8 da modularizacao) **moveu os arquivos fisicos para `modules/<id>/`**, sem mudar
+> nenhuma URL nem rota: `routers/` -> `modules/flow/routers/` e `modules/hierarchy/routers/`;
+> `metrics/` -> `modules/flow/metrics/` (e `hierarchy_metrics.py` -> `modules/hierarchy/metrics.py`);
+> `core/db.py` -> `modules/flow/db.py`; `ingest_to_db.py` -> `modules/flow/ingest.py` (o comando
+> `python ingest_to_db.py` continua funcionando via atalho); paginas do flow -> `modules/flow/web/`,
+> pasta `hierarchy/` -> `modules/hierarchy/web/`, design system/menu/painel -> `kernel/web/`.
+> Cada modulo serve a propria pasta web; modulo desligado nao e montado (404). O import-linter agora
+> verifica **independencia real** entre `modules.flow` e `modules.hierarchy`.
+> **Atencao:** as secoes mais antigas deste documento ainda citam os caminhos `metrics/`,
+> `routers/`, `hierarchy/` e paginas na raiz; leia-os como `modules/flow/metrics/`,
+> `modules/flow/routers/`, `modules/hierarchy/...` e `modules/<id>/web/`.
 >
 > A **v2.10.0** adicionou o **painel de modulos** (`/modules.html`, menu "Plataforma → Modulos"):
 > mostra, somente leitura, o estado de cada modulo (ligado/desligado/falhou), versao, dependencias,
@@ -1037,13 +1049,17 @@ JIRA_REQUEST_TIMEOUT_SECONDS=30
 ```
 changelog_timeline/
 ├── api.py                    # Ponto de entrada (uvicorn api:app): create_app()
-├── kernel/                   # module_base, registry, app_factory, migrations, config_store, static
-├── modules/                  # flow/ e hierarchy/: module.py + migrations/ + config.py + schema.py
-├── routers/                  # APIRouters por dominio (issues, projects, wave1..5, hierarchy_*...)
-├── core/db.py                # BASE_DIR, DB_PATH, get_db_connection, resolve_key
+├── kernel/                   # module_base, registry, app_factory, migrations, config_store, jobs, static
+│   ├── shared/ jira/         # codigo comum (constants, timeutils, forecast_core) e cliente Jira
+│   └── web/                  # assets da plataforma: tokens.css, nav.*, ui.*, context.js, dashboard.css, modules.*
+├── modules/
+│   ├── flow/                 # module.py, routers/, metrics/, db.py, ingest.py, config.py, schema.py,
+│   │                         #   migrations/, web/ (TODAS as paginas abaixo, servidas na raiz "/")
+│   └── hierarchy/            # module.py, routers/, metrics.py, db.py, config.py, schema.py,
+│                             #   migrations/, web/ (paginas servidas em /hierarchy/)
 ├── config/modules.yaml       # Modulos ligados/desligados (reinicio)
 ├── tests/                    # pytest: contrato OpenAPI, smoke, migracoes, kernel, config, estaticos
-├── ingest_to_db.py           # Ingestao JSONL -> SQLite + orquestra metricas
+├── ingest_to_db.py           # Atalho de CLI -> modules/flow/ingest.py (ingestao JSONL -> SQLite + metricas)
 ├── run_pipeline.py           # Orquestrador CLI (legado)
 ├── projects.yaml             # Configuracao de projetos e pipelines
 ├── issues.db                 # Banco SQLite (gerado)

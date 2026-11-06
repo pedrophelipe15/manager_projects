@@ -2,7 +2,7 @@ import json as _json
 from fastapi import HTTPException
 from modules.hierarchy.db import get_hierarchy_connection
 from pydantic import BaseModel
-from routers.hierarchy_common import _load_hierarchy_config
+from modules.hierarchy.routers.common import _load_hierarchy_config
 from modules.hierarchy.config import load_excluded_raw, update_entries, update_excluded
 from fastapi import APIRouter
 

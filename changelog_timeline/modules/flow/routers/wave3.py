@@ -1,8 +1,8 @@
-from metrics.wave3_people import get_handoff_time
-from metrics.wave3_people import get_rework_rate
-from metrics.wave3_people import get_wip_per_person
-from metrics.wave3_people import get_workload_distribution
-from core.db import get_db_connection
+from modules.flow.metrics.wave3_people import get_handoff_time
+from modules.flow.metrics.wave3_people import get_rework_rate
+from modules.flow.metrics.wave3_people import get_wip_per_person
+from modules.flow.metrics.wave3_people import get_workload_distribution
+from modules.flow.db import get_db_connection
 from fastapi import APIRouter
 
 router = APIRouter()

@@ -13,7 +13,6 @@ import yaml
 from fastapi import APIRouter
 
 from kernel.module_base import Module, ModuleStatus, NavItem
-from kernel.static import StaticPolicy
 
 # Itens de menu da PRÓPRIA plataforma (existem mesmo sem nenhum módulo ligado).
 PLATFORM_NAV = (NavItem("Módulos", "/modules.html", "Plataforma", 90, 10),)
@@ -122,14 +121,6 @@ class Registry:
         return True
 
     # ------------------------------------------------------------------
-    def static_policy(self) -> StaticPolicy:
-        """Quais pastas/raiz web estão liberadas, conforme os módulos LIGADOS."""
-        mods = self.modules.values()
-        return StaticPolicy(
-            dirs=frozenset(d for m in mods for d in m.static_dirs),
-            root=any(m.static_root for m in mods),
-        )
-
     def home(self) -> str:
         """URL de entrada: a `home` do primeiro módulo ligado (ordem do modules.yaml)."""
         for mid in self.config:

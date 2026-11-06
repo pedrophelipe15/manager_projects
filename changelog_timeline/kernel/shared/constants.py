@@ -8,7 +8,7 @@ wave3_people/rework.py, wave4_portfolio/benchmarking.py e no api.py.
 from __future__ import annotations
 
 # Estados em que o "relógio" de cycle time está rodando (trabalho ativo).
-# Usado por metrics/base.py e pela agregação de hierarquia em api.py.
+# Usado por modules/flow/metrics/base.py e pela agregação da hierarquia (modules/hierarchy).
 ACTIVE_STATES: set[str] = {"In Progress", "Blocked", "Test", "Waiting for Delivery"}
 
 # Variante para WIP por pessoa (wave3/wip.py): Blocked NÃO conta como carga

@@ -1,4 +1,4 @@
-from core.db import get_db_connection, resolve_key
+from modules.flow.db import get_db_connection, resolve_key
 from fastapi import APIRouter
 
 router = APIRouter()

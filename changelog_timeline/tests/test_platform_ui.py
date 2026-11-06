@@ -8,9 +8,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from kernel.app_factory import create_app
-from kernel.static import PLATFORM_ASSETS
+from kernel.static import KERNEL_WEB_DIR
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FLOW_WEB = os.path.join(ROOT, "modules", "flow", "web")
+HIER_WEB = os.path.join(ROOT, "modules", "hierarchy", "web")
 
 OLD_HARDCODED_MENU = [   # o que o antigo nav.js tinha fixo no código
     ("Minha Visão", [("Minha Visão", "/minha-visao.html")]),
@@ -47,7 +49,7 @@ def test_menu_hides_disabled_module(tmp_path):
 
 
 def test_nav_js_has_no_hardcoded_links():
-    src = open(os.path.join(ROOT, "nav.js"), encoding="utf-8").read()
+    src = open(os.path.join(KERNEL_WEB_DIR, "nav.js"), encoding="utf-8").read()
     assert "/api/platform/modules" in src
     assert not re.search(r"\.html", src), "nav.js não pode ter páginas fixas"
 
@@ -93,9 +95,14 @@ def test_new_module_appears_in_menu_and_serves_its_static_dir(tmp_path, monkeypa
     (pkg / "xmod").mkdir(parents=True)
     (pkg / "__init__.py").write_text("")
     (pkg / "xmod" / "__init__.py").write_text("")
+    (pkg / "xmod" / "web").mkdir()
+    (pkg / "xmod" / "web" / "index.html").write_text("<h1>X</h1>", encoding="utf-8")
     (pkg / "xmod" / "module.py").write_text(textwrap.dedent("""
+        import os
         from kernel.module_base import Module, NavItem
-        module = Module(id="xmod", name="Módulo X", home="/xmod/index.html", static_dirs=("xmod",),
+        module = Module(id="xmod", name="Módulo X", home="/xmod/index.html",
+                        web_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)), "web"),
+                        web_prefix="xmod",
                         nav=(NavItem("X Home", "/xmod/index.html", "Extras", 55, 10),))
     """), encoding="utf-8")
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -108,6 +115,8 @@ def test_new_module_appears_in_menu_and_serves_its_static_dir(tmp_path, monkeypa
         assert st["xmod"]["state"] == "enabled" and st["hierarchy"]["state"] == "failed"
         assert ("Extras", [("X Home", "/xmod/index.html")]) in _menu(c)
         assert c.get("/").headers["location"] == "/xmod/index.html"
+        assert c.get("/xmod/index.html").status_code == 200          # servido da pasta web do módulo
+        assert c.get("/xmod/module.py").status_code == 404           # código do módulo nunca
     finally:
         for k in [k for k in sys.modules if k.startswith("fakemods2")]:
             del sys.modules[k]
@@ -121,28 +130,32 @@ def _local_refs(path):
 
 
 def test_hierarchy_pages_only_use_own_dir_and_platform_assets():
+    """Resolve cada referência como o navegador (por URL): ou é da própria pasta /hierarchy/ ou
+    existe em kernel/web (plataforma). Nunca um arquivo do flow."""
+    import posixpath
     bad = []
-    hdir = os.path.join(ROOT, "hierarchy")
-    for f in os.listdir(hdir):
+    for f in os.listdir(HIER_WEB):
         if not f.endswith(".html"):
             continue
-        for ref in _local_refs(os.path.join(hdir, f)):
-            target = os.path.normpath(os.path.join(hdir, ref))
-            rel = os.path.relpath(target, ROOT).replace(os.sep, "/")
-            in_own = rel.startswith("hierarchy/")
-            if not (in_own or rel in PLATFORM_ASSETS):
+        for ref in _local_refs(os.path.join(HIER_WEB, f)):
+            url = posixpath.normpath(posixpath.join("/hierarchy", ref))
+            if url.startswith("/hierarchy/"):
+                ok = os.path.exists(os.path.join(HIER_WEB, url[len("/hierarchy/"):]))
+            else:
+                ok = os.path.exists(os.path.join(KERNEL_WEB_DIR, url.lstrip("/")))
+            if not ok:
                 bad.append((f, ref))
-    assert not bad, f"hierarchy referencia arquivos do flow: {bad}"
+    assert not bad, f"hierarchy referencia arquivos que não são dela nem da plataforma: {bad}"
 
 
 def test_flow_and_hierarchy_do_not_link_each_others_pages():
     flow_pages = r"/(?:minha-visao|dashboard|wave\d|compromisso|settings|insights|maturidade|inconsistencies|index|visao-projeto)\.html"
-    for f in os.listdir(os.path.join(ROOT, "hierarchy")):
+    for f in os.listdir(HIER_WEB):
         if f.endswith((".js", ".html")):
-            src = open(os.path.join(ROOT, "hierarchy", f), encoding="utf-8").read()
+            src = open(os.path.join(HIER_WEB, f), encoding="utf-8").read()
             assert not re.search(r'["\'`]' + flow_pages, src), f"hierarchy/{f} aponta para página do flow"
-    for f in os.listdir(ROOT):
+    for f in os.listdir(FLOW_WEB):
         if f.endswith((".js", ".html")):
-            src = open(os.path.join(ROOT, f), encoding="utf-8").read()
+            src = open(os.path.join(FLOW_WEB, f), encoding="utf-8").read()
             assert not re.search(r'(?:href|location(?:\.href)?)\s*=\s*["\']/hierarchy/', src), \
                 f"{f} tem link fixo para /hierarchy/ (use o menu dinâmico)"

@@ -1,20 +1,22 @@
-"""Estáticos por módulo, com allowlist.
+"""Estáticos: cada módulo serve a PRÓPRIA pasta web; a plataforma serve kernel/web.
 
-Regras (URLs inalteradas; só passa a valer quem está ligado):
-  - ASSETS DA PLATAFORMA (design system + menu): sempre servidos;
-  - pasta web de um módulo (ex.: /hierarchy/...): só se o módulo está LIGADO (senão 404);
-  - demais arquivos da raiz: só se um módulo "dono da raiz" (flow) está ligado;
-  - só extensões web conhecidas; nada que comece com "." (.env, .git, .venv);
-  - código, bancos, yaml, docs etc. nunca são servidos.
+Layout físico (URLs inalteradas):
+  kernel/web/                 -> "/"           assets da plataforma (design system, menu, painel): sempre
+  modules/<id>/web/           -> "/<prefixo>/" módulo com `web_prefix` (ex.: hierarchy -> /hierarchy/...)
+  modules/<id>/web/           -> "/"           módulo "dono da raiz" (web_prefix vazio, ex.: flow)
+
+Módulo desligado não é montado => suas páginas dão 404 (nada de política em runtime).
+Defesa extra: só extensões web conhecidas e nada que comece com "." (.env, .git, .venv).
+Código, bancos, yaml e docs ficam fora das pastas web, então nunca são alcançáveis.
 """
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
-from typing import Callable
 
 from fastapi import HTTPException
 from starlette.staticfiles import StaticFiles
+
+KERNEL_WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
 ALLOWED_EXT = {
     ".html", ".css", ".js",
@@ -22,42 +24,34 @@ ALLOWED_EXT = {
     ".woff", ".woff2", ".ttf",
 }
 
-# Design system e menu: usados por TODOS os módulos (sempre disponíveis).
-# dashboard.css entra aqui porque a hierarquia (pendencias.html) também o usa.
-PLATFORM_ASSETS = frozenset({
-    "tokens.css", "nav.css", "nav.js", "ui.css", "ui.js", "context.js", "dashboard.css",
-    "modules.html", "modules.js", "modules.css",   # painel de módulos (plataforma)
-})
 
-
-@dataclass(frozen=True)
-class StaticPolicy:
-    dirs: frozenset = frozenset()   # pastas web de módulos ligados
-    root: bool = False              # há módulo ligado dono da raiz?
-
-
-def is_allowed(path: str, policy: StaticPolicy) -> bool:
+def is_allowed(path: str) -> bool:
     p = path.replace("\\", "/").strip("/")
     if p in ("", "."):
-        return policy.root  # raiz/index.html pertence ao dono da raiz
+        return True  # raiz da pasta (index.html, se existir)
     parts = p.split("/")
     if any(s == "" or s.startswith(".") for s in parts):
         return False
-    if len(parts) == 1 and parts[0] in policy.dirs:
-        return True  # índice da pasta web do módulo
-    if os.path.splitext(parts[-1])[1].lower() not in ALLOWED_EXT:
-        return False
-    if len(parts) == 1:
-        return parts[0] in PLATFORM_ASSETS or policy.root
-    return parts[0] in policy.dirs
+    last = parts[-1]
+    # diretórios (sem extensão) são tratados pelo StaticFiles (index.html / 404)
+    return os.path.splitext(last)[1] == "" or os.path.splitext(last)[1].lower() in ALLOWED_EXT
 
 
 class SafeStaticFiles(StaticFiles):
-    def __init__(self, *args, policy: Callable[[], StaticPolicy], **kwargs):
-        super().__init__(*args, **kwargs)
-        self._policy = policy
-
     async def get_response(self, path, scope):
-        if not is_allowed(path, self._policy()):
+        if not is_allowed(path):
             raise HTTPException(status_code=404)
         return await super().get_response(path, scope)
+
+
+def mount_static(app, modules) -> None:
+    """Monta os estáticos dos módulos LIGADOS. Chamar por último (não sombrear /api/*)."""
+    for m in modules:
+        if m.web_dir and m.web_prefix:
+            app.mount("/" + m.web_prefix.strip("/"),
+                      SafeStaticFiles(directory=m.web_dir, html=True), name=f"static-{m.id}")
+    root = SafeStaticFiles(directory=KERNEL_WEB_DIR, html=True)
+    for m in modules:
+        if m.web_dir and not m.web_prefix:
+            root.all_directories.append(m.web_dir)  # kernel/web vem primeiro: assets da plataforma têm prioridade
+    app.mount("/", root, name="static")

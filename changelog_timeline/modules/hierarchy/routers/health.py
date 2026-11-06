@@ -1,12 +1,12 @@
 import json as _json
 from fastapi import HTTPException
 from modules.hierarchy.db import get_hierarchy_connection
-from metrics.hierarchy_metrics import get_all_epics_health
-from metrics.hierarchy_metrics import get_all_initiatives_health
-from metrics.hierarchy_metrics import get_dashboard_v2_data
-from metrics.hierarchy_metrics import get_epic_health_data
-from metrics.hierarchy_metrics import get_excluded_projects
-from metrics.hierarchy_metrics import get_initiative_health_data
+from modules.hierarchy.metrics import get_all_epics_health
+from modules.hierarchy.metrics import get_all_initiatives_health
+from modules.hierarchy.metrics import get_dashboard_v2_data
+from modules.hierarchy.metrics import get_epic_health_data
+from modules.hierarchy.metrics import get_excluded_projects
+from modules.hierarchy.metrics import get_initiative_health_data
 from fastapi import APIRouter
 
 router = APIRouter()

@@ -17,6 +17,6 @@ def ensure_flow_schema(conn: sqlite3.Connection) -> list[str]:
 def migrate_flow(db_path: str | None = None) -> list[str]:
     """Cria/atualiza o issues.db. Chamado no on_enable do módulo."""
     if db_path is None:
-        from core.db import DB_PATH
+        from modules.flow.db import DB_PATH
         db_path = DB_PATH
     return migrate_db(db_path, MIGRATIONS_DIR)

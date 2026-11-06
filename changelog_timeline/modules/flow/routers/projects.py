@@ -4,7 +4,7 @@ import subprocess
 import sys
 from fastapi import HTTPException
 from pydantic import BaseModel
-from core.db import BASE_DIR, DB_PATH, get_db_connection
+from modules.flow.db import BASE_DIR, DB_PATH, get_db_connection
 from kernel.config_store import default_path
 from kernel.jobs import JobRunner
 from kernel.paths import EXPORTER_DIR

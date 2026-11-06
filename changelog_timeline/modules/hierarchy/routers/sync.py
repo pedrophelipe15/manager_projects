@@ -3,8 +3,8 @@ import subprocess
 import sys
 from fastapi import HTTPException
 from modules.hierarchy.db import get_hierarchy_connection
-from metrics.hierarchy_metrics import calculate_hierarchy_metrics
-from routers.hierarchy_common import _load_hierarchy_config, hierarchy_sync_job
+from modules.hierarchy.metrics import calculate_hierarchy_metrics
+from modules.hierarchy.routers.common import _load_hierarchy_config, hierarchy_sync_job
 from kernel.jobs import JobRunner
 from kernel.paths import EXPORTER_DIR
 from fastapi import APIRouter

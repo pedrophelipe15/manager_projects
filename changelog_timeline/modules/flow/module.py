@@ -1,8 +1,10 @@
 """Manifest do módulo FLOW (dashboards de fluxo, Waves 1-5, insights, settings).
 
-Fase 1: o manifest apenas aponta para os routers que já existem em routers/.
-Os arquivos físicos serão movidos para modules/flow/ na fase 8.
+Tudo do módulo mora aqui: routers/, metrics/, db.py, ingest.py, config.py, migrations/ e web/
+(páginas servidas na raiz "/"). Atalho de CLI na raiz: ingest_to_db.py -> modules/flow/ingest.py.
 """
+import os
+
 from kernel.module_base import Module, NavItem
 
 
@@ -14,7 +16,7 @@ def _on_enable():
 
 def _health():
     import os
-    from core.db import DB_PATH
+    from modules.flow.db import DB_PATH
     from kernel.migrations import read_version
     v = read_version(DB_PATH)
     detail = f"{os.path.basename(DB_PATH)} · schema v{v}" if v is not None else f"{os.path.basename(DB_PATH)} · sem schema"
@@ -26,22 +28,22 @@ module = Module(
     name="Fluxo e Métricas",
     version="1.0.0",
     routers=(
-        "routers.blacklist",
-        "routers.issues",
-        "routers.projects",
-        "routers.purge",
-        "routers.validations",
-        "routers.inconsistencies",
-        "routers.wave1",
-        "routers.insights",
-        "routers.wave2",
-        "routers.wave5",
-        "routers.home",
-        "routers.wave3",
-        "routers.wave4",
+        "modules.flow.routers.blacklist",
+        "modules.flow.routers.issues",
+        "modules.flow.routers.projects",
+        "modules.flow.routers.purge",
+        "modules.flow.routers.validations",
+        "modules.flow.routers.inconsistencies",
+        "modules.flow.routers.wave1",
+        "modules.flow.routers.insights",
+        "modules.flow.routers.wave2",
+        "modules.flow.routers.wave5",
+        "modules.flow.routers.home",
+        "modules.flow.routers.wave3",
+        "modules.flow.routers.wave4",
     ),
     home="/minha-visao.html",
-    static_root=True,  # dono dos arquivos web da raiz (exceto assets da plataforma)
+    web_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)), "web"),  # servida na raiz "/"
     nav=(
         NavItem("Minha Visão", "/minha-visao.html", "Minha Visão", 10, 10),
         NavItem("Compromisso", "/compromisso.html", "Prazos", 20, 10),

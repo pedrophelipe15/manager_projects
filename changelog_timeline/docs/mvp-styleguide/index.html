@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Styleguide — Changelog Timeline (MVP)</title>
+<!--
+  MVP ISOLADO do guia de estilo. Arquivo único, sem API.
+  - Os blocos <style id="tokens"> e <style id="ui"> são CÓPIAS de kernel/web/tokens.css e ui.css (gerados
+    na criação deste arquivo). A listagem de cores/tipografia/espaçamento abaixo é LIDA desses CSS em
+    tempo de execução (não é digitada à mão), então o guia não diverge dos tokens.
+  - <style id="components"> contém os componentes PROPOSTOS (badge, chip, input, tabs, alert, card, kpi):
+    é o que viraria um kernel/web/components.css. Hoje só .btn e a tabela existem como padrão.
+  Na versão real: <link> para tokens.css/ui.css/components.css em vez de cópias.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style id="tokens">
+/**
+ * tokens.css — Design System (Onda 3 UX). FONTE UNICA de cor, tipografia,
+ * espacamento e botoes. Carregar ANTES de qualquer CSS de pagina.
+ *
+ * Substitui os 9 blocos :root duplicados e as 2 familias de nomes de variavel.
+ * Mantem ALIASES retrocompativeis (--bg-primary, --bg-color, --text-main, ...)
+ * para que o CSS existente resolva automaticamente no novo tema, sem reescrever
+ * cada arquivo. Contrastes de texto medidos sobre --surface-0 (>= 4.5:1 = AA).
+ */
+:root {
+    /* ---- Superficies (tema CLARO PagBank, 4 degraus) ---- */
+    --surface-0: #f4f6f8;   /* fundo da pagina (cinza quase branco) */
+    --surface-1: #ffffff;   /* card */
+    --surface-2: #eef1f4;   /* card elevado / hover */
+    --surface-3: #d9e0e6;   /* borda ativa / divisor forte */
+
+    /* ---- Texto (contraste medido sobre --surface-1 branco) ---- */
+    --text-1: #10203a;      /* principal      ~15:1  AAA */
+    --text-2: #4a5a70;      /* secundario     ~7.4:1 AAA */
+    --text-3: #7488a0;      /* terciario/hint ~4.6:1 AA  */
+
+    /* ---- Bordas ---- */
+    --border-subtle: rgba(16, 32, 58, 0.08);
+    --border-strong: rgba(16, 32, 58, 0.16);
+
+    /* ---- Acao: VERDE PagBank (um verde, tres estados) ---- */
+    --action: #0f9d58;
+    --action-hover: #0c8a4d;
+    --action-quiet: rgba(15, 157, 88, 0.10);
+
+    /* ---- Semantico (SO para significado, nunca decoracao) ---- */
+    --ok: #0f9d58;          /* sucesso = verde da marca */
+    --warn: #f5a623;
+    --risk: #e23b3b;
+    --ok-bg: rgba(15, 157, 88, 0.10);
+    --warn-bg: rgba(245, 166, 35, 0.12);
+    --risk-bg: rgba(226, 59, 59, 0.10);
+
+    /* ---- Cores de marca PagBank (apoio) ----
+       --brand-blue e usado para CLICAVEIS dentro de dados (links de issue,
+       status "In Progress"), reservando o verde para CTA e sucesso. */
+    --brand-yellow: #ffcc00;
+    --brand-blue: #0a66c2;
+
+    /* ---- Serie de grafico (categorica) ----
+       Paleta ancorada na marca PagBank, maxima distincao em fundo CLARO.
+       1 verde, 2 azul, 3 ambar, 4 laranja, 5 roxo, 6 ciano. */
+    --chart-1: #0f9d58;  --chart-2: #0a66c2;
+    --chart-3: #f5a623;  --chart-4: #f0883e;
+    --chart-5: #7b5cd6;  --chart-6: #17a2b8;
+
+    /* Linha de grade dos graficos (visivel sobre fundo claro) */
+    --chart-grid: rgba(16, 32, 58, 0.08);
+
+    /* ---- Tipografia: escala de 6 degraus (piso 12px) ---- */
+    --fs-xs: 0.75rem;    /* 12px — badge, label KPI, header tabela */
+    --fs-sm: 0.8125rem;  /* 13px — celula, texto de filtro */
+    --fs-md: 0.875rem;   /* 14px — corpo, link de nav */
+    --fs-lg: 1rem;       /* 16px — subtitulo */
+    --fs-xl: 1.25rem;    /* 20px — titulo de secao */
+    --fs-2xl: 2rem;      /* 32px — h1, valor de KPI */
+
+    /* ---- Espacamento: grade 4px ---- */
+    --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+
+    --radius: 6px;
+    --radius-lg: 12px;
+
+    /* ---- Sombra (essencial no tema CLARO para elevar sem peso) ---- */
+    --shadow-sm: 0 1px 2px rgba(16, 32, 58, 0.06);
+    --shadow-md: 0 4px 16px rgba(16, 32, 58, 0.08);
+
+    /* ================================================================
+       ALIASES retrocompativeis — apontam para os tokens acima.
+       Cobrem as 2 familias que existiam no projeto.
+       ================================================================ */
+    /* Familia B (wave2-4, insights, minha-visao, compromisso, hierarchy) */
+    --bg-primary: var(--surface-0);
+    --bg-secondary: var(--surface-1);
+    --text-primary: var(--text-1);
+    --text-muted: var(--text-2);
+    --accent: var(--action);
+    --success: var(--ok);
+    --warning: var(--warn);
+    --danger: var(--risk);
+    --info: var(--action);
+    --glass-bg: var(--surface-1);
+    --glass-border: var(--border-subtle);
+
+    /* Familia A (dashboard, wave1, inconsistencies, settings, style) */
+    --bg-color: var(--surface-0);
+    --card-bg: var(--surface-1);
+    --border-color: var(--border-subtle);
+    --text-main: var(--text-1);
+    --text-secondary: var(--text-2);
+    --accent-hover: var(--action-hover);
+    --accent-color: var(--action);
+    --accent-glow: var(--action-quiet);
+    --timeline-line-color: var(--border-subtle);
+}
+
+/* ===================================================================
+   Reset de RUIDO DE FUNDO — superficie neutra, sem gradiente nem blur.
+   Aplicado com !important para vencer os body/.glass das paginas antigas
+   sem precisar reescrever cada arquivo.
+   =================================================================== */
+body {
+    background-color: var(--surface-0) !important;
+    background-image: none !important;
+}
+
+.glass {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-subtle) !important;
+    box-shadow: var(--shadow-sm) !important;  /* elevacao no tema claro */
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* ===================================================================
+   SISTEMA DE BOTOES — 4 variantes x 2 tamanhos. Substitui as ~20 classes.
+   Uso: <button class="btn btn--primary btn--md">...</button>
+   =================================================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    font-family: inherit;
+    font-weight: 500;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.btn:focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Tamanhos */
+.btn--sm { font-size: var(--fs-sm); padding: 0.35rem 0.7rem; min-height: 32px; }
+.btn--md { font-size: var(--fs-md); padding: 0.5rem 1rem; min-height: 38px; }
+
+/* Variantes */
+.btn--primary { background: var(--action); color: #fff; }
+.btn--primary:hover:not(:disabled) { background: var(--action-hover); }
+
+.btn--secondary { background: transparent; border-color: var(--border-strong); color: var(--text-1); }
+.btn--secondary:hover:not(:disabled) { border-color: var(--action); background: var(--action-quiet); }
+
+.btn--ghost { background: transparent; color: var(--text-2); }
+.btn--ghost:hover:not(:disabled) { color: var(--text-1); background: var(--surface-2); }
+
+.btn--danger { background: transparent; border-color: rgba(239, 95, 95, 0.4); color: var(--risk); }
+.btn--danger:hover:not(:disabled) { background: var(--risk); color: #fff; border-color: var(--risk); }
+
+/* ===================================================================
+   COMPATIBILIDADE TEMA CLARO (PagBank)
+   O CSS legado usava rgba(255,255,255,alpha) — branco translucido —
+   para trilhas de barra, hover de linha e bordas. No fundo claro isso
+   fica invisivel. Aqui remapeamos esses padroes para tokens escuros,
+   de forma centralizada (vence o CSS antigo sem reescrever cada arquivo).
+   =================================================================== */
+
+/* Trilhas de barra (fundo do "vazio") — precisam de cinza visivel */
+.score-bar,
+.progress-bar,
+.mini-bar,
+.wave1-progress-track {
+    background: var(--surface-2) !important;
+}
+
+/* Hover de linha de tabela — tom suave sobre branco */
+.data-table tr:hover,
+.data-table tbody tr:hover,
+.metric-table tr:hover,
+.metric-table tbody tr:hover,
+.inc-table tbody tr:hover,
+.rules-table tbody tr:hover,
+.metrics-table tbody tr:hover,
+#detail-panel .data-table tr:hover {
+    background: var(--surface-2) !important;
+}
+
+/* Hover de opcao em dropdown/multiselect */
+.dd-option:hover,
+.multiselect-options label:hover,
+#detail-panel .dd-option:hover {
+    background: var(--surface-2) !important;
+}
+
+/* Bordas internas de celula que usavam branco translucido */
+.data-table td,
+.metric-table td,
+#detail-panel .data-table td {
+    border-bottom-color: var(--border-subtle) !important;
+}
+
+/* "value-box" e caixas de formula com fundo branco translucido */
+.value-box,
+.formula-details summary,
+.kpi-details-content {
+    background: var(--surface-2) !important;
+}
+
+/* ===================================================================
+   REGRA DO VERDE — clicaveis DENTRO de dados usam AZUL, nao verde.
+   O verde (--action) fica reservado para CTA e sucesso. Links de issue
+   e demais links em celulas de tabela recebem --brand-blue para nao
+   competir com o verde de sucesso (Commitment Score, "ok").
+   =================================================================== */
+.jira-link,
+#detail-panel .jira-link {
+    color: var(--brand-blue) !important;
+}
+
+/* ===================================================================
+   FILTROS E CONTROLES DE FORMULARIO — TEMA CLARO
+   O CSS legado (e alguns :root inline por pagina) pintavam filtros,
+   dropdowns, selects e pagers com azul-escuro rgba(15,23,42,*) e #1e293b,
+   assumindo fundo escuro. No tema claro isso fica ilegivel (campo escuro,
+   placeholder sumido). Centralizamos aqui o override com !important para
+   corrigir TODAS as telas de uma vez, sem editar arquivo por arquivo.
+   =================================================================== */
+
+/* Inputs, selects e campos de filtro */
+.filter-input,
+.filter-bar select,
+.filter-section select,
+.section-filters .filter-input,
+.table-header input,
+input[type="text"].filter-input,
+input[type="date"].filter-input {
+    background: var(--surface-1) !important;
+    color: var(--text-1) !important;
+    border: 1px solid var(--border-strong) !important;
+}
+.filter-input::placeholder,
+.table-header input::placeholder { color: var(--text-3) !important; }
+.filter-bar select option,
+.filter-section select option { background: var(--surface-1) !important; color: var(--text-1) !important; }
+
+/* Dropdown-checkbox (toggle + menu + opcoes) — padrao do design system */
+.dd-toggle {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-1) !important;
+}
+.dd-toggle:hover { border-color: var(--action) !important; }
+.dd-menu {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-strong) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+.dd-option { color: var(--text-1) !important; }
+.dd-option:hover { background: var(--surface-2) !important; }
+
+/* Toolbar de filtros (barra que agrupa os controles) */
+.toolbar-glass,
+.filter-bar,
+.section-filters {
+    background: var(--surface-2) !important;
+}
+
+/* Pagers e botoes pequenos que usavam azul-escuro */
+.worst-pager-btn,
+.detail-pager-btn,
+#kpi-detail-panel .detail-pager-btn {
+    background: var(--surface-1) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-1) !important;
+}
+
+/* Tag de multi-select selecionada: verde da marca, nao azul */
+.multiselect-tag {
+    background: var(--action-quiet) !important;
+    border: 1px solid var(--action) !important;
+    color: var(--action) !important;
+}
+
+/* Headers sticky de tabela em paineis de detalhe que usavam #1e293b */
+#kpi-detail-panel .data-table th,
+#detail-panel .data-table th {
+    background: var(--surface-1) !important;
+    color: var(--text-3) !important;
+}
+
+</style>
+<style id="ui">
+/**
+ * ui.css — Densidade, header de tabela fixo e botao copiar (Onda 4 UX).
+ * Complementa tokens.css. Carregar depois de tokens.css.
+ */
+
+/* ---- Toggle de densidade no header ---- */
+.page-header { position: relative; }
+.density-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+@media (max-width: 768px) {
+    .density-toggle { position: static; margin-top: 0.5rem; }
+}
+
+/* ---- Densidade COMPACTA: aperta tabelas e KPIs ---- */
+[data-density="compact"] .data-table th,
+[data-density="compact"] .data-table td,
+[data-density="compact"] .metric-table th,
+[data-density="compact"] .metric-table td,
+[data-density="compact"] .report-table th,
+[data-density="compact"] .report-table td {
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+}
+[data-density="compact"] .kpi-card { padding: 0.9rem; }
+[data-density="compact"] .section { padding: 1rem; }
+[data-density="compact"] .project-card { padding: 0.9rem; }
+[data-density="compact"] .action-item { padding: 0.4rem 0.7rem; }
+
+/* ---- Header de tabela fixo no scroll ---- */
+/* Aplica quando a tabela esta dentro de um wrapper rolavel (.table-scroll). */
+.table-scroll { max-height: 65vh; overflow: auto; border-radius: var(--radius-lg); }
+.table-scroll table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface-2);
+}
+
+/* ---- Barra de acao de tabela (titulo + copiar) ---- */
+.table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+.btn-copy-table.copied { color: var(--ok); border-color: var(--ok); }
+
+/* ---- Numeros tabulares (alinhamento vertical de digitos) ----
+   Aplica figuras de largura fixa em todas as tabelas de dados do projeto.
+   Inofensivo em celulas de texto; essencial em colunas numericas. */
+.data-table,
+.metric-table,
+.report-table,
+.action-table {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Tooltip explicativo reutilizavel (CTUI.infoTooltip)
+   Balao que aparece no hover/focus de um elemento-alvo, para
+   explicar de onde vem um numero (formula + breakdown).
+
+   Uso:
+     <span class="ct-tip-wrap" tabindex="0" role="button" aria-label="...">
+       <span>54.1%</span>
+       <div class="ct-tip">...conteudo (via CTUI.infoTooltip)...</div>
+     </span>
+
+   Posicionamento: por padrao abre abaixo, alinhado a direita do alvo.
+   Modificadores: .ct-tip--left (alinha a esquerda), .ct-tip--up (abre acima).
+   ============================================================ */
+.ct-tip-wrap { position: relative; cursor: help; outline: none; display: inline-block; }
+.ct-tip-wrap:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px; }
+
+.ct-tip {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+    width: 260px; padding: 0.8rem 0.9rem;
+    background: var(--surface-2); border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg); box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+    opacity: 0; visibility: hidden; transform: translateY(-4px);
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    text-align: left; font-weight: 400; white-space: normal;
+}
+.ct-tip-wrap:hover .ct-tip,
+.ct-tip-wrap:focus .ct-tip,
+.ct-tip-wrap:focus-within .ct-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+
+/* Setinha */
+.ct-tip::after {
+    content: ''; position: absolute; bottom: 100%; right: 18px;
+    border: 6px solid transparent; border-bottom-color: var(--surface-2);
+}
+.ct-tip--left { right: auto; left: 0; }
+.ct-tip--left::after { right: auto; left: 18px; }
+.ct-tip--up { top: auto; bottom: calc(100% + 8px); transform: translateY(4px); }
+.ct-tip--up::after { bottom: auto; top: 100%; border-bottom-color: transparent; border-top-color: var(--surface-2); }
+.ct-tip-wrap:hover .ct-tip--up,
+.ct-tip-wrap:focus .ct-tip--up,
+.ct-tip-wrap:focus-within .ct-tip--up { transform: translateY(0); }
+
+.ct-tip-title { font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-2); margin-bottom: 0.5rem; }
+.ct-tip-formula { font-size: 0.78rem; color: var(--text-3); }
+.ct-tip-calc { font-size: 0.85rem; color: var(--text-1); margin: 0.2rem 0 0.7rem; font-variant-numeric: tabular-nums; }
+.ct-tip-calc strong { color: var(--action); }
+.ct-tip-rows { display: flex; flex-direction: column; gap: 0.3rem; border-top: 1px solid var(--border-subtle); padding-top: 0.6rem; }
+.ct-tip-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; }
+.ct-tip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
+.ct-tip-dot.good { background: var(--ok); }
+.ct-tip-dot.info { background: var(--action); }
+.ct-tip-dot.warn { background: var(--warn); }
+.ct-tip-dot.bad { background: var(--risk); }
+.ct-tip-lbl { color: var(--text-2); flex: 1; }
+.ct-tip-val { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.ct-tip-row.total { border-top: 1px solid var(--border-subtle); margin-top: 0.15rem; padding-top: 0.45rem; }
+.ct-tip-row.total .ct-tip-lbl, .ct-tip-row.total .ct-tip-val { color: var(--text-1); }
+.ct-tip-note { font-size: 0.7rem; color: var(--text-3); line-height: 1.4; margin-top: 0.6rem; }
+.ct-tip-empty { font-size: 0.78rem; color: var(--text-3); }
+
+</style>
+
+<style id="components">
+/* ===== COMPONENTES PROPOSTOS (só tokens; nenhum valor solto) ===== */
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:var(--fs-md);color:var(--text-1)}
+*{box-sizing:border-box}
+:focus-visible{outline:2px solid var(--action);outline-offset:2px}
+
+/* badge: estado de dados (semântico) */
+.badge{display:inline-flex;align-items:center;gap:var(--sp-1);padding:2px var(--sp-3);border-radius:999px;font-size:var(--fs-xs);font-weight:600;border:1px solid transparent;white-space:nowrap}
+.badge--ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok)}
+.badge--warn{color:#9a6200;background:var(--warn-bg);border-color:var(--warn)}
+.badge--risk{color:var(--risk);background:var(--risk-bg);border-color:var(--risk)}
+.badge--off{color:var(--text-2);background:var(--surface-2);border-color:var(--border-strong)}
+/* chip: filtro/seleção (ação do usuário) */
+.chip{display:inline-flex;align-items:center;gap:var(--sp-2);padding:var(--sp-1) var(--sp-3);border-radius:999px;font:inherit;font-size:var(--fs-sm);font-weight:500;border:1px solid var(--border-strong);background:var(--surface-1);color:var(--text-1);cursor:pointer}
+.chip:hover,.chip.is-hover{background:var(--surface-2)}
+.chip[aria-pressed="true"]{background:var(--action);border-color:var(--action);color:#fff}
+.chip:disabled{opacity:.5;cursor:not-allowed}
+/* input */
+.field{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.field>label{font-size:var(--fs-xs);font-weight:600;color:var(--text-2)}
+.input{font:inherit;font-size:var(--fs-md);padding:var(--sp-2) var(--sp-3);min-height:38px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);color:var(--text-1);width:100%}
+.input::placeholder{color:var(--text-3)}
+.input:hover,.input.is-hover{border-color:var(--text-3)}
+.input:focus,.input.is-focus{outline:none;border-color:var(--action);box-shadow:0 0 0 3px var(--action-quiet)}
+.input:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
+.input.is-error{border-color:var(--risk);box-shadow:0 0 0 3px var(--risk-bg)}
+.field__msg{font-size:var(--fs-xs);color:var(--risk)}
+.input-search{position:relative}
+.input-search .input{padding-right:2rem}
+.input-search::after{content:"⌕";position:absolute;right:var(--sp-3);top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none}
+/* tabs */
+.tabs{display:flex;gap:var(--sp-5);border-bottom:1px solid var(--border-subtle)}
+.tab{font:inherit;font-weight:500;color:var(--text-2);background:none;border:0;padding:var(--sp-2) 0;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.tab:hover{color:var(--text-1)}
+.tab[aria-selected="true"]{color:var(--action);border-bottom-color:var(--action);font-weight:600}
+/* alert */
+.alert{display:flex;gap:var(--sp-3);align-items:flex-start;padding:var(--sp-3) var(--sp-4);border-radius:var(--radius);border:1px solid;font-size:var(--fs-sm)}
+.alert__ico{flex:none;font-weight:800}
+.alert--info{background:rgba(10,102,194,.08);border-color:var(--brand-blue);color:var(--brand-blue)}
+.alert--ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.alert--warn{background:var(--warn-bg);border-color:var(--warn);color:#9a6200}
+.alert--risk{background:var(--risk-bg);border-color:var(--risk);color:var(--risk)}
+.alert b{color:var(--text-1)}
+/* card / kpi */
+.card{background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--sp-4)}
+.card--hover:hover,.card.is-hover{box-shadow:var(--shadow-md)}
+.card__title{font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin:0 0 var(--sp-2)}
+.kpi__value{font-size:var(--fs-2xl);font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi__delta{font-size:var(--fs-sm);font-weight:600}
+.kpi__delta--up{color:var(--ok)} .kpi__delta--down{color:var(--risk)}
+
+/* ===== layout da PÁGINA DO GUIA (não é componente) ===== */
+.sg{max-width:1200px;margin:0 auto;padding:var(--sp-8) var(--sp-6) 96px}
+.sg h1{font-size:clamp(2rem,6vw,3.4rem);letter-spacing:-.02em;margin:0 0 var(--sp-2);font-weight:800}
+.sg .lead{color:var(--text-2);max-width:70ch;margin:0 0 var(--sp-5)}
+.toc{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:0 0 var(--sp-8);position:sticky;top:0;background:var(--surface-0);padding:var(--sp-3) 0;z-index:5}
+.toc a{padding:var(--sp-1) var(--sp-3);border:1px solid var(--border-subtle);border-radius:999px;color:var(--text-2);text-decoration:none;font-size:var(--fs-sm);background:var(--surface-1)}
+.toc a:hover{color:var(--text-1);border-color:var(--border-strong)}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-8) var(--sp-8);margin-bottom:var(--sp-8)}
+.cols--2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols--1{grid-template-columns:1fr}
+.sec{border-top:2px solid var(--text-1);padding-top:var(--sp-3);min-width:0;scroll-margin-top:72px}
+.sec h2{margin:0 0 var(--sp-4);font-size:var(--fs-lg);font-weight:600;display:flex;align-items:center;gap:var(--sp-2)}
+.tag{font-size:var(--fs-xs);font-weight:700;padding:1px var(--sp-2);border-radius:var(--radius);border:1px solid}
+.tag--new{color:var(--brand-blue);border-color:var(--brand-blue);background:rgba(10,102,194,.08)}
+.tag--now{color:var(--ok);border-color:var(--ok);background:var(--ok-bg)}
+.tag--legacy{color:#9a6200;border-color:var(--warn);background:var(--warn-bg)}
+.note{color:var(--text-3);font-size:var(--fs-sm);margin:var(--sp-3) 0 0}
+.stack{display:flex;flex-direction:column;gap:var(--sp-3)} .row{display:flex;flex-wrap:wrap;gap:var(--sp-3);align-items:center}
+.lbl{font-size:var(--fs-xs);color:var(--text-3);font-variant-numeric:tabular-nums}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.85em}
+/* swatches */
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--sp-3)}
+.sw{border-radius:var(--radius-lg);border:1px solid var(--border-subtle);overflow:hidden;background:var(--surface-1)}
+.sw i{display:block;height:54px;border-bottom:1px solid var(--border-subtle)}
+.sw div{padding:var(--sp-2) var(--sp-3);font-size:var(--fs-xs)}
+.sw b{display:block;font-weight:600;font-size:var(--fs-sm)}
+.sw span{color:var(--text-3)}
+.sw .cr{float:right;font-weight:700}
+.group-t{font-size:var(--fs-xs);font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);margin:var(--sp-4) 0 var(--sp-2)}
+.group-t:first-child{margin-top:0}
+/* typography */
+.ty{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-3);border-bottom:1px dashed var(--border-subtle);padding:var(--sp-1) 0}
+/* spacing */
+.sp{display:grid;grid-template-columns:44px 1fr 56px;gap:var(--sp-3);align-items:center;font-size:var(--fs-xs);color:var(--text-2);margin:var(--sp-1) 0}
+.sp i{display:block;height:12px;background:var(--text-3);border-radius:2px;opacity:.55}
+/* radius / elevation */
+.demo-box{width:100%;height:92px;background:var(--surface-2);border:1px solid var(--border-strong);display:grid;place-items:center;font-size:var(--fs-xs);color:var(--text-2)}
+/* grid 12 col */
+.grid12{position:relative;height:140px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);padding:0 var(--sp-6);display:grid;grid-template-columns:repeat(12,1fr);gap:var(--sp-4)}
+.grid12 i{background:var(--action-quiet);border-inline:1px solid rgba(15,157,88,.35)}
+.grid12::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0 3px,rgba(226,59,59,.10) 3px 4px);pointer-events:none;border-radius:var(--radius)}
+.shell{display:grid;grid-template-columns:90px 1fr;grid-template-rows:34px 1fr;gap:var(--sp-2);height:200px;font-size:var(--fs-xs);color:var(--text-2)}
+.shell>div{border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);display:grid;place-items:center;text-align:center;padding:var(--sp-1)}
+.shell .s-side{grid-row:1/3;background:var(--action-quiet);border-color:var(--action)}
+.shell .s-top{background:var(--surface-2)}
+.bp{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-2);margin-top:var(--sp-3);font-size:var(--fs-xs)}
+.bp div{border:1px solid var(--border-subtle);border-radius:var(--radius);padding:var(--sp-2);background:var(--surface-1)}
+/* nav item states */
+.nv{display:block;padding:var(--sp-2) var(--sp-3);border-radius:var(--radius);color:var(--text-2);font-weight:500;position:relative;width:200px}
+.nv:hover,.nv.is-hover{background:var(--surface-2);color:var(--text-1)}
+.nv[aria-current="page"]{background:var(--action-quiet);color:var(--action);font-weight:650}
+/* page anatomy */
+.anat{display:grid;gap:var(--sp-2)}
+.anat>div{border:1px dashed var(--border-strong);border-radius:var(--radius);padding:var(--sp-2) var(--sp-3);background:var(--surface-1);display:flex;justify-content:space-between;gap:var(--sp-3);font-size:var(--fs-sm)}
+.anat small{color:var(--text-3)}
+@media (max-width:980px){.cols,.cols--2{grid-template-columns:1fr}.sg{padding:var(--sp-5) var(--sp-4) 72px}.grid12{gap:var(--sp-1)}}
+</style>
+</head>
+<body>
+<main class="sg">
+    <h1>UI Styleguide</h1>
+    <p class="lead">Padrão visual e de layout para <b>toda</b> página HTML da plataforma — de qualquer módulo. Os valores de cor, tipografia, espaçamento, raio e sombra abaixo são <b>lidos do <code>tokens.css</code> real</b>; os componentes marcados <span class="tag tag--new">proposto</span> ainda não existem como padrão no app.</p>
+    <nav class="toc" aria-label="Seções">
+        <a href="#layout">Layout</a><a href="#cores">Cores</a><a href="#tipografia">Tipografia</a><a href="#espacamento">Espaçamento</a>
+        <a href="#raio">Raio e sombra</a><a href="#botoes">Botões</a><a href="#inputs">Inputs</a><a href="#chips">Chips e badges</a>
+        <a href="#tabs">Tabs</a><a href="#alerts">Alertas</a><a href="#cards">Cards e KPI</a><a href="#tabela">Tabela</a><a href="#nav">Menu</a><a href="#pagina">Anatomia da página</a><a href="#status">Status</a>
+    </nav>
+
+    <!-- 1. LAYOUT -->
+    <section class="cols cols--2" id="layout">
+        <div class="sec"><h2>Grid e ritmo <span class="tag tag--new">proposto</span></h2>
+            <div class="grid12" aria-label="Grade de 12 colunas, gutter 16px, margem 24px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <p class="note">12 colunas · gutter <code>--sp-4</code> (16px) · margem lateral <code>--sp-6</code> (24px) · largura útil máx. 1200px · linhas vermelhas = ritmo vertical de 4px (<code>--sp-1</code>).</p>
+        </div>
+        <div class="sec"><h2>Casca da página (shell) <span class="tag tag--new">proposto</span></h2>
+            <div class="shell"><div class="s-side">Menu lateral<br>272px · 68px recolhido</div><div class="s-top">Topo: ☰/⇤ · breadcrumb · projeto</div><div>Conteúdo<br>padding 24px · máx. 1200px</div></div>
+            <div class="bp"><div><b>≥ 901px</b><br>menu fixo, recolhível</div><div><b>≤ 900px</b><br>menu vira gaveta (☰)</div><div><b>Sempre</b><br>1 <code>&lt;h1&gt;</code> por página</div></div>
+        </div>
+    </section>
+
+    <!-- 2. CORES / TIPO / ESPAÇO -->
+    <section class="cols cols--1" id="cores-linha">
+        <div class="sec" id="cores"><h2>Color tokens <span class="tag tag--now">existe</span></h2><div id="colors"></div></div>
+    </section>
+
+    <section class="cols" id="tipo-linha">
+        <div class="sec" id="tipografia"><h2>Typography scale <span class="tag tag--now">existe</span></h2><div id="types"></div>
+            <p class="note">Família: <b>Inter</b> (Google Fonts), fallback <code>system-ui</code>. Piso de 12px. Números em tabelas: <code>font-variant-numeric: tabular-nums</code>.</p></div>
+        <div class="sec" id="espacamento"><h2>Spacing <span class="tag tag--now">existe</span></h2><div id="spaces"></div>
+            <p class="note">Grade de 4px. Use sempre <code>var(--sp-*)</code>; nada de valores soltos.</p></div>
+    <div class="sec" id="raio"><h2>Radius &amp; elevation <span class="tag tag--now">existe</span></h2><div class="stack" id="radii"></div><div class="stack" id="shadows" style="margin-top:var(--sp-4)"></div><p class="note">No tema claro a elevação vem de sombra suave + borda sutil, nunca de gradiente ou blur.</p></div>
+    </section>
+
+        <!-- 3. INPUTS / CHIPS / TABS -->
+    <section class="cols">
+        <div class="sec" id="botoes"><h2>Buttons <span class="tag tag--now">existe</span></h2>
+            <div class="stack">
+                <div class="row"><button class="btn btn--primary btn--md">default</button><button class="btn btn--primary btn--md" style="background:var(--action-hover)">hover</button><button class="btn btn--primary btn--md" disabled>disabled</button></div>
+                <div class="row"><button class="btn btn--secondary btn--md">secondary</button><button class="btn btn--ghost btn--md">ghost</button><button class="btn btn--danger btn--md">danger</button></div>
+                <div class="row"><button class="btn btn--primary btn--sm">sm</button><button class="btn btn--secondary btn--sm">sm</button><button class="btn btn--primary btn--md" style="outline:2px solid var(--action);outline-offset:2px">focus</button></div>
+            </div>
+            <p class="note">Primário = 1 por área (CTA). Destrutivo sempre <code>--danger</code> com confirmação. <code>.btn--md</code> 38px, <code>.btn--sm</code> 32px.</p>
+        </div>
+        <div class="sec" id="inputs"><h2>Inputs <span class="tag tag--new">proposto</span> <span class="tag tag--legacy">hoje: .filter-input, .dd-toggle…</span></h2>
+            <div class="stack">
+                <div class="field"><label for="i1">Padrão</label><input id="i1" class="input" placeholder="Buscar issues"></div>
+                <div class="field"><label for="i2">Busca</label><div class="input-search"><input id="i2" class="input" placeholder="Buscar issues"></div></div>
+                <div class="field"><label for="i3">Foco</label><input id="i3" class="input is-focus" value="REYK-1042"></div>
+                <div class="field"><label for="i4">Erro</label><input id="i4" class="input is-error" value="???"><span class="field__msg">Chave inválida. Use PROJ-123.</span></div>
+                <div class="field"><label for="i5">Desabilitado</label><input id="i5" class="input" placeholder="Somente leitura" disabled></div>
+                <div class="field"><label for="i6">Select</label><select id="i6" class="input"><option>Todos os projetos</option><option>REYK</option></select></div>
+            </div>
+        </div>
+        <div class="sec" id="chips"><h2>Chips e badges <span class="tag tag--new">proposto</span></h2>
+            <div class="group-t">Chip = ação do usuário (filtro)</div>
+            <div class="row"><button class="chip" aria-pressed="true">REYK</button><button class="chip" aria-pressed="false">STN</button><button class="chip is-hover" aria-pressed="false">hover</button><button class="chip" disabled>off</button></div>
+            <div class="group-t">Badge = estado de um dado (somente leitura)</div>
+            <div class="row"><span class="badge badge--ok">Ligado</span><span class="badge badge--warn">Atenção</span><span class="badge badge--risk">Falhou</span><span class="badge badge--off">Desligado</span></div>
+            <p class="note">Cor só para <b>significado</b> (ok/atenção/risco). Nunca como decoração. Estado nunca só por cor: sempre com texto.</p>
+        </div>
+    </section>
+
+    <!-- 4. CARDS / TABELA / NAV -->
+    <section class="cols">
+        <div class="sec" id="tabs"><h2>Tabs <span class="tag tag--new">proposto</span></h2>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Dashboard</button><button class="tab" role="tab" aria-selected="false">Pendências</button><button class="tab" role="tab" aria-selected="false">Roadmap</button></div>
+            <p class="note">Para alternar visões <b>dentro</b> da mesma página. Navegar entre páginas é o menu lateral, não tabs.</p>
+            <h2 style="margin-top:var(--sp-6)" id="alerts">Alerts <span class="tag tag--new">proposto</span></h2>
+            <div class="stack">
+                <div class="alert alert--info"><span class="alert__ico">i</span><div><b>Informação.</b> Dados atualizados há 2 h.</div></div>
+                <div class="alert alert--ok"><span class="alert__ico">✓</span><div><b>Sync concluído.</b> 3 projetos.</div></div>
+                <div class="alert alert--warn"><span class="alert__ico">!</span><div><b>Atenção.</b> 4 issues sem due date.</div></div>
+                <div class="alert alert--risk"><span class="alert__ico">✕</span><div><b>Falha ao sincronizar.</b> Veja Plataforma › Módulos.</div></div>
+            </div>
+        </div>
+        <div class="sec" id="cards"><h2>Cards e KPI <span class="tag tag--new">proposto</span></h2>
+            <div class="stack">
+                <div class="card"><p class="card__title">Lead time P85</p><div class="kpi__value">18 d</div><div class="kpi__delta kpi__delta--down">▲ 2 d vs. mês anterior</div></div>
+                <div class="card"><p class="card__title">Throughput / semana</p><div class="kpi__value">6,4</div><div class="kpi__delta kpi__delta--up">▲ 0,8</div></div>
+                <div class="card is-hover"><p class="card__title">Card clicável (hover)</p><div>Sombra sobe de <code>--shadow-sm</code> para <code>--shadow-md</code>.</div></div>
+            </div>
+        </div>
+        <div class="sec" id="nav"><h2>Item de menu <span class="tag tag--new">proposto</span></h2>
+            <div class="stack"><a class="nv" href="#nav">Padrão</a><a class="nv is-hover" href="#nav">Hover</a><a class="nv" href="#nav" aria-current="page">Ativo</a></div>
+            <p class="note">Veja o MVP do menu lateral (<code>docs/mvp-menu-lateral</code>) para o comportamento completo.</p>
+        </div>
+    </section>
+
+    <!-- 5. ANATOMIA / STATUS -->
+    <section class="cols">
+        <div class="sec" id="tabela"><h2>Tabela <span class="tag tag--now">existe</span></h2>
+            <div class="card" style="padding:var(--sp-2)">
+                <div class="table-scroll"><table class="data-table"><thead><tr><th>Chave</th><th>Status</th><th style="text-align:right">Idade</th></tr></thead>
+                <tbody><tr><td><a style="color:var(--brand-blue)" href="#tabela">REYK-1042</a></td><td><span class="badge badge--ok">Done</span></td><td style="text-align:right;font-variant-numeric:tabular-nums">3 d</td></tr>
+                <tr><td><a style="color:var(--brand-blue)" href="#tabela">STN-377</a></td><td><span class="badge badge--warn">Test</span></td><td style="text-align:right;font-variant-numeric:tabular-nums">5 d</td></tr>
+                <tr><td><a style="color:var(--brand-blue)" href="#tabela">BKA-6703</a></td><td><span class="badge badge--risk">Blocked</span></td><td style="text-align:right;font-variant-numeric:tabular-nums">21 d</td></tr></tbody></table></div>
+            </div>
+            <p class="note">Links dentro de dados = azul (<code>--brand-blue</code>); o verde fica para CTA e sucesso. Números alinhados à direita e tabulares.</p>
+        </div>
+        <div class="sec" id="pagina"><h2>Anatomia de uma página <span class="tag tag--new">proposto</span></h2>
+            <div class="anat">
+                <div><span><b>Topo</b> — breadcrumb + projeto</span><small>shell (automático)</small></div>
+                <div><span><b>Cabeçalho</b> — <code>&lt;h1&gt;</code> + 1 frase de subtítulo + ações da página</span><small>obrigatório</small></div>
+                <div><span><b>Filtros</b> — chips/inputs numa barra única</span><small>opcional</small></div>
+                <div><span><b>KPIs</b> — 3 a 5 cards</span><small>opcional</small></div>
+                <div><span><b>Conteúdo</b> — gráficos e tabelas em cards</span><small>obrigatório</small></div>
+                <div><span><b>Estados</b> — carregando · vazio · erro (alert)</span><small>obrigatório</small></div>
+            </div>
+            <p class="note">Toda página dos módulos segue essa ordem. Páginas novas começam do <code>template.html</code> (a criar).</p>
+        </div>
+        <div class="sec" id="status"><h2>Status dos componentes</h2>
+            <table class="data-table"><thead><tr><th>Componente</th><th>Hoje</th><th>Ação</th></tr></thead><tbody>
+                <tr><td>Tokens (cor, tipo, espaço)</td><td><span class="badge badge--ok">padrão</span></td><td>manter</td></tr>
+                <tr><td>Botão</td><td><span class="badge badge--ok">padrão</span></td><td>manter</td></tr>
+                <tr><td>Tabela</td><td><span class="badge badge--warn">parcial</span></td><td>unificar 4 classes</td></tr>
+                <tr><td>Input / filtro</td><td><span class="badge badge--risk">legado</span></td><td>criar <code>.input</code>, migrar</td></tr>
+                <tr><td>Badge, chip, card, tabs, alert</td><td><span class="badge badge--risk">por página</span></td><td>criar e migrar</td></tr>
+                <tr><td>Casca (menu lateral)</td><td><span class="badge badge--risk">não existe</span></td><td>implementar</td></tr>
+            </tbody></table>
+        </div>
+    </section>
+</main>
+
+<script>
+"use strict";
+/* ---- lê os tokens do :root do tokens.css (não digitados à mão) ---- */
+const root = document.documentElement;
+const cs = getComputedStyle(root);
+const names = [];
+for (const sheet of document.styleSheets) {
+    if (!sheet.ownerNode || sheet.ownerNode.id !== "tokens") continue;
+    for (const rule of sheet.cssRules) {
+        if (rule.selectorText === ":root") for (const p of rule.style) if (p.startsWith("--")) names.push(p);
+    }
+}
+const val = (n) => cs.getPropertyValue(n).trim();
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+/* contraste WCAG sobre o fundo informado */
+function rgb(c) {
+    const t = document.createElement("i"); t.style.color = c; document.body.appendChild(t);
+    const m = getComputedStyle(t).color.match(/[\d.]+/g).map(Number); t.remove(); return m;
+}
+const lum = ([r, g, b]) => { const f = (v) => (v /= 255) <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+const contrast = (a, b) => { const [x, y] = [lum(rgb(a)), lum(rgb(b))].sort((p, q) => q - p); return ((x + .05) / (y + .05)).toFixed(1); };
+
+const GROUPS = [
+    ["Superfícies", /^--surface-/], ["Texto", /^--text-[123]$/], ["Ação", /^--action/],
+    ["Semântico", /^--(ok|warn|risk)(-bg)?$/], ["Marca", /^--brand-/], ["Gráficos", /^--chart-[1-6]$/],
+];
+const colors = document.getElementById("colors");
+GROUPS.forEach(([title, rx]) => {
+    const list = names.filter((n) => rx.test(n));
+    if (!list.length) return;
+    colors.appendChild(el("div", "group-t", title));
+    const grid = el("div", "sw-grid");
+    list.forEach((n) => {
+        const box = el("div", "sw"), chipEl = document.createElement("i"); chipEl.style.background = `var(${n})`;
+        const info = el("div"); const b = el("b", null, n.replace("--", ""));
+        const v = el("span", "mono", val(n));
+        info.append(b, v);
+        if (/^--text-[123]$/.test(n)) info.appendChild(el("span", "cr", contrast(val(n), val("--surface-1")) + ":1"));
+        box.append(chipEl, info); grid.appendChild(box);
+    });
+    colors.appendChild(grid);
+});
+colors.appendChild(el("p", "note", "Texto: razão de contraste sobre --surface-1 (AA ≥ 4.5:1)."));
+
+const types = document.getElementById("types");
+names.filter((n) => /^--fs-/.test(n)).reverse().forEach((n) => {
+    const row = el("div", "ty"); const s = el("span", null, n === "--fs-2xl" ? "Título de página" : n === "--fs-xl" ? "Título de seção" : n === "--fs-lg" ? "Subtítulo" : n === "--fs-md" ? "Corpo e menu" : n === "--fs-sm" ? "Célula e filtro" : "Badge e rótulo");
+    s.style.fontSize = `var(${n})`; s.style.fontWeight = n === "--fs-2xl" || n === "--fs-xl" ? 700 : 500;
+    row.append(s, el("span", "lbl mono", `${n.replace("--", "")} · ${val(n)}`)); types.appendChild(row);
+});
+
+const spaces = document.getElementById("spaces");
+names.filter((n) => /^--sp-/.test(n)).forEach((n) => {
+    const r = el("div", "sp"); const bar = document.createElement("i"); bar.style.width = `var(${n})`; bar.style.minWidth = "2px";
+    const wrap = el("div"); wrap.appendChild(bar);
+    r.append(el("span", "mono", n.replace("--", "")), wrap, el("span", "mono", val(n))); spaces.appendChild(r);
+});
+
+const radii = document.getElementById("radii");
+names.filter((n) => /^--radius/.test(n)).forEach((n) => {
+    const d = el("div", "demo-box", `${n.replace("--", "")} · ${val(n)}`); d.style.borderRadius = `var(${n})`; radii.appendChild(d);
+});
+const shadows = document.getElementById("shadows");
+names.filter((n) => /^--shadow/.test(n)).forEach((n) => {
+    const d = el("div", "demo-box", `${n.replace("--", "")}`); d.style.boxShadow = `var(${n})`; d.style.background = "var(--surface-1)"; d.style.borderRadius = "var(--radius-lg)"; d.style.borderColor = "var(--border-subtle)"; shadows.appendChild(d);
+});
+
+/* tabs: só alterna a aba marcada (demonstração) */
+document.querySelectorAll(".tabs").forEach((t) => t.addEventListener("click", (e) => {
+    const b = e.target.closest(".tab"); if (!b) return;
+    t.querySelectorAll(".tab").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+}));
+document.querySelectorAll(".chip:not(:disabled)[aria-pressed]").forEach((c) => c.addEventListener("click", () => c.setAttribute("aria-pressed", String(c.getAttribute("aria-pressed") !== "true"))));
+</script>
+</body>
+</html>

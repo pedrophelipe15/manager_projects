@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MVP — Menu lateral por módulo</title>
+<!--
+  MVP VISUAL, ISOLADO DO SISTEMA. Arquivo único, sem dependências, sem chamar API nenhuma.
+  Objetivo: validar a ideia "menu lateral esquerdo, um item por módulo" antes de mexer no app.
+
+  Os dados em MODULES têm o MESMO formato de GET /api/platform/modules (id, name, state, nav[]
+  com label/href/group/group_order/order). Acrescentei só `icon` (campo novo proposto).
+  Tokens de cor copiados de kernel/web/tokens.css (tema claro PagBank).
+-->
+<style>
+:root {
+    --surface-0:#f4f6f8; --surface-1:#fff; --surface-2:#eef1f4; --surface-3:#d9e0e6;
+    --text-1:#10203a; --text-2:#4a5a70; --text-3:#7488a0;
+    --border-subtle:rgba(16,32,58,.08); --border-strong:rgba(16,32,58,.16);
+    --action:#0f9d58; --action-hover:#0c8a4d; --action-quiet:rgba(15,157,88,.10);
+    --warn:#f5a623; --warn-bg:rgba(245,166,35,.12); --risk:#e23b3b; --risk-bg:rgba(226,59,59,.10);
+    --brand-blue:#0a66c2; --radius:6px; --radius-lg:12px;
+    --shadow-sm:0 1px 2px rgba(16,32,58,.06); --shadow-md:0 4px 16px rgba(16,32,58,.08);
+    --side-w:272px; --rail-w:68px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:.875rem;color:var(--text-1);background:var(--surface-0)}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--brand-blue);outline-offset:2px}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:var(--side-w) 1fr;min-height:100vh;transition:grid-template-columns .2s}
+body.rail .app{grid-template-columns:var(--rail-w) 1fr}
+.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:var(--surface-1);border-right:1px solid var(--border-subtle);z-index:30}
+.main{min-width:0;display:flex;flex-direction:column}
+
+/* ---------- sidebar ---------- */
+.brand{display:flex;align-items:center;gap:.7rem;padding:1rem 1rem .8rem;min-height:64px}
+.brand-logo{flex:none;width:36px;height:36px;border-radius:10px;background:var(--action);color:#fff;display:grid;place-items:center;font-weight:800}
+.brand-name{font-weight:700;line-height:1.1}
+.brand-name small{display:block;font-weight:500;color:var(--text-3);font-size:.72rem}
+.side-scroll{flex:1;overflow-y:auto;padding:.25rem .6rem 1rem}
+.side-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:.9rem .6rem .35rem}
+.side-bottom{border-top:1px solid var(--border-subtle);padding:.4rem .6rem .6rem}
+
+.mod{margin:.15rem 0}
+.mod-head{width:100%;display:flex;align-items:center;gap:.65rem;padding:.55rem .6rem;border:0;background:transparent;border-radius:var(--radius);text-align:left;font-weight:650;color:var(--text-1)}
+.mod-head:hover{background:var(--surface-2)}
+.mod-ico{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);color:var(--text-2)}
+.mod.has-active .mod-ico{background:var(--action-quiet);color:var(--action)}
+.mod-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--action)}
+.dot.failed{background:var(--risk)}
+.chev{flex:none;width:16px;height:16px;color:var(--text-3);transition:transform .15s}
+.mod.open .chev{transform:rotate(90deg)}
+.mod-body{display:none;margin:.1rem 0 .35rem 1.05rem;padding-left:.75rem;border-left:1px solid var(--border-subtle)}
+.mod.open .mod-body{display:block}
+.grp-label{font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);padding:.55rem .55rem .15rem}
+.lnk{display:block;position:relative;padding:.38rem .6rem;border-radius:var(--radius);color:var(--text-2);font-weight:500}
+.lnk:hover{background:var(--surface-2);color:var(--text-1)}
+.lnk[aria-current="page"]{background:var(--action-quiet);color:var(--action);font-weight:650}
+.lnk[aria-current="page"]::before{content:"";position:absolute;left:-.8rem;top:20%;bottom:20%;width:3px;border-radius:3px;background:var(--action)}
+.mod-fail{margin:.2rem 0 .4rem;padding:.5rem .6rem;border-radius:var(--radius);background:var(--risk-bg);color:var(--risk);font-size:.78rem}
+@keyframes pulse{0%{background:var(--action-quiet)}100%{background:transparent}}
+.mod.new .mod-head{animation:pulse 2.2s ease-out 1}
+
+/* modo recolhido (rail) */
+body.rail .brand-name,body.rail .mod-name,body.rail .chev,body.rail .mod-body,body.rail .side-label,body.rail .dot{display:none}
+body.rail .brand{justify-content:center;padding-inline:0}
+body.rail .mod-head{justify-content:center;padding:.5rem 0}
+body.rail .side-scroll,body.rail .side-bottom{padding-inline:.5rem}
+
+/* ---------- topbar ---------- */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.75rem;padding:.65rem 1.25rem;background:var(--surface-1);border-bottom:1px solid var(--border-subtle)}
+.icon-btn{flex:none;width:36px;height:36px;border:1px solid var(--border-subtle);background:var(--surface-1);border-radius:var(--radius);display:grid;place-items:center;color:var(--text-2)}
+.icon-btn:hover{background:var(--surface-2)}
+.crumbs{flex:1;min-width:0;display:flex;align-items:center;gap:.4rem;color:var(--text-3);white-space:nowrap;overflow:hidden}
+.crumbs b{color:var(--text-1);font-weight:650}
+.crumbs .sep{opacity:.6}
+.ctx{display:flex;align-items:center;gap:.5rem;color:var(--text-2)}
+.ctx select{font:inherit;padding:.35rem .6rem;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);color:var(--text-1)}
+#btn-menu{display:none}
+
+/* ---------- conteúdo ---------- */
+.content{padding:1.25rem 1.5rem 3rem;max-width:1200px;width:100%}
+.sim{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.6rem .8rem;margin-bottom:1.25rem;border:1px dashed var(--border-strong);border-radius:var(--radius-lg);background:var(--surface-1)}
+.sim strong{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);margin-right:.25rem}
+.chip{border:1px solid var(--border-strong);background:var(--surface-1);border-radius:999px;padding:.3rem .75rem;font-size:.8rem;font-weight:600}
+.chip:hover{background:var(--surface-2)}
+.chip.on{background:var(--action-quiet);border-color:var(--action);color:var(--action)}
+.chip.bad{background:var(--risk-bg);border-color:var(--risk);color:var(--risk)}
+h1{margin:0 0 .15rem;font-size:1.6rem}
+.sub{margin:0 0 1.25rem;color:var(--text-2)}
+.sub code{background:var(--surface-2);padding:.1rem .4rem;border-radius:4px;font-size:.8rem}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.9rem;margin-bottom:1.1rem}
+.card{background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:1rem 1.1rem}
+.kpi-l{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.kpi-v{font-size:1.9rem;font-weight:750;margin-top:.2rem}
+.bars{display:flex;align-items:flex-end;gap:.5rem;height:120px;margin-top:.6rem}
+.bars i{flex:1;background:var(--action);opacity:.85;border-radius:4px 4px 0 0}
+table{width:100%;border-collapse:collapse}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--border-strong)}
+td{padding:.6rem;border-bottom:1px solid var(--border-subtle);vertical-align:top}
+.badge{display:inline-block;padding:.12rem .6rem;border-radius:999px;font-size:.75rem;font-weight:650;border:1px solid}
+.b-ok{color:var(--action);background:var(--action-quiet);border-color:var(--action)}
+.b-off{color:var(--text-2);background:var(--surface-2);border-color:var(--border-strong)}
+.b-fail{color:var(--risk);background:var(--risk-bg);border-color:var(--risk)}
+.note{margin-top:1.1rem;color:var(--text-3);font-size:.8rem}
+.toast{position:fixed;right:1.25rem;bottom:1.25rem;max-width:340px;padding:.8rem 1rem;border-radius:var(--radius-lg);background:var(--text-1);color:#fff;box-shadow:var(--shadow-md);opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;z-index:60}
+.toast.show{opacity:1;transform:none}
+.overlay{display:none}
+
+/* ---------- mobile: menu vira gaveta ---------- */
+@media (max-width:900px){
+    .app,body.rail .app{grid-template-columns:1fr}
+    .sidebar{position:fixed;inset:0 auto 0 0;width:min(86vw,300px);transform:translateX(-102%);transition:transform .2s;box-shadow:var(--shadow-md)}
+    body.drawer .sidebar{transform:none}
+    body.drawer .overlay{display:block;position:fixed;inset:0;background:rgba(16,32,58,.35);z-index:25}
+    #btn-menu{display:grid}
+    #btn-rail{display:none}
+    body.rail .brand-name,body.rail .mod-name,body.rail .chev,body.rail .side-label,body.rail .dot{display:revert}
+    body.rail .mod.open .mod-body{display:block}
+    .ctx span{display:none}
+    .content{padding:1rem}
+}
+</style>
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+        <div class="brand">
+            <div class="brand-logo">CT</div>
+            <div class="brand-name">Changelog Timeline<small>gestão de fluxo</small></div>
+        </div>
+        <div class="side-scroll"><nav id="modules-nav"></nav></div>
+        <div class="side-bottom"><nav id="platform-nav" aria-label="Plataforma"></nav></div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="icon-btn" id="btn-menu" aria-label="Abrir menu" aria-controls="sidebar">☰</button>
+            <button class="icon-btn" id="btn-rail" aria-label="Recolher ou expandir o menu" title="Recolher / expandir o menu">⇤</button>
+            <div class="crumbs" id="crumbs" aria-label="Você está em"></div>
+            <div class="ctx"><span>Projeto</span>
+                <select aria-label="Projeto"><option>Todos os meus projetos</option><option>REYK</option><option>STN</option><option>BKA</option></select>
+            </div>
+        </header>
+
+        <main class="content">
+            <div class="sim" id="sim" role="group" aria-label="Simulador do MVP"></div>
+            <div id="page"></div>
+        </main>
+    </div>
+</div>
+<div class="overlay" id="overlay"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ---------------------------------------------------------------- dados (mesmo formato da API) */
+const N = (label, href, group = "", group_order = 100, order = 100) => ({ label, href, group, group_order, order });
+
+const MODULES = [
+    { id: "flow", name: "Fluxo e Métricas", icon: "chart", state: "enabled", nav: [
+        N("Minha Visão", "/minha-visao.html", "Minha Visão", 10, 10),
+        N("Compromisso", "/compromisso.html", "Prazos", 20, 10),
+        N("Previsibilidade", "/wave2.html", "Prazos", 20, 20),
+        N("Maturidade", "/maturidade.html", "Pessoas", 30, 10),
+        N("Pessoas", "/wave3.html", "Pessoas", 30, 20),
+        N("Gargalo e Fluxo", "/wave1.html", "Fluxo", 40, 10),
+        N("Portfólio", "/wave4.html", "Fluxo", 40, 20),
+        N("Dashboard", "/dashboard.html", "Fluxo", 40, 30),
+        N("Inconsistências", "/inconsistencies.html", "Dados", 60, 10),
+        N("Configurações", "/settings.html", "Dados", 60, 20),
+    ]},
+    { id: "hierarchy", name: "Hierarquia", icon: "tree", state: "enabled", nav: [
+        // hoje a hierarquia tem uma sub-nav própria; no menu lateral esses itens sobem para cá
+        N("Dashboard", "/hierarchy/dashboard-v2.html", "", 10, 10),
+        N("Pendências", "/hierarchy/pendencias.html", "", 10, 20),
+        N("Roadmap", "/hierarchy/roadmap.html", "", 10, 30),
+        N("Timeline", "/hierarchy/timeline.html", "", 10, 40),
+        N("Configurações", "/hierarchy/settings.html", "", 10, 50),
+    ]},
+];
+const NEW_MODULE = { id: "quality", name: "Qualidade", icon: "shield", state: "enabled", nav: [
+    N("Regras", "/quality/rules.html", "Gestão", 10, 10),
+    N("Auditoria", "/quality/audit.html", "Gestão", 10, 20),
+    N("Relatórios", "/quality/reports.html", "", 20, 10),
+]};
+const PLATFORM = { id: "platform", name: "Plataforma", icon: "grid", state: "enabled",
+    nav: [N("Módulos", "/modules.html", "", 10, 10)] };
+
+/* ---------------------------------------------------------------- ícones (SVG estático) */
+const ICONS = {
+    chart:  '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    tree:   '<circle cx="12" cy="5" r="2.2"/><circle cx="5.5" cy="19" r="2.2"/><circle cx="18.5" cy="19" r="2.2"/><path d="M12 7.2v4.3M12 11.5H5.5v5.3M12 11.5h6.5v5.3"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    grid:   '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+    chev:   '<path d="M9 6l6 6-6 6"/>',
+};
+function svg(name, size = 18) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+}
+
+/* ---------------------------------------------------------------- estado */
+const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem storage: segue */ } },
+};
+let open = new Set(store.get("mvp.open", ["flow"]));
+let justAdded = null;
+document.body.classList.toggle("rail", store.get("mvp.rail", false));
+
+const slug = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+const allModules = () => [...MODULES, PLATFORM];
+const find = (route) => {
+    const [mid, sl] = route.split("/");
+    const mod = allModules().find((m) => m.id === mid);
+    const item = mod && mod.nav.find((n) => slug(n.label) === sl);
+    return mod && item && mod.state === "enabled" ? { mod, item } : null;
+};
+const firstRoute = () => {
+    for (const m of MODULES) if (m.state === "enabled") return `${m.id}/${slug(sortedNav(m)[0].label)}`;
+    return `platform/${slug(PLATFORM.nav[0].label)}`;
+};
+const sortedNav = (m) => [...m.nav].sort((a, b) => a.group_order - b.group_order || a.order - b.order);
+let currentRoute = "";
+const hashRoute = () => { try { return location.hash.replace(/^#\/?/, ""); } catch (e) { return ""; } };
+const route = () => currentRoute || hashRoute() || firstRoute();
+function go(r) {                                   // navega sem depender do hash (o hash é só um extra: voltar/compartilhar)
+    currentRoute = r;
+    try { history.replaceState(null, "", "#/" + r); } catch (e) { /* preview sem history: segue */ }
+    expandActive(); renderAll();
+}
+
+/* grupos de um módulo: [{name, links}] — grupo de 1 link com o mesmo nome do link vira link solto */
+function groupsOf(m) {
+    const out = [];
+    sortedNav(m).forEach((n) => {
+        const name = n.group || "";
+        let g = out.find((x) => x.name === name);
+        if (!g) out.push((g = { name, links: [] }));
+        g.links.push(n);
+    });
+    return out.map((g) => (g.links.length === 1 && g.links[0].label === g.name ? { name: "", links: g.links } : g));
+}
+
+/* ---------------------------------------------------------------- render: sidebar */
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+function renderModule(m, current) {
+    const wrap = el("div", "mod");
+    const hasActive = current && current.mod.id === m.id;
+    if (open.has(m.id)) wrap.classList.add("open");
+    if (hasActive) wrap.classList.add("has-active");
+    if (justAdded === m.id) wrap.classList.add("new");
+
+    const head = el("button", "mod-head");
+    head.type = "button";
+    head.title = m.name;
+    head.setAttribute("aria-expanded", String(open.has(m.id)));
+    head.innerHTML = `<span class="mod-ico">${svg(m.icon)}</span>`;
+    head.appendChild(el("span", "mod-name", m.name));
+    if (m.state === "failed") { const d = el("span", "dot failed"); d.title = "Módulo com falha"; head.appendChild(d); }
+    else if (m.id !== "platform") head.appendChild(el("span", "dot"));
+    const chev = el("span", "chev"); chev.innerHTML = svg("chev", 16); head.appendChild(chev);
+    head.addEventListener("click", () => {
+        if (document.body.classList.contains("rail") && matchMedia("(min-width:901px)").matches) setRail(false); // rail: clicar abre o menu
+        open.has(m.id) ? open.delete(m.id) : open.add(m.id);   // qualquer módulo pode ser recolhido
+        store.set("mvp.open", [...open]);
+        renderSidebar();
+    });
+    wrap.appendChild(head);
+
+    const body = el("div", "mod-body");
+    if (m.state === "failed") {
+        body.appendChild(el("div", "mod-fail", "Módulo com falha — veja Plataforma › Módulos"));
+    } else {
+        groupsOf(m).forEach((g) => {
+            if (g.name) body.appendChild(el("div", "grp-label", g.name));
+            g.links.forEach((n) => {
+                const a = el("a", "lnk", n.label);
+                a.href = `#/${m.id}/${slug(n.label)}`;
+                if (current && current.mod.id === m.id && current.item === n) a.setAttribute("aria-current", "page");
+                a.addEventListener("click", (e) => { e.preventDefault(); closeDrawer(); go(`${m.id}/${slug(n.label)}`); });
+                body.appendChild(a);
+            });
+        });
+    }
+    wrap.appendChild(body);
+    return wrap;
+}
+
+function renderSidebar() {
+    const current = find(route());
+    const nav = document.getElementById("modules-nav");
+    nav.textContent = "";
+    nav.appendChild(el("div", "side-label", "Módulos"));
+    MODULES.filter((m) => m.state !== "disabled").forEach((m) => nav.appendChild(renderModule(m, current)));
+    const pn = document.getElementById("platform-nav");
+    pn.textContent = "";
+    pn.appendChild(renderModule(PLATFORM, current));
+}
+
+/* ---------------------------------------------------------------- render: página */
+function renderCrumbs(cur) {
+    const c = document.getElementById("crumbs");
+    c.textContent = "";
+    const parts = [cur.mod.name];
+    const g = cur.item.group;
+    if (g && g !== cur.item.label && cur.mod.nav.filter((n) => n.group === g).length > 1) parts.push(g);
+    parts.push(cur.item.label);
+    parts.forEach((p, i) => {
+        if (i) c.appendChild(el("span", "sep", "›"));
+        c.appendChild(i === parts.length - 1 ? el("b", null, p) : el("span", null, p));
+    });
+}
+
+const FAKE_ROWS = [["REYK-1042", "Migração do cluster", "In Progress", "12 d"], ["STN-377", "Revisão de índices", "Test", "5 d"],
+    ["BKA-6703", "Rotina de expurgo", "Blocked", "21 d"], ["REYK-1051", "Ajuste de pipeline", "Done", "3 d"], ["STN-402", "Backup point-in-time", "In Progress", "9 d"]];
+
+function renderPage() {
+    const cur = find(route());
+    const page = document.getElementById("page");
+    page.textContent = "";
+    if (!cur) { currentRoute = firstRoute(); return renderAll(); }
+    renderCrumbs(cur);
+    document.title = `${cur.item.label} · ${cur.mod.name} — MVP menu lateral`;
+
+    page.appendChild(el("h1", null, cur.item.label));
+    const sub = el("p", "sub");
+    sub.append(`Módulo ${cur.mod.name} · página atual do sistema: `);
+    sub.appendChild(el("code", null, cur.item.href));
+    page.appendChild(sub);
+
+    if (cur.mod.id === "platform") return renderModulesPanel(page);
+
+    const kpis = el("div", "kpis");
+    [["Lead time P85", "18 d"], ["Throughput / sem", "6,4"], ["WIP", "23"], ["Bloqueadas", "4"]].forEach(([l, v]) => {
+        const k = el("div", "card"); k.appendChild(el("div", "kpi-l", l)); k.appendChild(el("div", "kpi-v", v)); kpis.appendChild(k);
+    });
+    page.appendChild(kpis);
+
+    const chart = el("div", "card");
+    chart.appendChild(el("div", "kpi-l", "Entregas por semana (exemplo)"));
+    const bars = el("div", "bars");
+    [40, 62, 55, 80, 48, 90, 70, 84].forEach((h) => { const b = document.createElement("i"); b.style.height = h + "%"; bars.appendChild(b); });
+    chart.appendChild(bars);
+    page.appendChild(chart);
+
+    const t = el("div", "card"); t.style.marginTop = ".9rem";
+    t.appendChild(el("div", "kpi-l", "Issues (exemplo)"));
+    const tbl = document.createElement("table");
+    tbl.innerHTML = "<thead><tr><th>Chave</th><th>Resumo</th><th>Status</th><th>Idade</th></tr></thead>";
+    const tb = document.createElement("tbody");
+    FAKE_ROWS.forEach((r) => { const tr = document.createElement("tr"); r.forEach((v) => tr.appendChild(el("td", null, v))); tb.appendChild(tr); });
+    tbl.appendChild(tb); t.appendChild(tbl); page.appendChild(t);
+    page.appendChild(el("p", "note", "Conteúdo ilustrativo: só o layout (menu, breadcrumb, largura útil) está em validação."));
+}
+
+function renderModulesPanel(page) {
+    const card = el("div", "card");
+    const tbl = document.createElement("table");
+    tbl.innerHTML = "<thead><tr><th>Módulo</th><th>Estado</th><th>Itens de menu</th></tr></thead>";
+    const tb = document.createElement("tbody");
+    [...MODULES, PLATFORM].forEach((m) => {
+        const tr = document.createElement("tr");
+        const s = { enabled: ["Ligado", "b-ok"], disabled: ["Desligado", "b-off"], failed: ["Falhou", "b-fail"] }[m.state];
+        const td0 = el("td"); td0.appendChild(el("strong", null, m.name)); td0.appendChild(document.createElement("br")); td0.appendChild(el("code", null, m.id));
+        const td1 = el("td"); td1.appendChild(el("span", "badge " + s[1], s[0]));
+        tr.append(td0, td1, el("td", null, m.state === "enabled" ? String(m.nav.length) : "—"));
+        tb.appendChild(tr);
+    });
+    tbl.appendChild(tb); card.appendChild(tbl); page.appendChild(card);
+    page.appendChild(el("p", "note", "Na versão real esta tela é somente leitura (liga/desliga continua em config/modules.yaml). Aqui o simulador acima só ilustra o efeito no menu."));
+}
+
+/* ---------------------------------------------------------------- simulador (só no MVP) */
+function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 3600);
+}
+function renderSim() {
+    const sim = document.getElementById("sim");
+    sim.textContent = "";
+    sim.appendChild(el("strong", null, "Simulador do MVP"));
+    const h = MODULES.find((m) => m.id === "hierarchy");
+    const q = MODULES.find((m) => m.id === "quality");
+    const chip = (text, cls, fn) => { const b = el("button", "chip " + (cls || ""), text); b.type = "button"; b.addEventListener("click", fn); sim.appendChild(b); };
+
+    chip(`Hierarquia: ${h.state === "enabled" ? "ligada" : h.state === "disabled" ? "desligada" : "com falha"}`, h.state === "enabled" ? "on" : h.state === "failed" ? "bad" : "",
+        () => { h.state = h.state === "enabled" ? "disabled" : "enabled"; afterChange(h.state === "enabled" ? "Hierarquia ligada: voltou ao menu." : "Hierarquia desligada: saiu do menu (e as páginas dela dariam 404)."); });
+    chip("Simular falha na Hierarquia", h.state === "failed" ? "bad" : "",
+        () => { h.state = h.state === "failed" ? "enabled" : "failed"; afterChange(h.state === "failed" ? "Falha de carga: o módulo fica no menu, marcado, com o motivo em Plataforma › Módulos." : "Falha resolvida."); });
+    chip(q ? "Remover módulo “Qualidade”" : "+ Ligar módulo novo “Qualidade”", q ? "on" : "",
+        () => {
+            if (q) { MODULES.splice(MODULES.indexOf(q), 1); afterChange("Módulo removido do config: sumiu do menu."); }
+            else { MODULES.push(structuredClone(NEW_MODULE)); justAdded = "quality"; open.add("quality"); afterChange("Módulo novo apareceu no menu só por declarar seus itens no manifest — nenhuma página existente foi alterada."); }
+        });
+    chip(document.body.classList.contains("rail") ? "Expandir menu" : "Recolher menu (só ícones)", "", () => setRail(!document.body.classList.contains("rail")));
+}
+function afterChange(msg) {
+    if (!find(route())) currentRoute = firstRoute();
+    renderAll(); toast(msg); justAdded = null;
+}
+
+/* ---------------------------------------------------------------- menu: recolher / gaveta */
+function setRail(on) { document.body.classList.toggle("rail", on); store.set("mvp.rail", on); renderSim(); }
+function closeDrawer() { document.body.classList.remove("drawer"); }
+document.getElementById("btn-rail").addEventListener("click", () => setRail(!document.body.classList.contains("rail")));
+document.getElementById("btn-menu").addEventListener("click", () => document.body.classList.add("drawer"));
+document.getElementById("overlay").addEventListener("click", closeDrawer);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+
+function renderAll() { renderSidebar(); renderPage(); renderSim(); }
+/* ao NAVEGAR, o módulo da página atual se expande (e só então; recolher manualmente é respeitado) */
+function expandActive() { const cur = find(route()); if (cur) { open.add(cur.mod.id); store.set("mvp.open", [...open]); } }
+window.addEventListener("hashchange", () => { currentRoute = hashRoute(); expandActive(); renderAll(); });
+expandActive();
+renderAll();
+</script>
+</body>
+</html>

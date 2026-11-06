@@ -1,0 +1,7 @@
+# Módulos da plataforma. Para desligar um módulo: enabled: false e reiniciar o serviço.
+# A ordem aqui é a ordem de registro das rotas.
+modules:
+  flow:
+    enabled: true
+  hierarchy:
+    enabled: true

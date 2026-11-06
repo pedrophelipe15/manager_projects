@@ -100,18 +100,19 @@ Os projetos e as JQLs de extração são definidos em `projects.yaml`.
 
 ```
 changelog_timeline/
-├── api.py                 # Backend FastAPI (API REST + serve estáticos)
-├── ingest_to_db.py        # Ingestão JSONL → SQLite + cálculo de métricas
+├── api.py                 # Ponto de entrada (uvicorn api:app): create_app()
+├── kernel/                # plataforma: registry, migrações, ConfigStore, jobs, shared/, jira/, web/
+├── modules/
+│   ├── flow/              # dashboards: routers/, metrics/, db.py, ingest.py, migrations/, web/ (páginas em /)
+│   └── hierarchy/         # hierarquia: routers/, metrics.py, db.py, migrations/, web/ (páginas em /hierarchy/)
+├── config/modules.yaml    # módulos ligados/desligados
+├── ingest_to_db.py        # atalho de CLI para modules/flow/ingest.py
 ├── run_pipeline.py        # Orquestrador CLI (extração + ingestão)
 ├── projects.yaml          # Projetos e pipelines (JQLs)
 ├── requirements.txt
 │
-├── metrics/               # Pacote de métricas (base, waves 1-4, insights, hierarquia)
-├── exporter_jira/         # Extrator Jira (standalone) + .env
-├── hierarchy/             # Páginas do módulo de hierarquia
-├── mvp_slide/             # Slide executivo por iniciativa
-│
-├── *.html / *.js / *.css  # Páginas do dashboard (dashboard, wave1-4, insights, etc.)
+├── exporter_jira/         # Extratores Jira (standalone) + .env
+├── tests/                 # pytest
 ├── mock_full_load.py      # Gera dados de demonstração
 ├── mock_delta_sync.py     # Simula delta sync
 └── docs/                  # Documentação (ver docs/README.md)

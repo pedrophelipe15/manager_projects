@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Módulos - Changelog Timeline</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="tokens.css?v=2">
+    <link rel="stylesheet" href="ui.css?v=3">
+    <link rel="stylesheet" href="nav.css?v=1">
+    <link rel="stylesheet" href="modules.css?v=1">
+</head>
+<body>
+    <div class="page-container">
+        <nav id="main-nav" class="nav-bar"></nav>
+
+        <header class="page-header">
+            <h1>Módulos</h1>
+            <p class="subtitle">Estado dos módulos da plataforma. Para ligar ou desligar um módulo, edite
+                <code>config/modules.yaml</code> e reinicie o serviço.</p>
+        </header>
+
+        <section class="modules-summary" id="summary" aria-live="polite"></section>
+
+        <div class="table-scroll">
+            <table class="data-table" id="modules-table">
+                <thead>
+                    <tr>
+                        <th>Módulo</th>
+                        <th>Estado</th>
+                        <th>Versão</th>
+                        <th>Depende de</th>
+                        <th>Saúde</th>
+                        <th>Entrada</th>
+                    </tr>
+                </thead>
+                <tbody id="modules-body">
+                    <tr><td colspan="6" class="empty-state">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="modules-actions">
+            <button class="btn btn--secondary btn--sm" id="btn-refresh" type="button">Atualizar</button>
+        </p>
+    </div>
+
+    <script src="nav.js?v=3"></script>
+    <script src="modules.js?v=1"></script>
+</body>
+</html>

@@ -1,6 +1,54 @@
 # DATASHEET - Changelog Timeline
 
-> **Versao:** v2.6.2 · **Status:** produtivo · **Atualizado:** 2026-10-08
+> **Versao:** v2.11.0 · **Status:** produtivo · **Atualizado:** 2026-11-06
+>
+> A **v2.11.0** (fase 8 da modularizacao) **moveu os arquivos fisicos para `modules/<id>/`**, sem mudar
+> nenhuma URL nem rota: `routers/` -> `modules/flow/routers/` e `modules/hierarchy/routers/`;
+> `metrics/` -> `modules/flow/metrics/` (e `hierarchy_metrics.py` -> `modules/hierarchy/metrics.py`);
+> `core/db.py` -> `modules/flow/db.py`; `ingest_to_db.py` -> `modules/flow/ingest.py` (o comando
+> `python ingest_to_db.py` continua funcionando via atalho); paginas do flow -> `modules/flow/web/`,
+> pasta `hierarchy/` -> `modules/hierarchy/web/`, design system/menu/painel -> `kernel/web/`.
+> Cada modulo serve a propria pasta web; modulo desligado nao e montado (404). O import-linter agora
+> verifica **independencia real** entre `modules.flow` e `modules.hierarchy`.
+> **Atencao:** as secoes mais antigas deste documento ainda citam os caminhos `metrics/`,
+> `routers/`, `hierarchy/` e paginas na raiz; leia-os como `modules/flow/metrics/`,
+> `modules/flow/routers/`, `modules/hierarchy/...` e `modules/<id>/web/`.
+>
+> A **v2.10.0** adicionou o **painel de modulos** (`/modules.html`, menu "Plataforma → Modulos"):
+> mostra, somente leitura, o estado de cada modulo (ligado/desligado/falhou), versao, dependencias,
+> saude (banco + versao do schema) e a causa de falhas de carga, a partir de
+> `GET /api/platform/modules`. A pagina e os arquivos `modules.html/js/css` sao assets da plataforma
+> (sempre servidos). `config/modules.yaml` agora rejeita ids de modulo que o YAML le como booleano
+> (`off`, `on`, `yes`, `no` sem aspas).
+>
+> A **v2.9.0** unificou os jobs em background no **`kernel/jobs.py` (JobRunner)**: sync do flow
+> (`/api/settings/projects/sync*`), recalculo Wave 1 (`/api/metrics/wave1/recalculate*`) e sync da
+> hierarquia (`/api/hierarchy/sync*`) usam o mesmo mecanismo (estado, log, cancelamento). O formato
+> das respostas de status nao mudou. Correcoes: o inicio do job e atomico (dois POSTs simultaneos
+> nao iniciam dois jobs), `running` ja e verdadeiro na resposta do POST e uma excecao inesperada
+> nao deixa mais o job preso em "rodando" (antes so reiniciando o servidor).
+>
+> A **v2.8.0** (fases 4-5 da modularizacao): codigo compartilhado foi para `kernel/`
+> (`shared/`, `jira/`, `paths.py`) e as fronteiras entre modulos passaram a ser verificadas
+> (`.importlinter`); o **menu e dinamico** (`GET /api/platform/modules` -> `menu`); os
+> **estaticos pertencem aos modulos**: `/hierarchy/*` retorna 404 com a hierarquia desligada, e as
+> paginas da raiz (flow) com o flow desligado; assets da plataforma (`tokens.css`, `nav.css`,
+> `nav.js`, `ui.*`, `context.js`, `dashboard.css`) ficam sempre disponiveis. A rota `/` agora
+> **redireciona para a home do primeiro modulo ligado** (antes servia o `index.html`, que segue em
+> `/index.html`). O botao "VOLTAR" da hierarquia leva a `/`. A pagina `visao-projeto.html` passou a usar o menu dinamico.
+>
+> A **v2.7.0** e uma **refatoracao estrutural sem mudanca de telas**: (1) o `api.py` (3.500 linhas)
+> foi dividido em `routers/` por dominio e passou a ser so o ponto de entrada; (2) nasceu o
+> `kernel/` (registry de modulos, `create_app`, migracoes, ConfigStore) e os modulos **flow** e
+> **hierarchy** (`modules/*/module.py`), ligados/desligados em `config/modules.yaml` (reinicio);
+> (3) o schema de `issues.db` e `hierarchy.db` agora vem de **migracoes versionadas**
+> (`modules/*/migrations/`, tabela `schema_version`) — `core/db_init.py` e o auto-setup de
+> `hierarchy_db.py` foram removidos (esse arquivo hoje e `modules/hierarchy/db.py`); (4) `projects.yaml` e acessado so pelo **ConfigStore**
+> (lock + escrita atomica + secoes por modulo); (5) estaticos servidos por **allowlist** (antes
+> qualquer arquivo da pasta, inclusive `.db`, era servido); (6) `mvp_slide/` removido; (7) suite
+> `tests/` (pytest). Novas rotas: `GET /api/platform/modules`, `/api/hierarchy/excluded-projects`
+> (a antiga `/api/settings/excluded-projects` segue como deprecated). Detalhes e plano:
+> [`ESTUDO_MODULARIZACAO.md`](ESTUDO_MODULARIZACAO.md).
 >
 > A **v2.6.2** aplicou uma **revisao ortografica (pt-BR)** nos textos de interface de todo o
 > `changelog_timeline` — acentuacao/grafia em titulos, subtitulos, labels, placeholders,
@@ -294,10 +342,14 @@ api.py (FastAPI + uvicorn) ---> Browser (HTML/JS/CSS)
 
 | Componente | Arquivo | Funcao |
 |-----------|---------|--------|
-| API Backend | `api.py` | FastAPI servindo endpoints REST + arquivos estaticos |
+| API Backend | `api.py` → `kernel/app_factory.py` | `api.py` so chama `create_app()`; o kernel carrega os modulos ligados (`config/modules.yaml`), inclui seus routers (`routers/*.py`), expoe `/api/platform/modules` e serve estaticos por allowlist (`kernel/static.py`) |
+| Modulos | `modules/flow/`, `modules/hierarchy/` | Manifest (`module.py`: routers, menu, `on_enable`, health), `migrations/` (schema versionado) e `config.py` (secao do `projects.yaml`) |
+| Config | `kernel/config_store.py` | Acesso ao `projects.yaml` com lock, escrita atomica, `.bak` e secoes por modulo (`projects` = flow; `hierarchy`, `excluded_projects` = hierarchy) |
 | Extrator Jira | `exporter_jira/export_jira.py` | Extrai issues e changelogs do Jira via API |
-| Cliente Jira | `exporter_jira/jira_client.py` | Conexao, autenticacao, paginacao, retry |
-| Mapper | `exporter_jira/jira_mapper.py` | Transforma payload bruto Jira em formato flat |
+| Cliente Jira | `kernel/jira/jira_client.py` | Conexao, autenticacao, paginacao, retry (compartilhado; credenciais em `exporter_jira/.env`) |
+| Mapper | `kernel/jira/jira_mapper.py` | Transforma payload bruto Jira em formato flat |
+| Codigo compartilhado | `kernel/shared/` | `constants` (estados ativos, ordem de status), `timeutils`, `forecast_core` (Monte Carlo) — usados por flow e hierarchy |
+| Fronteiras | `.importlinter` + `tests/test_architecture.py` | Contratos: kernel nao importa modulos; flow e hierarchy nao se importam |
 | Ingestao | `ingest_to_db.py` | Le JSONL, popula SQLite, orquestra calculo de metricas |
 | Metricas Base | `metrics/base.py` | Calcula lead time e cycle time |
 | Wave 1 | `metrics/wave1_bottleneck/` | 5 sub-metricas de gargalo e fluxo |
@@ -342,7 +394,10 @@ Acesso: `http://localhost:8000`
 
 A partir da v2.0.0 a nav e **injetada por `nav.js`** (estilo em `nav.css`) num placeholder
 `<nav id="main-nav" class="nav-bar">`, substituindo as barras duplicadas por pagina. E
-**agrupada por pergunta do gestor** (a ordem/abas vivem no array `GROUPS` de `nav.js`):
+**agrupada por pergunta do gestor**. **Desde a v2.8.0 o menu e dinamico:** `nav.js` le `menu` de
+`GET /api/platform/modules`, montado pelo kernel a partir dos `NavItem` declarados no manifest
+de cada modulo **ligado** (`modules/*/module.py`); modulo desligado nao aparece, modulo novo
+aparece sozinho. A tabela abaixo e o menu atual (flow + hierarchy):
 
 | Grupo | Abas | Pergunta |
 |-------|------|----------|
@@ -993,8 +1048,18 @@ JIRA_REQUEST_TIMEOUT_SECONDS=30
 
 ```
 changelog_timeline/
-├── api.py                    # Backend FastAPI (endpoints + sync)
-├── ingest_to_db.py           # Ingestao JSONL -> SQLite + orquestra metricas
+├── api.py                    # Ponto de entrada (uvicorn api:app): create_app()
+├── kernel/                   # module_base, registry, app_factory, migrations, config_store, jobs, static
+│   ├── shared/ jira/         # codigo comum (constants, timeutils, forecast_core) e cliente Jira
+│   └── web/                  # assets da plataforma: tokens.css, nav.*, ui.*, context.js, dashboard.css, modules.*
+├── modules/
+│   ├── flow/                 # module.py, routers/, metrics/, db.py, ingest.py, config.py, schema.py,
+│   │                         #   migrations/, web/ (TODAS as paginas abaixo, servidas na raiz "/")
+│   └── hierarchy/            # module.py, routers/, metrics.py, db.py, config.py, schema.py,
+│                             #   migrations/, web/ (paginas servidas em /hierarchy/)
+├── config/modules.yaml       # Modulos ligados/desligados (reinicio)
+├── tests/                    # pytest: contrato OpenAPI, smoke, migracoes, kernel, config, estaticos
+├── ingest_to_db.py           # Atalho de CLI -> modules/flow/ingest.py (ingestao JSONL -> SQLite + metricas)
 ├── run_pipeline.py           # Orquestrador CLI (legado)
 ├── projects.yaml             # Configuracao de projetos e pipelines
 ├── issues.db                 # Banco SQLite (gerado)
@@ -1057,9 +1122,7 @@ changelog_timeline/
 │
 ├── exporter_jira/            # Modulo de extracao do Jira
 │   ├── export_jira.py        # CLI principal de extracao
-│   ├── jira_client.py        # Cliente Jira (auth, paginacao, retry)
-│   ├── jira_mapper.py        # Mapeamento de campos
-│   ├── jira_comments.py      # Normalizacao de comentarios
+│   │                         # (jira_client/jira_mapper/jira_comments agora em kernel/jira/)
 │   ├── .env                  # Credenciais (NAO commitar)
 │   └── requirements.txt      # Dependencias do extrator
 │
@@ -1377,11 +1440,11 @@ Um badge dinamico na nav bar mostra a contagem total de alertas em todas as pagi
 
 1. Criar pasta `metrics/wave2_NOME/`
 2. Criar `__init__.py` com `run_wave2(conn, only_keys)`
-3. Criar 1 arquivo .py por sub-metrica com `setup_table()` + `calculate_X()`
+3. Criar 1 arquivo .py por sub-metrica com `calculate_X()`; tabelas novas entram como **migracao** em `modules/flow/migrations/` (nao mais `CREATE TABLE` no codigo da metrica; `setup_table()` apenas delega para `ensure_flow_schema`)
 4. Registrar no `ingest_to_db.py`: `from metrics.wave2_NOME import run_wave2`
-5. Criar endpoints em `api.py`: `GET /api/metrics/wave2/*`
+5. Criar endpoints em um router de `routers/` (e listar o router em `modules/flow/module.py`): `GET /api/metrics/wave2/*`
 6. Criar `wave2.html/js/css` (flat na raiz)
-7. Adicionar link na navegacao
+7. Adicionar o item de menu como `NavItem` em `modules/flow/module.py` (nao ha mais lista fixa no `nav.js`)
 8. Atualizar este DATASHEET
 
 ---
@@ -1390,7 +1453,7 @@ Um badge dinamico na nav bar mostra a contagem total de alertas em todas as pagi
 
 ### Indices de banco de dados
 
-O projeto cria indices automaticamente no `setup_db()` do `ingest_to_db.py`:
+Os indices sao criados pela migracao `modules/flow/migrations/001_baseline.sql` (aplicada no `on_enable` do modulo e no `setup_db()` do `ingest_to_db.py`):
 
 | Tabela | Indice | Proposito |
 |--------|--------|-----------|
@@ -1456,7 +1519,7 @@ Pipeline **completamente isolada** do projeto padrao. Extrai a hierarquia Jira (
 ```
 changelog_timeline/
 ├── hierarchy.db                      # Banco isolado
-├── hierarchy_db.py                   # Schema + setup (7 tabelas, 6 indices)
+├── modules/hierarchy/db.py           # Conexao do hierarchy.db (antes hierarchy_db.py); schema em modules/hierarchy/migrations/ (8 tabelas, 8 indices)
 ├── exporter_jira/
 │   └── export_hierarchy.py           # Extrator cascata (Iniciativa→Epico→Story→Subtask)
 ├── metrics/

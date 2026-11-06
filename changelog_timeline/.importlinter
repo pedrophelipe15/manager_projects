@@ -1,0 +1,25 @@
+[importlinter]
+root_packages =
+    kernel
+    modules
+include_external_packages = False
+
+# --- 1. O kernel nunca depende de módulo ---------------------------------------------
+[importlinter:contract:kernel-independente]
+name = kernel nao importa modulos
+type = forbidden
+source_modules =
+    kernel
+forbidden_modules =
+    modules
+
+# --- 2. Módulos são independentes entre si -------------------------------------------
+# Cada módulo mora em modules/<id>/ (routers, metrics, db, migrations, web). Código
+# compartilhado fica em kernel/ (kernel.shared, kernel.jira, kernel.jobs, kernel.config_store).
+# Ao criar um módulo novo: adicione modules.<id> à lista abaixo.
+[importlinter:contract:modulos-independentes]
+name = flow e hierarchy sao independentes
+type = independence
+modules =
+    modules.flow
+    modules.hierarchy

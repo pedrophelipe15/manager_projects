@@ -100,6 +100,19 @@ JIRA_REQUEST_TIMEOUT_SECONDS=30
 
 > **Nunca commitar o `.env`.** Já está no `.gitignore`.
 
+### Testes
+
+```powershell
+cd changelog_timeline
+pip install -r requirements-dev.txt
+python -m pytest tests -q
+```
+
+Os testes usam bancos e `projects.yaml` temporários (variáveis `MANAGER_DB_PATH`,
+`MANAGER_HIERARCHY_DB_PATH`, `MANAGER_PROJECTS_YAML`); não tocam nos dados reais.
+Se mudar a API de propósito, regenere o snapshot: `set UPDATE_SNAPSHOT=1` e rode
+`pytest tests/test_openapi_contract.py`.
+
 ### Sincronização
 
 Via UI em `/settings.html` (botão "Atualizar") ou via CLI (ver DATASHEET).
@@ -111,14 +124,17 @@ Via UI em `/settings.html` (botão "Atualizar") ou via CLI (ver DATASHEET).
 ```
 manager_projects_v2/
 ├── changelog_timeline/       # Aplicação (backend + frontend + métricas)
-│   ├── api.py                # FastAPI: endpoints REST + estáticos
-│   ├── ingest_to_db.py       # Ingestão JSONL → SQLite + orquestra métricas
-│   ├── metrics/              # Pacote de métricas (base, wave1..5, insights)
-│   ├── exporter_jira/        # Extrator do Jira
-│   ├── hierarchy/            # Módulo hierárquico (banco isolado)
-│   ├── docs/                 # DATASHEET + Guia de Design
-│   ├── tokens.css nav.* ui.* context.js  # Design system compartilhado
-│   └── *.html *.css *.js     # Telas
+│   ├── api.py                # Ponto de entrada (uvicorn api:app): create_app()
+│   ├── kernel/               # registry de módulos, app factory, migrações, ConfigStore, jobs,
+│   │                         #   shared/ (código comum), jira/ (cliente), web/ (design system + menu + painel)
+│   ├── modules/
+│   │   ├── flow/             # dashboards: routers/, metrics/, db, ingest, migrations/, web/ (páginas na raiz)
+│   │   └── hierarchy/        # hierarquia: routers/, metrics, db, migrations/, web/ (páginas em /hierarchy/)
+│   ├── config/modules.yaml   # módulos ligados/desligados
+│   ├── ingest_to_db.py       # atalho de CLI para modules/flow/ingest.py
+│   ├── exporter_jira/        # Extratores do Jira (scripts) + .env
+│   ├── tests/                # pytest
+│   └── docs/                 # DATASHEET + Guia de Design + ESTUDO_MODULARIZACAO
 ├── .kiro/steering/           # Regras de layout e comunicação do projeto
 └── README.md
 ```

@@ -9,11 +9,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import sys
+
 from dotenv import load_dotenv
 
-from jira_client import JiraClient
-from jira_comments import normalize_jira_comments
-from jira_mapper import map_issue
+# Os scripts rodam com cwd=exporter_jira/: coloca a raiz da aplicação no path para achar kernel/
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from kernel.jira.jira_client import JiraClient  # noqa: E402
+from kernel.jira.jira_comments import normalize_jira_comments  # noqa: E402
+from kernel.jira.jira_mapper import map_issue  # noqa: E402
 
 
 load_dotenv()
